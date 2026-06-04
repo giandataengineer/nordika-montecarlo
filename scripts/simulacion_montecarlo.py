@@ -433,3 +433,30 @@ def generate_dataset() -> pd.DataFrame:
         )
 
     return pd.DataFrame(rows)
+
+
+CATEGORICAL = [
+    "bloque_horario",
+    "producto_despacho",
+    "tipo_dia",
+    "estado_red",
+    "zona_red",
+    "profundidad_descarga",
+    "ventana_carga",
+]
+
+NUMERIC = [
+    "precio_spot_usd_mwh",
+    "diferencial_usd_mwh",
+    "soc_inicial_pct",
+    "coste_degradacion_usd",
+    "reserva_comprometida",
+    "rampa_optimizada",
+    "regulacion_ofertada",
+    "regulacion_convocada",
+    "mercado_nuevo",
+    "indice_despacho",
+    "ciclos_acumulados",
+]
+
+FEATURES = CATEGORICAL + NUMERIC
