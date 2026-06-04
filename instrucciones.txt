@@ -1,0 +1,55 @@
+AGENTE IA MONTE CARLO - INSTALACION RAPIDA
+
+1. QUE INCLUYE ESTA CARPETA
+- La app web local de Mission Control.
+- El dataset sintetico y los CSV de resultados en datos/.
+- Los scripts Python necesarios en scripts/.
+- El notebook del caso en caso_agente_ia_montecarlo.ipynb.
+
+2. REQUISITOS
+- Windows, macOS o Linux.
+- Python 3.11 recomendado.
+- Opcional: Conda si quieres usar environment.yml.
+
+3. CONFIGURA TU API KEY (solo si vas a usar el notebook)
+- El demo web (mission_control_server.py) NO necesita ninguna API key, incluido el Informe final.
+- Solo hace falta si vas a correr caso_agente_ia_montecarlo.ipynb.
+- Duplica .env.example y renombralo a .env.
+- Abre .env y pega tu clave.
+
+Contenido esperado de .env:
+OPENAI_API_KEY=tu_api_key_aqui
+
+4. INSTALACION CON CONDA
+- Abre una terminal dentro de esta carpeta.
+- Ejecuta:
+  conda env create -f environment.yml
+  conda activate montecarlo
+
+5. INSTALACION CON PIP
+- Abre una terminal dentro de esta carpeta.
+- Ejecuta:
+  python -m venv .venv
+  .\.venv\Scripts\Activate.ps1
+  pip install -r requirements.txt
+
+6. ARRANCAR LA APP
+- Opcion A, Windows con Conda: doble clic en lanzar_app.bat
+- Opcion B, cualquier entorno ya instalado: ejecuta
+  python scripts/mission_control_server.py
+- Despues abre en el navegador:
+  http://127.0.0.1:8765
+
+7. REGENERAR LOS ARTEFACTOS
+- Si quieres volver a ejecutar la simulacion Monte Carlo y regenerar dashboards:
+  python scripts/simulacion_montecarlo.py --simulations 10000 --live-dashboard --progress-every 100
+
+8. NOTEBOOK
+- Si quieres usar el notebook con un kernel dedicado:
+  python -m ipykernel install --user --name montecarlo --display-name "Python (montecarlo)"
+- Luego abre caso_agente_ia_montecarlo.ipynb y selecciona ese kernel.
+
+9. NOTAS
+- El dashboard web funciona completo sin ninguna API key.
+- Solo si corres el notebook necesitas tu propia OPENAI_API_KEY.
+- El dataset incluido es sintetico y se distribuye como parte del ejemplo.
