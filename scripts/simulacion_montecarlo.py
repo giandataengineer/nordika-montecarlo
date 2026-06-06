@@ -460,3 +460,76 @@ NUMERIC = [
 ]
 
 FEATURES = CATEGORICAL + NUMERIC
+
+# Proporcion de la ventana temporal reservada para validacion.
+TEST_FRACTION = 0.25
+
+
+def temporal_split(df: pd.DataFrame, test_fraction: float = TEST_FRACTION) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Corta por fecha, no al azar.
+
+    Un train_test_split aleatorio sobre datos con fecha entrena con registros
+    posteriores a los de validacion, asi que el modelo ve futuro al aprender y
+    el AUC sale inflado. Aqui se entrena con la parte antigua de la ventana y se
+    valida con la mas reciente, que es como se usara en produccion.
+
+    El corte se devuelve desde una sola funcion para que las metricas del panel
+    y las del pipeline no puedan desincronizarse.
+    """
+    ordered = df.sort_values("date", kind="stable")
+    cut = int(len(ordered) * (1 - test_fraction))
+    return ordered.iloc[:cut].copy(), ordered.iloc[cut:].copy()
+
+
+def split_boundary(df: pd.DataFrame, test_fraction: float = TEST_FRACTION) -> dict[str, str]:
+    """Fechas del corte, para poder mostrarlas y auditar la validacion."""
+    train, test = temporal_split(df, test_fraction)
+    return {
+        "train_start": str(train["date"].min()),
+        "train_end": str(train["date"].max()),
+        "test_start": str(test["date"].min()),
+        "test_end": str(test["date"].max()),
+        "train_rows": int(len(train)),
+        "test_rows": int(len(test)),
+    }
+
+
+def build_conversion_model(df: pd.DataFrame) -> tuple[Pipeline, float]:
+    preprocessor = ColumnTransformer(
+        [
+            ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
+            ("num", StandardScaler(), NUMERIC),
+        ]
+    )
+    model = Pipeline(
+        [
+            ("preprocessor", preprocessor),
+            (
+                "classifier",
+                LogisticRegression(max_iter=1000, C=0.8, random_state=SEED),
+            ),
+        ]
+    )
+    train, test = temporal_split(df)
+    model.fit(train[FEATURES], train["cubrio_degradacion"])
+    predicted = model.predict_proba(test[FEATURES])[:, 1]
+    auc = roc_auc_score(test["cubrio_degradacion"], predicted)
+    return model, float(auc)
+
+
+def build_aov_model(df: pd.DataFrame) -> Pipeline:
+    sold = df[df["cubrio_degradacion"] == 1].copy()
+    preprocessor = ColumnTransformer(
+        [
+            ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
+            ("num", StandardScaler(), NUMERIC),
+        ]
+    )
+    model = Pipeline(
+        [
+            ("preprocessor", preprocessor),
+            ("regressor", HistGradientBoostingRegressor(max_iter=220, learning_rate=0.045, random_state=SEED)),
+        ]
+    )
+    model.fit(sold[FEATURES], np.log1p(sold["ingreso_usd"]))
+    return model
