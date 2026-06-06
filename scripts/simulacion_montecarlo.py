@@ -558,3 +558,102 @@ def aplicar_profundidad(frame: pd.DataFrame, nivel: str) -> pd.DataFrame:
     salida["coste_degradacion_usd"] = salida["coste_degradacion_usd"] * factor
     salida["profundidad_descarga"] = nivel
     return salida
+
+
+def predict_components(
+    rows: pd.DataFrame,
+    conversion_model: Pipeline,
+    aov_model: Pipeline,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    p_sale = conversion_model.predict_proba(rows[FEATURES])[:, 1]
+    aov = np.expm1(aov_model.predict(rows[FEATURES]))
+    margin = rows["margen_operativo_pct"].to_numpy()
+    cost = rows["coste_degradacion_usd"].to_numpy()
+    return p_sale, aov, margin, cost
+
+
+def estimate_historical_parameters(df: pd.DataFrame, conversion_model: Pipeline, aov_model: Pipeline) -> pd.DataFrame:
+    rows = []
+
+    def effect(name: str, base: pd.DataFrame, scenario: pd.DataFrame) -> None:
+        p0, a0, m0, c0 = predict_components(base, conversion_model, aov_model)
+        p1, a1, m1, c1 = predict_components(scenario, conversion_model, aov_model)
+        value0 = p0 * a0 * m0 - c0
+        value1 = p1 * a1 * m1 - c1
+        delta = value1 - value0
+
+        # El uplift medio por si solo no dice si el efecto sobrevive a otra muestra
+        # de oportunidades. El intervalo si, y ademas deja ver cuando cruza el cero.
+        try:
+            from analitica_avanzada import intervalo_uplift
+
+            ic = intervalo_uplift(delta, semilla=SEED)
+        except Exception:
+            ic = {}
+
+        rows.append(
+            {
+                "parameter": name,
+                "sample_size": len(base),
+                "baseline_cobertura": round(float(p0.mean()), 4),
+                "scenario_conversion": round(float(p1.mean()), 4),
+                "conversion_lift_pct": round(float((p1.mean() / p0.mean()) - 1), 4),
+                "profit_lift_per_window_usd": round(float(delta.mean()), 2),
+                # None y no NaN: json.dumps escribe NaN, que no es JSON valido y
+                # revienta el JSON.parse del navegador
+                "profit_lift_ci_low_usd": round(float(ic["inferior"]), 2) if ic.get("inferior") is not None else None,
+                "profit_lift_ci_high_usd": round(float(ic["superior"]), 2) if ic.get("superior") is not None else None,
+                "profit_lift_significativo": bool(ic.get("significativo", False)),
+                "source": "Estimado con contrafactual ML sobre historico sintetico",
+            }
+        )
+
+    base = df.copy()
+
+    # Palancas de control fino: ventana de carga optimizada, rampa suave y
+    # reserva comprometida. Es el paquete barato, casi todo software.
+    control = aplicar_profundidad(base, "conservadora")
+    control["ventana_carga"] = "optimizada"
+    control["rampa_optimizada"] = 1
+    control["reserva_comprometida"] = 1
+    effect("control_fino_completo", base, control)
+
+    # La palanca central del caso: descargar profundo mueve mas energia pero
+    # el desgaste crece con el cuadrado. Se mide por bloque horario porque el
+    # diferencial de precio no es igual en la punta que en el valle solar.
+    for bloque in ["punta_noche", "punta_tarde", "manana", "valle_solar"]:
+        bloque_df = df[df["bloque_horario"] == bloque]
+        if len(bloque_df) == 0:
+            continue
+        p, a, m, c = predict_components(bloque_df, conversion_model, aov_model)
+        rows.append(
+            {
+                "parameter": f"bloque_{bloque}",
+                "sample_size": len(bloque_df),
+                "baseline_cobertura": round(float(bloque_df["cubrio_degradacion"].mean()), 4),
+                "scenario_conversion": round(float(p.mean()), 4),
+                "conversion_lift_pct": "",
+                "profit_lift_per_window_usd": round(float((p * a * m - c).mean()), 2),
+                "source": "Historico por bloque horario de despacho",
+            }
+        )
+
+    effect("descarga_profunda", base, aplicar_profundidad(base, "profunda"))
+
+    # Regulacion de frecuencia sobre las ventanas que pueden ofertarla.
+    aptas = df[
+        df["bloque_horario"].isin(["punta_tarde", "punta_noche", "manana"])
+        | df["estado_red"].isin(["ajustado", "critico"])
+    ].copy()
+    regulada = aptas.copy()
+    regulada["regulacion_ofertada"] = 1
+    regulada["regulacion_convocada"] = 1
+    effect("regulacion_convocada", aptas, regulada)
+
+    # Mercado nuevo, solo en los nodos con habilitacion tramitable.
+    habilitables = df[df["zona_red"].isin(["Nodo Centro", "Nodo Costa", "Nodo Sur"])].copy()
+    nuevo = habilitables.copy()
+    nuevo["mercado_nuevo"] = 1
+    effect("mercado_nuevo", habilitables, nuevo)
+
+    return pd.DataFrame(rows)
