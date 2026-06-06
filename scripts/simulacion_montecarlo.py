@@ -533,3 +533,28 @@ def build_aov_model(df: pd.DataFrame) -> Pipeline:
     )
     model.fit(sold[FEATURES], np.log1p(sold["ingreso_usd"]))
     return model
+
+
+# Factor de desgaste que arrastra la palanca de profundidad. Sale de los
+# exponentes del generador: la descarga profunda mueve ~2,2x mas energia y su
+# desgaste escala con el cuadrado, no linealmente.
+FACTOR_DESGASTE_PROFUNDA = 2.1
+
+
+def aplicar_profundidad(frame: pd.DataFrame, nivel: str) -> pd.DataFrame:
+    """Cambia la profundidad de descarga arrastrando su coste de degradacion.
+
+    Sin esto el contrafactual solo veia el cambio categorico y el coste seguia
+    siendo el del historico, con lo que la palanca central del caso salia con
+    uplift cero.
+    """
+    salida = frame.copy()
+    actual = salida["profundidad_descarga"]
+    factor = np.where(
+        (actual == "conservadora") & (nivel == "profunda"),
+        FACTOR_DESGASTE_PROFUNDA,
+        np.where((actual == "profunda") & (nivel == "conservadora"), 1 / FACTOR_DESGASTE_PROFUNDA, 1.0),
+    )
+    salida["coste_degradacion_usd"] = salida["coste_degradacion_usd"] * factor
+    salida["profundidad_descarga"] = nivel
+    return salida
