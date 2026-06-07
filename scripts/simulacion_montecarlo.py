@@ -657,3 +657,96 @@ def estimate_historical_parameters(df: pd.DataFrame, conversion_model: Pipeline,
     effect("mercado_nuevo", habilitables, nuevo)
 
     return pd.DataFrame(rows)
+
+
+def scenario_frames(base: pd.DataFrame, rng: np.random.Generator) -> dict[str, tuple[pd.DataFrame, float]]:
+    """Las cuatro estrategias de operacion, con su inversion inicial en USD.
+
+    Cada una es la misma base historica con las palancas movidas, que es lo que
+    permite compararlas contra si mismas y no contra periodos distintos.
+    """
+    scenarios: dict[str, tuple[pd.DataFrame, float]] = {}
+
+    # 1. La aburrida: ciclado suave y control fino. Inversion baja, casi todo
+    #    software y ajuste de consignas.
+    conservadora = aplicar_profundidad(base, "conservadora")
+    conservadora["ventana_carga"] = "optimizada"
+    conservadora["rampa_optimizada"] = 1
+    conservadora["reserva_comprometida"] = 1
+    scenarios["Ventana conservadora"] = (conservadora, 18_000.0)
+
+    # 2. La intuitiva: perseguir cada diferencial. Se anaden ventanas de punta
+    #    con descarga profunda, que es exactamente lo que hace un operador que
+    #    solo mira la facturacion del mes.
+    punta = base[base["bloque_horario"].isin(["punta_tarde", "punta_noche"])].copy()
+    extra_count = max(620, int(len(punta) * 2.00))
+    extra = punta.sample(extra_count, replace=True, random_state=SEED).copy()
+    extra["profundidad_descarga"] = "profunda"
+    extra["estado_red"] = rng.choice(["ajustado", "critico"], size=extra_count, p=[0.80, 0.20])
+    extra["soc_inicial_pct"] = np.clip(
+        extra["soc_inicial_pct"] * rng.normal(1.05, 0.12, extra_count), 5, 100
+    )
+    # mas ciclos consumidos encarecen cada operacion siguiente
+    extra["coste_degradacion_usd"] = extra["coste_degradacion_usd"] * rng.normal(1.55, 0.12, extra_count)
+    extra["indice_despacho"] = np.clip(
+        extra["indice_despacho"] - rng.normal(4, 4, extra_count), 1, 99
+    ).round().astype(int)
+    agresivo = aplicar_profundidad(pd.concat([base, extra], ignore_index=True), "profunda")
+    scenarios["Arbitraje agresivo"] = (agresivo, 95_000.0)
+
+    # 3. La estable: comprometer capacidad y cobrar por disponibilidad.
+    regulacion = base.copy()
+    apta = regulacion["bloque_horario"].isin(["punta_tarde", "punta_noche", "manana"]) | (
+        regulacion["estado_red"].isin(["ajustado", "critico"])
+    )
+    ofertada = apta & (rng.random(len(regulacion)) < 0.62)
+    convocada = ofertada & (rng.random(len(regulacion)) < 0.34)
+    regulacion.loc[ofertada, "regulacion_ofertada"] = 1
+    regulacion.loc[convocada, "regulacion_convocada"] = 1
+    regulacion.loc[ofertada, "reserva_comprometida"] = 1
+    scenarios["Servicios de regulacion"] = (regulacion, 28_000.0)
+
+    # 4. La espectacular: habilitar un mercado nuevo. Techo alto, coste hundido
+    #    y la unica con incertidumbre sobre si la certificacion llega a tiempo.
+    hibrido = base.copy()
+    habilitable = hibrido["zona_red"].isin(["Nodo Centro", "Nodo Costa", "Nodo Sur"])
+    activado = habilitable & (rng.random(len(hibrido)) < 0.32)
+    hibrido.loc[activado, "mercado_nuevo"] = 1
+    hibrido.loc[activado, "coste_degradacion_usd"] = hibrido.loc[
+        activado, "coste_degradacion_usd"
+    ] + rng.lognormal(np.log(5.0), 0.35, int(activado.sum()))
+    scenarios["Hibrido certificado"] = (hibrido, 140_000.0)
+
+    return scenarios
+
+
+# Calibracion de los tres ruidos por estrategia, extraida del cuerpo del bucle
+# para poder escalarla desde fuera y auditar de que depende la conclusion.
+# (mu, sigma) de la lognormal del precio; valores y pesos del riesgo de
+# despacho; suelo y proporcion del ruido residual.
+NOISE_PROFILES: dict[str, dict[str, object]] = {
+    # Mercado nuevo: nadie sabe cuanto paga ni cuando llega la habilitacion.
+    "Hibrido certificado": {
+        "uncertainty": (-0.90, 1.38),
+        "execution": ([0.10, 0.30, 0.76, 1.65, 3.40], [0.23, 0.25, 0.24, 0.18, 0.10]),
+        "residual": (18_000, 0.34),
+    },
+    # Arbitraje: expuesto de lleno a la cola gruesa del precio spot.
+    "Arbitraje agresivo": {
+        "uncertainty": (-0.08, 0.24),
+        "execution": ([0.58, 0.82, 1.00, 1.16], [0.18, 0.30, 0.34, 0.18]),
+        "residual": (16_000, 0.26),
+    },
+    # Regulacion: se cobra por disponibilidad, asi que el precio importa menos.
+    # El riesgo real es no ser convocado.
+    "Servicios de regulacion": {
+        "uncertainty": (0.0, 0.16),
+        "execution": ([0.72, 0.94, 1.10, 1.22], [0.18, 0.36, 0.32, 0.14]),
+        "residual": (4_000, 0.12),
+    },
+    "_default": {
+        "uncertainty": (0.0, 0.07),
+        "execution": ([0.88, 0.98, 1.05, 1.12], [0.14, 0.44, 0.30, 0.12]),
+        "residual": (2_500, 0.06),
+    },
+}
