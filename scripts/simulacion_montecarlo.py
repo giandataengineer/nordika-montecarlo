@@ -750,3 +750,101 @@ NOISE_PROFILES: dict[str, dict[str, object]] = {
         "residual": (2_500, 0.06),
     },
 }
+
+
+def simulate_decisions(
+    df: pd.DataFrame,
+    conversion_model: Pipeline,
+    aov_model: Pipeline,
+    n_simulations: int = N_SIMULATIONS,
+    progress_every: int = 0,
+    progress_callback=None,
+    pacing_total_seconds: float = 0.0,
+    seed: int | None = None,
+    noise_scales: tuple[float, float, float] = (1.0, 1.0, 1.0),
+) -> pd.DataFrame:
+    """`seed` permite repetir la realizacion con otros dados sin tocar los datos.
+
+    `noise_scales` escala (incertidumbre, ejecucion, residual) de forma
+    independiente: 1.0 es la calibracion elegida por el analista, 2.0 la duplica.
+    Sirve para comprobar a partir de que exageracion cambia la recomendacion.
+    """
+    scale_unc, scale_exec, scale_res = noise_scales
+    rng = np.random.default_rng(SEED if seed is None else seed)
+    started_at = time.perf_counter()
+    recent = df[df["date"] >= "2025-10-01"].copy()
+    if len(recent) < 2500:
+        recent = df.tail(4500).copy()
+
+    base_size = min(3600, len(recent))
+    base = recent.sample(base_size, replace=True, random_state=SEED).reset_index(drop=True)
+    p0, a0, m0, c0 = predict_components(base, conversion_model, aov_model)
+    base_expected_value = p0 * a0 * m0 - c0 - p0 * 22
+
+    scenarios = scenario_frames(base, rng)
+    precomputed = {}
+    for decision, (scenario_df, fixed_cost) in scenarios.items():
+        p, aov, margin, cost = predict_components(scenario_df, conversion_model, aov_model)
+        expected_value = p * aov * margin - cost - p * 22
+        precomputed[decision] = (scenario_df.reset_index(drop=True), fixed_cost, expected_value)
+
+    results = []
+    for sim in range(1, n_simulations + 1):
+        idx = rng.integers(0, len(base), len(base))
+
+        for decision, (scenario_df, fixed_cost, expected_value) in precomputed.items():
+            if len(scenario_df) == len(base):
+                raw_delta = float((expected_value[idx] - base_expected_value[idx]).sum())
+            else:
+                extra_value = expected_value[len(base) :]
+                extra_idx = rng.integers(0, len(extra_value), len(extra_value))
+                raw_delta = float(extra_value[extra_idx].sum())
+
+            profile = NOISE_PROFILES.get(decision, NOISE_PROFILES["_default"])
+            mu, sigma = profile["uncertainty"]
+            valores, pesos = profile["execution"]
+            suelo, proporcion = profile["residual"]
+
+            uncertainty = rng.lognormal(mu, sigma * scale_unc)
+            # el retraso se estira alrededor de 1.0 para no desplazar la media al escalarlo
+            bruto = rng.choice(valores, p=pesos)
+            execution_delay = 1.0 + (bruto - 1.0) * scale_exec
+            residual_sd = max(suelo, abs(raw_delta) * proporcion) * scale_res
+
+            incremental_profit = raw_delta * uncertainty * execution_delay - fixed_cost
+            incremental_profit += rng.normal(0, residual_sd)
+            results.append(
+                {
+                    "decision": decision,
+                    "simulation": sim,
+                    "incremental_profit_usd": round(incremental_profit, 2),
+                    "roi": round(incremental_profit / fixed_cost, 4),
+                }
+            )
+
+        if progress_callback is not None and progress_every and (sim % progress_every == 0 or sim == n_simulations):
+            progress_callback(sim, n_simulations, results)
+            if pacing_total_seconds > 0:
+                target_elapsed = pacing_total_seconds * (sim / n_simulations)
+                elapsed = time.perf_counter() - started_at
+                wait_seconds = target_elapsed - elapsed
+                if wait_seconds > 0:
+                    time.sleep(wait_seconds)
+
+    return pd.DataFrame(results)
+
+
+def summarize_partial(results: list[dict]) -> pd.DataFrame:
+    if not results:
+        return pd.DataFrame(
+            columns=[
+                "decision",
+                "expected_profit_usd",
+                "p10_usd",
+                "p50_usd",
+                "p90_usd",
+                "probability_loss",
+                "expected_roi",
+            ]
+        )
+    return summarize(pd.DataFrame(results))
