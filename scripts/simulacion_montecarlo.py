@@ -848,3 +848,505 @@ def summarize_partial(results: list[dict]) -> pd.DataFrame:
             ]
         )
     return summarize(pd.DataFrame(results))
+
+
+def write_live_dashboard(
+    current_simulation: int,
+    total_simulations: int,
+    results: list[dict],
+    output_path: Path = LIVE_DASHBOARD_PATH,
+    status_path: Path = LIVE_STATUS_PATH,
+    status_script_path: Path = LIVE_STATUS_SCRIPT_PATH,
+) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    status_path.parent.mkdir(parents=True, exist_ok=True)
+    summary = summarize_partial(results)
+    leaderboard = summary.to_dict(orient="records")
+    recent_runs = results[-16:]
+    status = {
+        "current_simulation": current_simulation,
+        "total_simulations": total_simulations,
+        "progress_pct": round(current_simulation / total_simulations * 100, 2),
+        "is_running": current_simulation < total_simulations,
+        "leaderboard": leaderboard,
+        "recent_runs": recent_runs,
+        "dashboard_path": LIVE_DASHBOARD_RELATIVE_PATH,
+    }
+    status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8")
+    status_script_path.write_text(
+        "window.__MONTECARLO_STATUS__ = " + json.dumps(status, ensure_ascii=False) + ";",
+        encoding="utf-8",
+    )
+    if _should_log_live_update(current_simulation, total_simulations):
+        leader = leaderboard[0]["decision"] if leaderboard else None
+        _debug_log(
+            "live_dashboard_written",
+            current_simulation=current_simulation,
+            total_simulations=total_simulations,
+            progress_pct=status["progress_pct"],
+            is_running=status["is_running"],
+            leader=leader,
+            output_path=output_path.name,
+            status_script_path=status_script_path.name,
+        )
+
+    colors = {
+        "Ventana conservadora": "#1fa971",
+        "Servicios de regulacion": "#2f80ed",
+        "Arbitraje agresivo": "#d9531e",
+        "Hibrido certificado": "#7c3aed",
+    }
+    initial_status = json.dumps(status, ensure_ascii=False)
+    colors_json = json.dumps(colors, ensure_ascii=False)
+    html = f"""<!doctype html>
+<html lang=\"es\">
+<head>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+<title>Monte Carlo Live</title>
+<style>
+:root {{ --bg:#ededed; --panel:#f2f2f2; --line:#dedddc; --cyan:#d9531e; --green:#1fa971; --amber:#d9531e; --pink:#7c3aed; --blue:#2f80ed; --text:#131313; --muted:#6c6c6c; --ghost:#b2b2b2; }}
+* {{ box-sizing:border-box; }}
+body {{ margin:0; font-family:Inter,-apple-system,Segoe UI,Arial,sans-serif; color:var(--text); background:var(--bg); overflow-x:hidden; }}
+.shell {{ max-width:1500px; margin:0 auto; padding:24px; position:relative; }}
+.hero,.panel,.card,.metric-chip {{ border:1px solid var(--line); background:var(--panel); border-radius:24px; box-shadow:0 12px 32px rgba(19,19,19,.06); }}
+.hero {{ padding:24px; display:grid; grid-template-columns:1.15fr .85fr; gap:18px; position:relative; overflow:hidden; }}
+.hero-copy,.hero-side {{ position:relative; z-index:1; }}
+.hero h1 {{ margin:0; font-size:42px; text-transform:uppercase; letter-spacing:.08em; }}
+.hero-grid {{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:18px; }}
+.metric-chip {{ padding:14px 16px; }}
+.metric-chip .label {{ font-size:11px; text-transform:uppercase; letter-spacing:.16em; color:var(--muted); }}
+.metric-chip .value {{ margin-top:8px; font-size:26px; font-weight:800; color:var(--text); }}
+.hero-side {{ display:grid; place-items:center; }}
+.ring {{ width:230px; height:230px; border-radius:50%; position:relative; display:grid; place-items:center; background:conic-gradient(var(--cyan) 0deg, var(--cyan) 0deg, #e0e0de 0deg 360deg); transition:background .25s linear; }}
+.ring:before {{ content:''; position:absolute; inset:18px; border-radius:50%; background:var(--panel); border:1px solid var(--line); }}
+.ring:after {{ content:''; position:absolute; inset:34px; border-radius:50%; border:1px dashed rgba(120,201,227,.16); animation:rotate 16s linear infinite; }}
+.ring-content {{ position:relative; text-align:center; z-index:1; }}
+.ring-content .kicker {{ font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }}
+.ring-content .big {{ font-size:54px; font-weight:800; line-height:1; color:var(--text); }}
+.ring-content .sub {{ margin-top:8px; font-size:14px; color:var(--muted); }}
+.cards {{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:18px; }}
+.card {{ padding:16px; position:relative; overflow:hidden; min-height:132px; }}
+.card:after {{ content:''; position:absolute; inset:auto 0 0 0; height:3px; background:var(--accent,#d9531e);  }}
+.kicker {{ font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.16em; }}
+.metric {{ margin-top:10px; font-size:31px; color:var(--text); font-weight:800; }}
+.sub {{ margin-top:8px; color:var(--muted); font-size:13px; }}
+.dashboard-grid {{ display:grid; grid-template-columns:1.2fr .8fr; gap:18px; margin-top:18px; }}
+.panel {{ padding:18px; position:relative; overflow:hidden; }}
+.panel h3 {{ margin:0 0 14px; font-size:15px; letter-spacing:.16em; text-transform:uppercase; color:var(--text); }}
+.leaderboard-bars {{ display:grid; gap:12px; }}
+.bar-row {{ display:grid; grid-template-columns:210px 1fr 90px; align-items:center; gap:12px; }}
+.bar-track {{ height:18px; border-radius:999px; background:#e6e6e4; border:1px solid var(--line); overflow:hidden; position:relative; }}
+.bar-fill {{ height:100%; border-radius:999px; position:relative; transition:width .32s ease-out; }}
+.bar-value {{ text-align:right; font-weight:700; color:var(--text); }}
+.radar-wrap {{ position:relative; min-height:340px; }}
+.radar-grid {{ position:absolute; inset:0; background:radial-gradient(circle, rgba(19,19,19,.08) 0 1px, transparent 1px), linear-gradient(90deg, rgba(19,19,19,.06) 1px, transparent 1px), linear-gradient(180deg, rgba(19,19,19,.06) 1px, transparent 1px); background-size:28px 28px, 28px 28px, 28px 28px; mask-image:radial-gradient(circle at center, black 40%, transparent 88%); }}
+.radar-sweep {{ position:absolute; inset:18px; border-radius:50%; background:conic-gradient(from 0deg, rgba(31,169,113,.20), transparent 55deg, transparent 360deg); animation:rotate 5s linear infinite; opacity:.6; }}
+.radar-svg {{ position:relative; width:100%; height:340px; z-index:1; }}
+.spark-grid {{ display:grid; gap:10px; }}
+.spark-row {{ display:grid; grid-template-columns:220px 1fr 90px; gap:12px; align-items:center; }}
+.spark-svg {{ width:100%; height:52px; display:block; }}
+.spark-value {{ text-align:right; font-weight:700; }}
+.telemetry-window {{ height:340px; overflow:hidden; position:relative; border:1px solid var(--line); border-radius:14px; background:var(--panel); }}
+.telemetry-window:before, .telemetry-window:after {{ content:''; position:absolute; left:0; right:0; height:44px; z-index:2; pointer-events:none; }}
+.telemetry-window:before {{ top:0; background:linear-gradient(180deg, var(--panel), rgba(242,242,242,0)); }}
+.telemetry-window:after {{ bottom:0; background:linear-gradient(0deg, var(--panel), rgba(242,242,242,0)); }}
+.telemetry-track {{ position:absolute; inset:0; padding:10px 12px 12px; display:grid; gap:8px; animation:none; --telemetry-duration:9s; }}
+.telemetry-track.is-running {{ animation:telemetryDrift var(--telemetry-duration) linear infinite; }}
+.telemetry-row {{ display:grid; grid-template-columns:92px 1.3fr 110px 74px; gap:10px; padding:10px 12px; border-radius:12px; background:#f7f7f6; border:1px solid var(--line); color:var(--text); transform:translateY(8px); opacity:0; animation:rowIn .45s ease forwards; }}
+.telemetry-row:nth-child(odd) {{ background:#efefee; }}
+.telemetry-row strong {{ color:var(--text); }}
+.footer-note {{ margin-top:12px; color:#7eb7cb; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }}
+@keyframes rotate {{ from {{ transform:rotate(0deg); }} to {{ transform:rotate(360deg); }} }}
+@keyframes sheen {{ from {{ transform:translateX(-120%); }} to {{ transform:translateX(120%); }} }}
+@keyframes rowIn {{ to {{ opacity:1; transform:translateY(0); }} }}
+@keyframes telemetryDrift {{ from {{ transform:translateY(0); }} to {{ transform:translateY(-35%); }} }}
+@keyframes scan {{ from {{ transform:translateY(-4px); }} to {{ transform:translateY(4px); }} }}
+@media (max-width:1200px) {{ .hero, .dashboard-grid {{ grid-template-columns:1fr; }} .cards {{ grid-template-columns:repeat(2,1fr); }} .bar-row, .spark-row {{ grid-template-columns:1fr; }} }}
+@media (max-width:760px) {{ .cards {{ grid-template-columns:1fr; }} .ring {{ width:180px; height:180px; }} .hero h1 {{ font-size:32px; }} }}
+</style>
+</head>
+<body>
+<div class=\"shell\">
+    <section class=\"hero\">
+        <div class=\"hero-copy\">
+            <div class=\"kicker\">Mission Control Monte Carlo</div>
+            <h1>Simulacion en directo</h1>
+            <div class=\"hero-grid\">
+                <div class=\"metric-chip\"><div class=\"label\">Estado</div><div class=\"value\" id=\"hero-state\">En marcha</div></div>
+                <div class=\"metric-chip\"><div class=\"label\">Lider</div><div class=\"value\" id=\"hero-leader\">-</div></div>
+                <div class=\"metric-chip\"><div class=\"label\">ROI lider</div><div class=\"value\" id=\"hero-roi\">-</div></div>
+            </div>
+            <div class=\"footer-note\" id=\"hero-meta\">Esperando telemetria...</div>
+        </div>
+        <div class=\"hero-side\">
+            <div class=\"ring\" id=\"progress-ring\">
+                <div class=\"ring-content\">
+                    <div class=\"kicker\">Progreso</div>
+                    <div class=\"big\" id=\"progress-value\">0%</div>
+                    <div class=\"sub\" id=\"progress-iteration\">Iteracion 0 de 0</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <div class=\"cards\" id=\"leader-cards\"></div>
+    <div class=\"dashboard-grid\">
+        <section class=\"panel\">
+            <h3>Radar riesgo / retorno</h3>
+            <div class=\"radar-wrap\">
+                <div class=\"radar-grid\"></div>
+                <div class=\"radar-sweep\"></div>
+                <svg class=\"radar-svg\" id=\"radar-svg\" viewBox=\"0 0 640 340\" preserveAspectRatio=\"none\"></svg>
+            </div>
+            <div class=\"footer-note\">Cuanto mas arriba, mayor beneficio esperado. Cuanto mas a la derecha, mayor probabilidad de perdida.</div>
+        </section>
+        <section class=\"panel\">
+            <h3>Pulso reciente por decision</h3>
+            <div class=\"spark-grid\" id=\"spark-grid\"></div>
+        </section>
+        <section class=\"panel\">
+            <h3>Clasificacion en directo</h3>
+            <div class=\"leaderboard-bars\" id=\"leaderboard-bars\"></div>
+        </section>
+        <section class=\"panel\">
+            <h3>Telemetria en streaming</h3>
+            <div class=\"telemetry-window\"><div class=\"telemetry-track\" id=\"telemetry-track\"></div></div>
+        </section>
+    </div>
+</div>
+<script>
+window.__MONTECARLO_STATUS__ = {initial_status};
+const COLORS = {colors_json};
+const STATUS_SCRIPT_NAME = {json.dumps(status_script_path.name)};
+const DEBUG_LOG_URL = '/api/debug-log';
+let statusPollHandle = null;
+let lastRenderedSignature = null;
+let lastDebugMilestone = null;
+let debugSequence = 0;
+
+function reportDebug(event, details = {{}}, options = {{}}) {{
+    try {{
+        if (options.once) {{
+            window.__LIVE_DEBUG_ONCE__ = window.__LIVE_DEBUG_ONCE__ || new Set();
+            const key = JSON.stringify([event, details]);
+            if (window.__LIVE_DEBUG_ONCE__.has(key)) return;
+            window.__LIVE_DEBUG_ONCE__.add(key);
+        }}
+        const payload = JSON.stringify({{
+            source: 'live_dashboard',
+            event,
+            sequence: ++debugSequence,
+            href: window.location.href,
+            ...details,
+        }});
+        if (navigator.sendBeacon) {{
+            const blob = new Blob([payload], {{ type: 'application/json' }});
+            navigator.sendBeacon(DEBUG_LOG_URL, blob);
+            return;
+        }}
+        fetch(DEBUG_LOG_URL, {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: payload,
+            keepalive: true,
+        }}).catch(() => {{}});
+    }} catch (error) {{
+    }}
+}}
+
+function reportStatusMilestone(status) {{
+    const total = Number(status.total_simulations || 0);
+    const current = Number(status.current_simulation || 0);
+    const progress = Number(status.progress_pct || 0);
+    let milestone = null;
+    if (current <= 0) {{
+        milestone = 'start';
+    }} else if (!status.is_running) {{
+        milestone = 'done';
+    }} else {{
+        const step = Math.max(1, Math.floor(total / 4));
+        if (current % step === 0 || progress >= 99.9) {{
+            milestone = `progress-${{current}}`;
+        }}
+    }}
+    if (milestone && milestone !== lastDebugMilestone) {{
+        lastDebugMilestone = milestone;
+        const leader = status.leaderboard && status.leaderboard.length ? status.leaderboard[0].decision : null;
+        reportDebug('live_status', {{
+            milestone,
+            current_simulation: current,
+            total_simulations: total,
+            progress_pct: progress,
+            is_running: Boolean(status.is_running),
+            leader,
+        }});
+    }}
+}}
+
+window.addEventListener('error', (event) => {{
+    reportDebug('window_error', {{
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+    }});
+}});
+
+window.addEventListener('unhandledrejection', (event) => {{
+    reportDebug('unhandled_rejection', {{
+        reason: String(event.reason || 'unknown'),
+    }});
+}});
+
+reportDebug('live_dashboard_boot', {{ status_script: STATUS_SCRIPT_NAME }}, {{ once: true }});
+
+function statusSignature(status) {{
+    const recent = status.recent_runs || [];
+    const lastRecent = recent.length ? recent[recent.length - 1] : null;
+    const leader = (status.leaderboard && status.leaderboard.length) ? status.leaderboard[0] : null;
+    return [
+        status.current_simulation || 0,
+        status.total_simulations || 0,
+        Number(status.progress_pct || 0).toFixed(2),
+        status.is_running ? 1 : 0,
+        leader ? leader.decision : 'none',
+        leader ? Number(leader.expected_profit_usd || 0).toFixed(2) : '0.00',
+        lastRecent ? lastRecent.simulation : 'none',
+        lastRecent ? lastRecent.decision : 'none',
+        lastRecent ? Number(lastRecent.incremental_profit_usd || 0).toFixed(2) : '0.00',
+    ].join('|');
+}}
+
+function money(value) {{
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
+    return Number(value).toLocaleString('es-ES', {{ maximumFractionDigits: 0 }}) + ' USD';
+}}
+
+function shortMoney(value) {{
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
+    const abs = Math.abs(Number(value));
+    if (abs >= 1000000) return (Number(value) / 1000000).toFixed(1) + 'M';
+    if (abs >= 1000) return (Number(value) / 1000).toFixed(1) + 'k';
+    return Number(value).toFixed(0);
+}}
+
+function pct(value) {{
+    if (value === null || value === undefined || Number.isNaN(Number(value))) return '-';
+    return (Number(value) * 100).toFixed(1) + '%';
+}}
+
+function setProgressRing(progressPct) {{
+    const degrees = Math.max(0, Math.min(360, progressPct * 3.6));
+    const ring = document.getElementById('progress-ring');
+    ring.style.background = `conic-gradient(var(--cyan) 0deg, var(--green) ${{degrees}}deg, rgba(255,255,255,.06) ${{degrees}}deg 360deg)`;
+}}
+
+function renderCards(leaderboard) {{
+    const root = document.getElementById('leader-cards');
+    root.innerHTML = leaderboard.slice(0, 4).map((row) => `
+        <section class="card" style="--accent:${{COLORS[row.decision] || '#d9531e'}}">
+            <div class="kicker">Posicion ${{row.ranking}}</div>
+            <div class="metric">${{shortMoney(row.expected_profit_usd)}}</div>
+            <div class="sub">${{row.decision}}</div>
+            <div class="sub">Perdida: ${{pct(row.probability_loss)}} | ROI: ${{Number(row.expected_roi).toFixed(2)}}x</div>
+        </section>
+    `).join('');
+}}
+
+function renderLeaderboardBars(leaderboard) {{
+    const root = document.getElementById('leaderboard-bars');
+    const maxValue = Math.max(...leaderboard.map((row) => Number(row.expected_profit_usd) || 0), 1);
+    root.innerHTML = leaderboard.map((row) => {{
+        const width = Math.max(6, (Number(row.expected_profit_usd) / maxValue) * 100);
+        const color = COLORS[row.decision] || '#d9531e';
+        return `
+            <div class="bar-row">
+                <div class="sub">${{row.decision}}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${{width}}%; background:linear-gradient(90deg, ${{color}}, rgba(255,255,255,.15));"></div></div>
+                <div class="bar-value">${{shortMoney(row.expected_profit_usd)}}</div>
+            </div>
+        `;
+    }}).join('');
+}}
+
+function renderRadar(leaderboard) {{
+    const svg = document.getElementById('radar-svg');
+    const width = 640;
+    const height = 340;
+    const padX = 44;
+    const padY = 24;
+    const maxProfit = Math.max(...leaderboard.map((row) => Number(row.expected_profit_usd) || 0), 1);
+    const axes = `
+        <line x1="${{padX}}" y1="${{height - padY}}" x2="${{width - padX}}" y2="${{height - padY}}" stroke="rgba(140,185,206,.35)" />
+        <line x1="${{padX}}" y1="${{height - padY}}" x2="${{padX}}" y2="${{padY}}" stroke="rgba(140,185,206,.35)" />
+        <text x="${{width - padX}}" y="${{height - 8}}" fill="var(--muted)" font-size="11" text-anchor="end">Riesgo</text>
+        <text x="12" y="${{padY + 12}}" fill="var(--muted)" font-size="11">Beneficio</text>
+    `;
+    const points = leaderboard.map((row) => {{
+        const risk = Number(row.probability_loss) || 0;
+        const profit = Number(row.expected_profit_usd) || 0;
+        const x = padX + risk * (width - padX * 2);
+        const y = height - padY - (profit / maxProfit) * (height - padY * 2);
+        const color = COLORS[row.decision] || '#d9531e';
+        return `
+            <g>
+                <circle cx="${{x}}" cy="${{y}}" r="8" fill="${{color}}" opacity="0.95">
+                    <animate attributeName="r" values="7;10;7" dur="1.8s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="${{x}}" cy="${{y}}" r="16" fill="${{color}}" opacity="0.16">
+                    <animate attributeName="r" values="12;20;12" dur="1.8s" repeatCount="indefinite" />
+                </circle>
+                <text x="${{x + 12}}" y="${{y - 8}}" fill="#dff8ff" font-size="12">${{row.ranking}} · ${{row.decision}}</text>
+            </g>
+        `;
+    }}).join('');
+    svg.innerHTML = axes + points;
+}}
+
+function buildSparkline(points, color) {{
+    if (!points.length) return '';
+    const values = points.map((item) => Number(item.incremental_profit_usd) || 0);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const span = Math.max(1, max - min);
+    const coords = values.map((value, index) => {{
+        const x = (index / Math.max(1, values.length - 1)) * 300;
+        const y = 44 - ((value - min) / span) * 36;
+        return `${{x}},${{y}}`;
+    }}).join(' ');
+    return `
+        <svg class="spark-svg" viewBox="0 0 300 52" preserveAspectRatio="none">
+            <polyline fill="none" stroke="${{color}}" stroke-width="3" points="${{coords}}" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <polyline fill="url(#fade-${{color.replace('#','')}})" opacity="0.18" points="0,52 ${{coords}} 300,52"></polyline>
+            <defs>
+                <linearGradient id="fade-${{color.replace('#','')}}" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="${{color}}"></stop>
+                    <stop offset="100%" stop-color="${{color}}" stop-opacity="0"></stop>
+                </linearGradient>
+            </defs>
+        </svg>
+    `;
+}}
+
+function renderSparks(status) {{
+    const root = document.getElementById('spark-grid');
+    const grouped = new Map();
+    (status.recent_runs || []).forEach((row) => {{
+        if (!grouped.has(row.decision)) grouped.set(row.decision, []);
+        grouped.get(row.decision).push(row);
+    }});
+    const rows = (status.leaderboard || []).map((entry) => {{
+        const series = grouped.get(entry.decision) || [];
+        const color = COLORS[entry.decision] || '#d9531e';
+        const lastValue = series.length ? series[series.length - 1].incremental_profit_usd : entry.expected_profit_usd;
+        return `
+            <div class="spark-row">
+                <div class="sub">${{entry.decision}}</div>
+                ${{buildSparkline(series, color)}}
+                <div class="spark-value" style="color:${{color}}">${{shortMoney(lastValue)}}</div>
+            </div>
+        `;
+    }}).join('');
+    root.innerHTML = rows;
+}}
+
+function renderTelemetry(status) {{
+    const root = document.getElementById('telemetry-track');
+    const recent = status.recent_runs || [];
+    const tape = recent.concat(recent).slice(0, Math.max(12, recent.length * 2));
+    const progress = Number(status.progress_pct || 0);
+    const midBoost = 1 - Math.abs(progress - 50) / 50;
+    const telemetryDuration = 11 - midBoost * 4.5;
+    root.classList.toggle('is-running', Boolean(status.is_running));
+    root.style.setProperty('--telemetry-duration', `${{telemetryDuration.toFixed(2)}}s`);
+    root.innerHTML = tape.map((row, index) => `
+        <div class="telemetry-row" style="animation-delay:${{(index % 10) * 0.03}}s">
+            <div><strong>#${{row.simulation}}</strong></div>
+            <div>${{row.decision}}</div>
+            <div>${{money(row.incremental_profit_usd)}}</div>
+            <div>${{Number(row.roi).toFixed(2)}}x</div>
+        </div>
+    `).join('');
+}}
+
+function render(status) {{
+    const signature = statusSignature(status);
+    if (signature === lastRenderedSignature) {{
+        if (!status.is_running && statusPollHandle !== null) {{
+            clearInterval(statusPollHandle);
+            statusPollHandle = null;
+        }}
+        return;
+    }}
+    lastRenderedSignature = signature;
+    reportStatusMilestone(status);
+    const leaderboard = status.leaderboard || [];
+    const best = leaderboard[0] || null;
+    const progress = Number(status.progress_pct || 0);
+    setProgressRing(progress);
+    document.getElementById('progress-value').textContent = progress.toFixed(1) + '%';
+    document.getElementById('progress-iteration').textContent = `Iteracion ${{Number(status.current_simulation || 0).toLocaleString('es-ES')}} de ${{Number(status.total_simulations || 0).toLocaleString('es-ES')}}`;
+    document.getElementById('hero-state').textContent = status.is_running ? 'En marcha' : 'Completada';
+    document.getElementById('hero-leader').textContent = best ? best.decision : '-';
+    document.getElementById('hero-roi').textContent = best ? Number(best.expected_roi).toFixed(2) + 'x' : '-';
+    document.getElementById('hero-meta').textContent = `Actualizado en iteracion ${{Number(status.current_simulation || 0).toLocaleString('es-ES')}} | archivo de estado: {status_path.name}`;
+    renderCards(leaderboard);
+    renderLeaderboardBars(leaderboard);
+    renderRadar(leaderboard);
+    renderSparks(status);
+    renderTelemetry(status);
+    if (!status.is_running && statusPollHandle !== null) {{
+        clearInterval(statusPollHandle);
+        statusPollHandle = null;
+    }}
+}}
+
+function pullStatus() {{
+    const previous = document.getElementById('status-loader');
+    if (previous) previous.remove();
+    const script = document.createElement('script');
+    script.id = 'status-loader';
+    script.src = STATUS_SCRIPT_NAME + '?ts=' + Date.now();
+    script.onload = () => {{
+        if (window.__MONTECARLO_STATUS__) render(window.__MONTECARLO_STATUS__);
+    }};
+    script.onerror = () => {{
+        reportDebug('status_script_error', {{ script_src: script.src }});
+    }};
+    document.body.appendChild(script);
+}}
+
+render(window.__MONTECARLO_STATUS__);
+if (window.__MONTECARLO_STATUS__ && window.__MONTECARLO_STATUS__.is_running) {{
+    statusPollHandle = setInterval(pullStatus, 250);
+}}
+</script>
+</body>
+</html>"""
+    output_path.write_text(html, encoding="utf-8")
+
+
+def summarize(simulations: pd.DataFrame) -> pd.DataFrame:
+    summary = (
+        simulations.groupby("decision")
+        .agg(
+            expected_profit_usd=("incremental_profit_usd", "mean"),
+            p10_usd=("incremental_profit_usd", lambda x: np.percentile(x, 10)),
+            p50_usd=("incremental_profit_usd", lambda x: np.percentile(x, 50)),
+            p90_usd=("incremental_profit_usd", lambda x: np.percentile(x, 90)),
+            probability_loss=("incremental_profit_usd", lambda x: (x < 0).mean()),
+            expected_roi=("roi", "mean"),
+        )
+        .sort_values("expected_profit_usd", ascending=False)
+        .reset_index()
+    )
+    summary.insert(0, "ranking", np.arange(1, len(summary) + 1))
+    return summary
+
+
+def markdown_table(frame: pd.DataFrame) -> str:
+    columns = list(frame.columns)
+    rows = ["| " + " · ".join(columns) + " |", "| " + " · ".join("---" for _ in columns) + " |"]
+    for _, row in frame.iterrows():
+        rows.append("| " + " · ".join(str(row[col]) for col in columns) + " |")
+    return "\n".join(rows)
