@@ -1350,3 +1350,117 @@ def markdown_table(frame: pd.DataFrame) -> str:
     for _, row in frame.iterrows():
         rows.append("| " + " · ".join(str(row[col]) for col in columns) + " |")
     return "\n".join(rows)
+
+
+def evaluate(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, auc: float) -> tuple[bool, list[str]]:
+    by_decision = summary.set_index("decision")
+    param_idx = params.set_index("parameter")
+    checks = [
+        (
+            "dataset_transaccional_20k",
+            len(df) == N_ROWS
+            and df["ventana_id"].is_unique
+            and df["cubrio_degradacion"].between(0, 1).all()
+            and df["date"].min() == "2024-01-01"
+            and df["date"].max() <= "2026-04-30",
+        ),
+        (
+            "parametros_emergen_del_historico",
+            auc >= 0.70
+            and param_idx.loc["control_fino_completo", "profit_lift_per_window_usd"] > 0
+            # umbral propio del dominio: ser convocado a regulacion sube la
+            # cobertura un digito medio, no el 30 % del caso comercial de
+            # partida. Se exige efecto positivo y significativo.
+            and param_idx.loc["regulacion_convocada", "conversion_lift_pct"] > 0.10
+            and bool(param_idx.loc["regulacion_convocada", "profit_lift_significativo"])
+            # el mecanismo central del caso: descargar profundo destruye margen
+            and param_idx.loc["descarga_profunda", "profit_lift_per_window_usd"] < 0
+            and param_idx.loc["bloque_valle_solar", "baseline_cobertura"]
+            < param_idx.loc["bloque_punta_noche", "baseline_cobertura"],
+        ),
+        (
+            "conclusion_y_narrativa",
+            # el hallazgo del caso: gana la estrategia aburrida, y gana porque
+            # es la unica con suelo positivo, no porque tenga la media mas alta
+            summary.iloc[0]["decision"] == "Ventana conservadora"
+            and by_decision.loc["Ventana conservadora", "p10_usd"] > 0
+            and by_decision.loc["Ventana conservadora", "probability_loss"] < 0.01
+            # la intuitiva es la mas dispersa: mayor recorrido entre P10 y P90
+            and (
+                by_decision.loc["Arbitraje agresivo", "p90_usd"]
+                - by_decision.loc["Arbitraje agresivo", "p10_usd"]
+            )
+            > (
+                by_decision.loc["Ventana conservadora", "p90_usd"]
+                - by_decision.loc["Ventana conservadora", "p10_usd"]
+            )
+            and by_decision.loc["Arbitraje agresivo", "probability_loss"] > 0.05,
+        ),
+    ]
+    return all(result for _, result in checks), [f"{name}: {'PASS' if result else 'FAIL'}" for name, result in checks]
+
+
+def write_report(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, auc: float, checks: list[str]) -> None:
+    conversion = df["cubrio_degradacion"].mean()
+    revenue = df["ingreso_usd"].sum()
+    profit = df["margen_neto_usd"].sum()
+    channel = (
+        df.groupby("bloque_horario")
+        .agg(
+            registros=("ventana_id", "count"),
+            conversion=("cubrio_degradacion", "mean"),
+            ingreso_usd=("ingreso_usd", "sum"),
+            margen_neto_usd=("margen_neto_usd", "sum"),
+            coste_medio=("coste_degradacion_usd", "mean"),
+        )
+        .reset_index()
+    )
+    channel["conversion"] = (channel["conversion"] * 100).round(1).astype(str) + "%"
+    channel["ingreso_usd"] = channel["ingreso_usd"].round(0).astype(int)
+    channel["margen_neto_usd"] = channel["margen_neto_usd"].round(0).astype(int)
+    channel["coste_medio"] = channel["coste_medio"].round(2)
+
+    pretty_summary = summary.copy()
+    for col in ["expected_profit_usd", "p10_usd", "p50_usd", "p90_usd"]:
+        pretty_summary[col] = pretty_summary[col].round(0).astype(int)
+    pretty_summary["probability_loss"] = (pretty_summary["probability_loss"] * 100).round(1).astype(str) + "%"
+    pretty_summary["expected_roi"] = pretty_summary["expected_roi"].round(1).astype(str) + "x"
+
+    lines = [
+        "# Evaluacion del dataset transaccional sintetico",
+        "",
+        "## Checks",
+        *[f"- {check}" for check in checks],
+        "",
+        "## Baseline historico",
+        f"- Registros: {len(df):,}",
+        f"- Periodo: {df['date'].min()} a {df['date'].max()}",
+        f"- Conversion media: {conversion:.1%}",
+        f"- Ingreso historico: {revenue:,.0f} USD",
+        f"- Margen neto historico: {profit:,.0f} USD",
+        f"- AUC modelo de cobertura de degradacion: {auc:.3f}",
+        "",
+        "## Variables clave para estimar hipotesis",
+        "- Control de operacion: profundidad_descarga, ventana_carga, rampa_optimizada, reserva_comprometida.",
+        "- Condiciones de mercado: precio_spot_usd_mwh, diferencial_usd_mwh, estado_red, bloque_horario.",
+        "- Estado del activo: soc_inicial_pct, ciclos_acumulados, coste_degradacion_usd, indice_despacho.",
+        "- Productos de mercado: regulacion_ofertada, regulacion_convocada, mercado_nuevo, zona_red.",
+        "- Resultado economico: cubrio_degradacion, ingreso_usd, margen_bruto_usd, margen_neto_usd.",
+        "",
+        "## Resumen por bloque horario",
+        markdown_table(channel),
+        "",
+        "## Parametros estimados desde historico",
+        markdown_table(params),
+        "",
+        "## Simulacion Monte Carlo",
+        markdown_table(pretty_summary),
+        "",
+        "## Lectura ejecutiva",
+        "- Las hipotesis no se fijan como tabla externa: se estiman con contrafactuales del modelo entrenado sobre el historico.",
+        "- La ventana conservadora gana porque el historico contiene ventanas con ciclado suave y control fino de carga, y el modelo aprende que ahi el diferencial capturado si cubre el desgaste.",
+        "- El arbitraje agresivo usa el patron historico de saturacion del activo: al aumentar la profundidad de descarga crece la energia movida, pero el coste de degradacion escala con el cuadrado y se come el ingreso extra.",
+        "- Los servicios de regulacion emergen como segunda opcion porque el historico contiene ventanas ofertadas y convocadas, y el modelo aprende que remuneran con poco desgaste.",
+        "- El hibrido certificado mantiene el P90 mas alto por acceso a un producto mejor pagado, pero tambien mayor probabilidad de perdida por coste hundido de certificacion y variabilidad de ejecucion.",
+    ]
+    REPORT_PATH.write_text("\n".join(lines), encoding="utf-8")
