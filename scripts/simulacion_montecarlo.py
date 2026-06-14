@@ -1464,3 +1464,111 @@ def write_report(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, 
         "- El hibrido certificado mantiene el P90 mas alto por acceso a un producto mejor pagado, pero tambien mayor probabilidad de perdida por coste hundido de certificacion y variabilidad de ejecucion.",
     ]
     REPORT_PATH.write_text("\n".join(lines), encoding="utf-8")
+
+
+def run_pipeline(
+    n_simulations: int = N_SIMULATIONS,
+    live_dashboard: bool = False,
+    progress_every: int = 80,
+    persist_outputs: bool = True,
+    live_duration_seconds: float = 40.0,
+) -> dict[str, object]:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DASHBOARDS_DIR.mkdir(parents=True, exist_ok=True)
+    pipeline_started_at = time.perf_counter()
+    df = generate_dataset()
+    if persist_outputs:
+        df.to_csv(DATASET_PATH, index=False, encoding="utf-8")
+
+    conversion_model, auc = build_conversion_model(df)
+    aov_model = build_aov_model(df)
+
+    params = estimate_historical_parameters(df, conversion_model, aov_model)
+    if persist_outputs:
+        params.to_csv(PARAMS_PATH, index=False, encoding="utf-8")
+
+    progress_callback = None
+    if live_dashboard:
+        write_live_dashboard(0, n_simulations, [], LIVE_DASHBOARD_PATH, LIVE_STATUS_PATH)
+        progress_callback = lambda current, total, results: write_live_dashboard(
+            current,
+            total,
+            results,
+            LIVE_DASHBOARD_PATH,
+            LIVE_STATUS_PATH,
+        )
+
+    remaining_live_seconds = 0.0
+    if live_dashboard and live_duration_seconds > 0:
+        elapsed_before_simulation = time.perf_counter() - pipeline_started_at
+        remaining_live_seconds = max(0.0, live_duration_seconds - elapsed_before_simulation)
+
+    simulations = simulate_decisions(
+        df,
+        conversion_model,
+        aov_model,
+        n_simulations=n_simulations,
+        progress_every=progress_every,
+        progress_callback=progress_callback,
+        pacing_total_seconds=remaining_live_seconds,
+    )
+    if persist_outputs:
+        simulations.to_csv(SIMULATIONS_PATH, index=False, encoding="utf-8")
+
+    summary = summarize(simulations)
+    if persist_outputs:
+        summary.to_csv(SUMMARY_PATH, index=False, encoding="utf-8")
+
+    passed, checks = evaluate(df, params, summary, auc)
+    if persist_outputs:
+        write_report(df, params, summary, auc, checks)
+
+    if live_dashboard:
+        write_live_dashboard(n_simulations, n_simulations, simulations.to_dict(orient="records"), LIVE_DASHBOARD_PATH, LIVE_STATUS_PATH)
+
+    return {
+        "passed": passed,
+        "checks": checks,
+        "auc": auc,
+        "dataset_path": DATASET_PATH,
+        "params_path": PARAMS_PATH,
+        "simulations_path": SIMULATIONS_PATH,
+        "summary_path": SUMMARY_PATH,
+        "report_path": REPORT_PATH,
+        "dashboard_path": LIVE_DASHBOARD_PATH,
+        "summary": summary,
+    }
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Simulacion Monte Carlo end-to-end para el caso de negocio")
+    parser.add_argument("--simulations", type=int, default=N_SIMULATIONS, help="Numero de iteraciones Monte Carlo")
+    parser.add_argument("--live-dashboard", action="store_true", help="Genera un dashboard vivo durante la simulacion")
+    parser.add_argument("--progress-every", type=int, default=80, help="Frecuencia de actualizacion del dashboard")
+    parser.add_argument("--live-duration-seconds", type=float, default=40.0, help="Duracion objetivo del modo live en segundos")
+    parser.add_argument("--no-persist", action="store_true", help="No sobrescribir los CSV finales")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    result = run_pipeline(
+        n_simulations=args.simulations,
+        live_dashboard=args.live_dashboard,
+        progress_every=args.progress_every,
+        persist_outputs=not args.no_persist,
+        live_duration_seconds=args.live_duration_seconds,
+    )
+
+    print("PASS" if result["passed"] else "FAIL")
+    print(f"dataset={result['dataset_path']}")
+    print(f"params={result['params_path']}")
+    print(f"summary={result['summary_path']}")
+    print(f"report={result['report_path']}")
+    print(f"dashboard={result['dashboard_path']}")
+    print(f"auc={result['auc']:.3f}")
+    print(result["summary"].to_string(index=False))
+
+
+if __name__ == "__main__":
+    main()
