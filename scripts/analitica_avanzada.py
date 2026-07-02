@@ -141,3 +141,106 @@ def coherencia_informe(
         "frase_sustituta": sustituta,
         "metricas_contrastadas": metricas,
     }
+
+
+# 2. Intervalo de confianza sobre el uplift
+
+def intervalo_uplift(
+    delta_por_oportunidad: np.ndarray,
+    n_replicas: int = 800,
+    confianza: float = 0.90,
+    semilla: int = 42,
+) -> dict[str, float | str]:
+    """Bootstrap sobre el delta contrafactual fila a fila.
+
+    Importante para no vender mas de lo que hace: re-muestrea las predicciones ya
+    calculadas, asi que mide **incertidumbre de muestreo** (¿cambiaria el delta con
+    otra muestra de oportunidades?). No mide incertidumbre del modelo, que exigiria
+    reentrenar en cada replica y cuesta unas 30 veces mas. El campo `alcance` lo
+    deja escrito en el propio resultado.
+    """
+    datos = np.asarray(delta_por_oportunidad, dtype=float)
+    datos = datos[np.isfinite(datos)]
+    if datos.size == 0:
+        return {"media": 0.0, "inferior": 0.0, "superior": 0.0, "alcance": "sin datos"}
+
+    rng = np.random.default_rng(semilla)
+    idx = rng.integers(0, datos.size, size=(n_replicas, datos.size))
+    medias = datos[idx].mean(axis=1)
+
+    cola = (1 - confianza) / 2
+    inferior = float(np.percentile(medias, cola * 100))
+    superior = float(np.percentile(medias, (1 - cola) * 100))
+    media = float(datos.mean())
+
+    return {
+        "media": media,
+        "inferior": inferior,
+        "superior": superior,
+        "amplitud": superior - inferior,
+        "confianza": confianza,
+        "replicas": n_replicas,
+        # cruza el cero: el signo del efecto no esta asegurado
+        "significativo": bool(inferior > 0 or superior < 0),
+        "alcance": "incertidumbre de muestreo, no de modelo (no se reentrena por replica)",
+    }
+
+
+# 3. Estabilidad del ranking bajo re-muestreo
+
+def estabilidad_ranking(
+    simular: Callable[[int], pd.DataFrame],
+    semillas: Iterable[int],
+    columna_decision: str = "decision",
+    columna_valor: str = "expected_profit_usd",
+) -> dict[str, Any]:
+    """Repite solo la capa Monte Carlo con distintas semillas y cuenta victorias.
+
+    `simular(semilla)` debe devolver el resumen por decision de esa realizacion.
+    Responde a "¿cuanto del ranking depende de los dados?", no a "¿cuanto depende
+    de los datos?": para lo segundo habria que regenerar el dataset entero, que es
+    un experimento distinto y mucho mas caro.
+    """
+    semillas = list(semillas)
+    victorias: dict[str, int] = {}
+    posiciones: dict[str, list[int]] = {}
+    valores: dict[str, list[float]] = {}
+
+    for s in semillas:
+        resumen = simular(s).sort_values(columna_valor, ascending=False).reset_index(drop=True)
+        for pos, fila in resumen.iterrows():
+            nombre = str(fila[columna_decision])
+            posiciones.setdefault(nombre, []).append(pos + 1)
+            valores.setdefault(nombre, []).append(float(fila[columna_valor]))
+        ganador = str(resumen.iloc[0][columna_decision])
+        victorias[ganador] = victorias.get(ganador, 0) + 1
+
+    total = len(semillas)
+    detalle = []
+    for nombre, pos in posiciones.items():
+        vals = valores[nombre]
+        detalle.append({
+            "decision": nombre,
+            "victorias": victorias.get(nombre, 0),
+            "realizaciones": total,
+            "tasa_victoria": victorias.get(nombre, 0) / total if total else 0.0,
+            "posicion_media": float(np.mean(pos)),
+            "posicion_peor": int(np.max(pos)),
+            "beneficio_medio": float(np.mean(vals)),
+            "beneficio_min": float(np.min(vals)),
+            "beneficio_max": float(np.max(vals)),
+        })
+    detalle.sort(key=lambda d: d["tasa_victoria"], reverse=True)
+
+    lider = detalle[0] if detalle else None
+    return {
+        "realizaciones": total,
+        "semillas": semillas,
+        "detalle": detalle,
+        "ganador_estable": bool(lider and lider["tasa_victoria"] >= 0.80),
+        "veredicto": (
+            f"{lider['decision']} gana en {lider['victorias']} de {total} realizaciones"
+            if lider else "sin datos"
+        ),
+        "alcance": "varia la semilla del Monte Carlo; el dataset y los modelos se mantienen fijos",
+    }
