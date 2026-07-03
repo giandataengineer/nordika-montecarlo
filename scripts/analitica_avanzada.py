@@ -244,3 +244,155 @@ def estabilidad_ranking(
         ),
         "alcance": "varia la semilla del Monte Carlo; el dataset y los modelos se mantienen fijos",
     }
+
+
+# 4. Sensibilidad a la calibracion de los tres ruidos
+
+def sensibilidad_ruidos(
+    simular: Callable[[float, float, float], pd.DataFrame],
+    factores: Sequence[float] = (0.5, 1.0, 1.5, 2.0),
+    columna_decision: str = "decision",
+    columna_valor: str = "expected_profit_usd",
+) -> dict[str, Any]:
+    """Escala cada ruido por separado y observa si el ranking aguanta.
+
+    La magnitud de los tres ruidos la elige el analista. Sin esto es un numero
+    puesto a mano dentro de una caja negra; con esto queda auditado: se ve a partir
+    de que exageracion la conclusion cambia.
+    """
+    ruidos = ["incertidumbre", "ejecucion", "residual"]
+    resultados = []
+    ganador_base = None
+
+    for i, ruido in enumerate(ruidos):
+        fila = {"ruido": ruido, "puntos": []}
+        for f in factores:
+            escalas = [1.0, 1.0, 1.0]
+            escalas[i] = f
+            resumen = simular(*escalas).sort_values(columna_valor, ascending=False).reset_index(drop=True)
+            ganador = str(resumen.iloc[0][columna_decision])
+            if f == 1.0 and ganador_base is None:
+                ganador_base = ganador
+            fila["puntos"].append({
+                "factor": f,
+                "ganador": ganador,
+                "beneficio_ganador": float(resumen.iloc[0][columna_valor]),
+                "cambia": ganador_base is not None and ganador != ganador_base,
+            })
+        fila["punto_de_quiebre"] = next(
+            (p["factor"] for p in fila["puntos"] if p["cambia"]), None
+        )
+        resultados.append(fila)
+
+    frágiles = [r["ruido"] for r in resultados if r["punto_de_quiebre"] is not None]
+    return {
+        "ganador_base": ganador_base,
+        "factores": list(factores),
+        "resultados": resultados,
+        "robusto": not frágiles,
+        "veredicto": (
+            "La recomendacion aguanta duplicar cualquiera de los tres ruidos"
+            if not frágiles
+            else "La recomendacion cambia al exagerar: " + ", ".join(frágiles)
+        ),
+    }
+
+
+# 5. Valor esperado de la informacion perfecta
+
+# TODO: revisar si el EVPI aguanta bien con mas de cuatro decisiones
+def valor_informacion(matriz_escenarios: dict[str, np.ndarray]) -> dict[str, Any]:
+    """EVPI: cuanto vale saber de antemano como va a salir el futuro.
+
+    Con incertidumbre eliges la opcion de mayor media y te quedas con ella pase lo
+    que pase. Con informacion perfecta elegirias, en cada escenario, la que mejor
+    sale en ese escenario. La diferencia es el techo de lo que tiene sentido gastar
+    en reducir incertidumbre: mas estudio, un piloto, mejores datos.
+
+    `matriz_escenarios`: decision -> array de beneficios, todas con la misma longitud
+    y el escenario i comparable entre decisiones.
+    """
+    nombres = list(matriz_escenarios.keys())
+    if not nombres:
+        return {"evpi": 0.0, "alcance": "sin datos"}
+
+    matriz = np.vstack([np.asarray(matriz_escenarios[n], dtype=float) for n in nombres])
+    medias = matriz.mean(axis=1)
+
+    i_mejor = int(np.argmax(medias))
+    sin_info = float(medias[i_mejor])
+    con_info = float(matriz.max(axis=0).mean())
+    evpi = con_info - sin_info
+
+    # en cuantos escenarios la apuesta elegida NO era la mejor
+    mejor_por_escenario = matriz.argmax(axis=0)
+    acierto = float((mejor_por_escenario == i_mejor).mean())
+
+    reparto = []
+    for j, nombre in enumerate(nombres):
+        cuota = float((mejor_por_escenario == j).mean())
+        if cuota > 0:
+            reparto.append({"decision": nombre, "cuota_escenarios": cuota})
+    reparto.sort(key=lambda d: d["cuota_escenarios"], reverse=True)
+
+    return {
+        "decision_sin_informacion": nombres[i_mejor],
+        "valor_sin_informacion": sin_info,
+        "valor_con_informacion_perfecta": con_info,
+        "evpi": evpi,
+        "evpi_relativo": evpi / abs(sin_info) if sin_info else 0.0,
+        "acierto_de_la_apuesta": acierto,
+        "reparto_de_escenarios": reparto,
+        "lectura": (
+            f"Reducir la incertidumbre vale como maximo {evpi:,.0f} por decision. "
+            f"La apuesta elegida es la mejor en el {acierto:.0%} de los escenarios."
+        ),
+    }
+
+
+def _autocomprobacion() -> None:
+    """Comprobaciones minimas: cada bloque falla si la logica se rompe."""
+    ranking_malo = [
+        {"decision": "Arbitraje agresivo", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
+        {"decision": "Ventana conservadora", "expected_profit_usd": 53882, "p10_usd": 45485, "probability_loss": 0.0},
+    ]
+    informe = {"headline": "Es la opcion mas robusta por suelo positivo y perdida esperada practicamente nula.",
+               "razones": ["El downside esta contenido.", "Beneficio de 63.446."]}
+    res = coherencia_informe(informe, ranking_malo)
+    assert res["frases_retiradas"] == 2, res
+    # el titular se sustituye por una frase factual, no se queda vacio
+    assert res["informe"]["headline"] == res["frase_sustituta"]
+    assert "no se puede presentar como una apuesta de bajo riesgo" in res["informe"]["headline"]
+    # los elementos de lista que fallan si se retiran
+    assert res["informe"]["razones"] == ["Beneficio de 63.446."]
+
+    ranking_bueno = [
+        {"decision": "Ventana conservadora", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
+        {"decision": "Servicios de regulacion", "expected_profit_usd": 31154, "p10_usd": 20076, "probability_loss": 0.0},
+    ]
+    ok = coherencia_informe(informe, ranking_bueno)
+    assert ok["frases_retiradas"] == 0, ok
+
+    ci = intervalo_uplift(np.random.default_rng(1).normal(50, 10, 4000))
+    assert ci["inferior"] < ci["media"] < ci["superior"]
+    assert ci["significativo"] is True
+    nulo = intervalo_uplift(np.random.default_rng(1).normal(0, 30, 4000))
+    assert nulo["significativo"] is False
+
+    rng = np.random.default_rng(0)
+    evpi = valor_informacion({
+        "A": rng.normal(100, 5, 5000),
+        "B": rng.normal(95, 60, 5000),
+    })
+    assert evpi["evpi"] > 0
+    assert 0 <= evpi["acierto_de_la_apuesta"] <= 1
+
+    # una opcion que domina a la otra en todos los escenarios no deja valor a la informacion
+    dominante = valor_informacion({"A": np.full(1000, 100.0), "B": np.full(1000, 10.0)})
+    assert abs(dominante["evpi"]) < 1e-9, dominante
+
+    print("analitica_avanzada: todas las comprobaciones pasan")
+
+
+if __name__ == "__main__":
+    _autocomprobacion()
