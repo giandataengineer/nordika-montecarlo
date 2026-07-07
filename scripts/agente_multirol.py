@@ -248,3 +248,109 @@ CATALOGO: dict[str, list[str]] = {
         "nvidia/nemotron-mini-4b-instruct",
     ],
 }
+
+# Un modelo que acaba de devolver 429 se aparta un rato en vez de reintentarse
+# en bucle. Vive en memoria del proceso: no merece persistirse.
+_ENFRIANDO: dict[str, float] = {}
+_ESPERA_TRAS_429 = 90.0
+
+
+def _enfriar(clave: str) -> None:
+    _ENFRIANDO[clave] = time.time() + _ESPERA_TRAS_429
+
+
+def _esta_frio(clave: str) -> bool:
+    hasta = _ENFRIANDO.get(clave)
+    if hasta is None:
+        return False
+    if time.time() >= hasta:
+        _ENFRIANDO.pop(clave, None)
+        return False
+    return True
+
+
+def candidatos(rol: str, ya_usados: set[str]) -> list[tuple[str, str]]:
+    """Todos los pares (proveedor, modelo) que este rol puede intentar, en orden.
+
+    Cada rol arranca por un proveedor distinto y recorre el resto en rueda, de
+    modo que tres roles simultaneos no compitan por la misma cuota. Se prefieren
+    los modelos que ningun otro rol haya usado todavia, porque dos roles sobre
+    el mismo modelo dejan de ser dos opiniones independientes.
+    """
+    cfg = ROLES[rol]
+    orden = list(PROVEEDORES.keys())
+    inicio = cfg["proveedor"]
+    if inicio in orden:
+        i = orden.index(inicio)
+        orden = orden[i:] + orden[:i]
+
+    preferidos: list[tuple[str, str]] = []
+    resto: list[tuple[str, str]] = []
+    repetidos: list[tuple[str, str]] = []
+
+    for proveedor in orden:
+        if not os.getenv(PROVEEDORES[proveedor]["env_key"]):
+            continue
+        modelos = CATALOGO.get(proveedor) or [PROVEEDORES[proveedor]["modelo"]]
+        for modelo in modelos:
+            clave = f"{proveedor}/{modelo}"
+            if _esta_frio(clave):
+                continue
+            # un modelo que ya usó otro rol baja al final aunque sea el
+            # preferido: dos roles sobre el mismo modelo no son dos opiniones
+            if modelo in ya_usados:
+                repetidos.append((proveedor, modelo))
+            elif proveedor == inicio and modelo == cfg.get("modelo"):
+                preferidos.append((proveedor, modelo))
+            else:
+                resto.append((proveedor, modelo))
+
+    return preferidos + resto + repetidos
+
+
+ROLES: dict[str, dict[str, Any]] = {
+    "finanzas": {
+        "etiqueta": "Finanzas",
+        "proveedor": "groq",
+        "modelo": "qwen/qwen3.6-27b",
+        "prioriza": "retorno sobre el capital del activo, payback y defensa ante el comite",
+        "sistema": (
+            "Eres el director financiero del operador. La bateria es un activo de varios "
+            "millones y tu respondes por su retorno. Te importa el margen neto sobre el capital "
+            "comprometido, el plazo de recuperacion y poder defender la estrategia ante el comite "
+            "de inversiones. Te molesta la dispersion sin justificacion y las apuestas que no "
+            "puedes explicar con numeros. No eres el mas prudente ni el mas agresivo: eres el que "
+            "tiene que responder por el resultado del anio."
+        ),
+    },
+    "operacion": {
+        "etiqueta": "Operacion",
+        "proveedor": "openrouter",
+        "modelo": "nvidia/nemotron-3-super-120b-a12b:free",
+        "prioriza": "vida util del banco, ciclos consumidos y disponibilidad del activo",
+        "sistema": (
+            "Eres el responsable de operacion del activo. Tu unidad de medida no son los dolares "
+            "del mes, son los ciclos equivalentes consumidos y la capacidad que le quedara al banco "
+            "dentro de cinco anios. Sabes que el desgaste crece mas que proporcionalmente con la "
+            "profundidad de descarga, asi que desconfias de cualquier estrategia que compre ingreso "
+            "hoy pagandolo con vida util. Tambien sabes que un activo infrautilizado no amortiza. "
+            "Estas dispuesto a discrepar de Finanzas si la opcion mas rentable sobre el papel "
+            "compromete la salud del banco."
+        ),
+    },
+    "riesgo": {
+        "etiqueta": "Riesgo",
+        "proveedor": "gemini",
+        "modelo": "gemini-3.6-flash",
+        "prioriza": "control del downside, suelo de la distribucion y compromiso con el operador de red",
+        "sistema": (
+            "Eres el director de riesgos. Tu trabajo no es maximizar el retorno esperado, es evitar "
+            "que la compania se lleve un golpe del que no se recupere. Miras el percentil 10 antes "
+            "que la media, y la probabilidad de perdida antes que el ROI. Una estrategia con mejor "
+            "media pero cola izquierda peligrosa es peor para ti. Vigilas ademas los compromisos "
+            "adquiridos con el operador de red: incumplir una reserva comprometida tiene "
+            "consecuencias que no aparecen en la cuenta de resultados. Discrepa abiertamente si la "
+            "opcion mejor situada en media no es la mas defendible."
+        ),
+    },
+}
