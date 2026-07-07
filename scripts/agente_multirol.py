@@ -354,3 +354,343 @@ ROLES: dict[str, dict[str, Any]] = {
         ),
     },
 }
+
+ESQUEMA = """Devuelve exclusivamente JSON valido, sin markdown ni bloques de codigo:
+{
+  "decision_elegida": "el nombre exacto de una de las decisiones del ranking",
+  "headline": "una frase con tu veredicto",
+  "summary": "dos o tres frases justificando desde tu angulo",
+  "reasons": ["tres razones"],
+  "watchouts": ["tres cosas a vigilar"],
+  "next_actions": ["tres siguientes pasos"],
+  "switch_signals": ["tres senales que te harian cambiar de opinion"],
+  "due_diligence": ["tres preguntas antes de ejecutar"]
+}
+
+Reglas duras:
+- decision_elegida DEBE ser una de las del ranking, copiada literal.
+- Puedes elegir una decision distinta a la primera del ranking si tu criterio lo justifica.
+- No afirmes que el suelo es positivo si el P10 es negativo.
+- No llames robusta a una opcion con probabilidad de perdida alta.
+- Cita cifras concretas del ranking cuando sustenten tu argumento.
+- Escribe en espanol ejecutivo, sin markdown."""
+
+
+def _cliente(proveedor: str):
+    """Devuelve (cliente, modelo) o None si ese proveedor no tiene clave."""
+    cfg = PROVEEDORES[proveedor]
+    api_key = os.getenv(cfg["env_key"])
+    if not api_key:
+        return None
+    try:
+        from openai import OpenAI
+    except ImportError:
+        return None
+
+    modelo = os.getenv(cfg["env_modelo"]) or cfg["modelo"]
+    if cfg["base_url"]:
+        return OpenAI(api_key=api_key, base_url=cfg["base_url"]), modelo
+    return OpenAI(api_key=api_key), modelo
+
+
+def _proveedor_disponible(preferido: str) -> str | None:
+    """El preferido si tiene clave; si no, cualquier otro que la tenga."""
+    if os.getenv(PROVEEDORES[preferido]["env_key"]):
+        return preferido
+    for nombre, cfg in PROVEEDORES.items():
+        if os.getenv(cfg["env_key"]):
+            return nombre
+    return None
+
+
+def _contexto(ranking: list[dict], uplift: list[dict], avanzado: dict | None) -> str:
+    partes = [
+        "Ranking de decisiones tras simular los escenarios:",
+        json.dumps(ranking, ensure_ascii=False, indent=1),
+        "",
+        "Uplift contrafactual estimado por los modelos:",
+        json.dumps(uplift, ensure_ascii=False, indent=1),
+    ]
+    if avanzado:
+        estab = avanzado.get("estabilidad", {})
+        sens = avanzado.get("sensibilidad", {})
+        evpi = avanzado.get("valor_informacion", {})
+        partes += [
+            "",
+            "Evidencia adicional sobre la solidez de este ranking:",
+            f"- Estabilidad: {estab.get('veredicto', 'no calculada')}",
+            f"- Sensibilidad al ruido: {sens.get('veredicto', 'no calculada')}",
+            f"- Valor de la informacion perfecta: {evpi.get('lectura', 'no calculado')}",
+        ]
+    return "\n".join(partes)
+
+
+def _una_llamada(cliente, modelo: str, cfg: dict, prompt: str, timeout: float) -> dict[str, Any]:
+    """Un intento contra un modelo concreto. Lanza si falla."""
+    mensajes = [
+        {"role": "system", "content": cfg["sistema"]},
+        {"role": "user", "content": prompt},
+    ]
+    # El techo de tokens es lo que agotaba la cuota: Groq limita a 6.000 por
+    # minuto y reservar justo 6.000 en una llamada consumia el minuto entero.
+    kwargs = {"model": modelo, "messages": mensajes, "temperature": 0.4,
+              "timeout": timeout, "max_tokens": 2600}
+    try:
+        respuesta = cliente.chat.completions.create(**kwargs, response_format={"type": "json_object"})
+    except Exception:
+        # no todos los proveedores admiten JSON forzado
+        respuesta = cliente.chat.completions.create(**kwargs)
+    return json.loads(_sin_vallas(respuesta.choices[0].message.content or ""))
+
+
+def consultar_rol(
+    rol: str,
+    ranking: list[dict],
+    uplift: list[dict],
+    avanzado: dict | None = None,
+    timeout: float = 45.0,
+    ya_usados: set[str] | None = None,
+) -> dict[str, Any]:
+    """Recorre la cadena de respaldo hasta que un modelo responda.
+
+    Antes bastaba un 429 del proveedor preferido para que el rol cayera al texto
+    determinista. Ahora se baja de modelo y de proveedor: con cuatro proveedores
+    y su catalogo, un rol tiene decenas de intentos antes de rendirse.
+    """
+    cfg = ROLES[rol]
+    lista = candidatos(rol, ya_usados or set())
+    if not lista:
+        return {"rol": rol, "fuente": "determinista", "motivo": "sin proveedores disponibles"}
+
+    prompt = (
+        f"{_contexto(ranking, uplift, avanzado)}\n\n"
+        f"Prioriza {cfg['prioriza']}.\n\n{ESQUEMA}"
+    )
+    validas = {str(d.get("decision")) for d in ranking}
+    intentos: list[str] = []
+
+    for proveedor, modelo in lista:
+        par = _cliente(proveedor)
+        if par is None:
+            continue
+        cliente, _ = par
+        try:
+            datos = _una_llamada(cliente, modelo, cfg, prompt, timeout)
+        except Exception as exc:
+            nombre = type(exc).__name__
+            if "RateLimit" in nombre or "429" in str(exc):
+                _enfriar(f"{proveedor}/{modelo}")
+            intentos.append(f"{proveedor}/{modelo}: {nombre}")
+            continue
+
+        elegida = str(datos.get("decision_elegida", "")).strip()
+        if elegida not in validas:
+            intentos.append(f"{proveedor}/{modelo}: eligio {elegida!r}, que no esta en el ranking")
+            continue
+
+        datos.update({
+            "rol": rol, "fuente": "llm", "proveedor": proveedor, "modelo": modelo,
+            "intentos_previos": len(intentos),
+        })
+        return datos
+
+    return {
+        "rol": rol,
+        "fuente": "determinista",
+        "motivo": f"agotados {len(intentos)} modelos de respaldo",
+        "intentos": intentos[:6],
+    }
+
+
+def _sin_vallas(texto: str) -> str:
+    """Quita razonamiento y vallas de codigo antes de parsear.
+
+    Los modelos con cadena de pensamiento visible (Qwen 3.6, Nemotron) emiten
+    bloques <think>...</think> antes del JSON. Sin limpiarlos, json.loads falla
+    y el rol cae al camino determinista sin que se sepa por que.
+    """
+    import re as _re
+
+    # Un <think> sin cerrar significa que el modelo agoto su presupuesto pensando
+    # y nunca llego a emitir el JSON. Rescatar el primer "{...}" de ahi dentro
+    # produce basura, asi que se marca como truncado y el rol cae al determinista.
+    if "<think>" in texto and "</think>" not in texto:
+        raise ValueError("respuesta truncada: el modelo no cerro su bloque de razonamiento")
+    limpio = _re.sub(r"<think>.*?</think>", "", texto, flags=_re.DOTALL).strip()
+    if "```" in limpio:
+        bloques = limpio.split("```")
+        if len(bloques) > 1:
+            limpio = bloques[1]
+            if limpio.lstrip().startswith("json"):
+                limpio = limpio.lstrip()[4:]
+    limpio = limpio.strip()
+    # ultimo recurso: quedarse con el primer objeto JSON que aparezca
+    if not limpio.startswith("{"):
+        i, j = limpio.find("{"), limpio.rfind("}")
+        if i != -1 and j > i:
+            limpio = limpio[i : j + 1]
+    return limpio.strip()
+
+
+def agregar_lecturas(lecturas: list[dict], ranking: list[dict]) -> dict[str, Any]:
+    """Compara las tres decisiones y convierte el (des)acuerdo en informacion.
+
+    El desacuerdo es el dato mas valioso de la pantalla: significa que la eleccion
+    depende de que prioriza quien decide, no de los numeros. Coincidencia total
+    significa que la conclusion aguanta los tres criterios.
+    """
+    con_llm = [l for l in lecturas if l.get("fuente") == "llm"]
+    elecciones = {l["rol"]: l.get("decision_elegida") for l in con_llm}
+    distintas = set(elecciones.values())
+
+    # Lo que descorrelaciona es el MODELO, no el proveedor: dos modelos de
+    # familias distintas sobre la misma infraestructura siguen siendo dos
+    # opiniones independientes, mientras que el mismo modelo en dos proveedores
+    # distintos daria practicamente la misma respuesta.
+    modelos = {l.get("modelo") for l in con_llm}
+    modelos_independientes = len(modelos) == len(con_llm) and len(con_llm) > 1
+
+    if not con_llm:
+        return {
+            "modo": "determinista",
+            "consenso": None,
+            "veredicto": (
+                "Sin claves de API configuradas: las tres lecturas salen de plantillas "
+                "deterministas contrastadas contra las cifras. Coinciden por construccion, "
+                "asi que su acuerdo no aporta informacion."
+            ),
+            "elecciones": {},
+            "roles_con_llm": 0,
+        }
+
+    if len(distintas) == 1:
+        unica = next(iter(distintas))
+        veredicto = (
+            f"Los {len(con_llm)} roles coinciden en {unica}. "
+            + (
+                "Al correr en modelos independientes, la coincidencia es una senal real de robustez."
+                if modelos_independientes
+                else "Varios roles comparten modelo, asi que la coincidencia vale menos de lo que parece."
+            )
+        )
+        return {
+            "modo": "llm",
+            "consenso": True,
+            "decision_consenso": unica,
+            "veredicto": veredicto,
+            "elecciones": elecciones,
+            "roles_con_llm": len(con_llm),
+            "modelos_independientes": modelos_independientes,
+        }
+
+    detalle = " · ".join(f"{ROLES[r]['etiqueta']} elige {d}" for r, d in elecciones.items())
+    return {
+        "modo": "llm",
+        "consenso": False,
+        "veredicto": (
+            f"No hay consenso: {detalle}. La eleccion depende de que se prioriza, "
+            "no de los numeros. Esta discrepancia es el hallazgo, no un fallo."
+        ),
+        "elecciones": elecciones,
+        "roles_con_llm": len(con_llm),
+        "modelos_independientes": modelos_independientes,
+    }
+
+
+def lecturas_multirol(
+    ranking: list[dict],
+    uplift: list[dict],
+    avanzado: dict | None = None,
+) -> dict[str, Any]:
+    """Punto de entrada: consulta los tres roles y agrega el resultado."""
+    from analitica_avanzada import coherencia_informe
+
+    huella = _huella(ranking, uplift)
+    guardado = _leer_cache(huella)
+    if guardado is not None:
+        return guardado
+
+    lecturas = []
+    usados: set[str] = set()
+    for i, rol in enumerate(ROLES):
+        if i:
+            time.sleep(4)  # los free tier limitan por minuto, no solo por dia
+        salida = consultar_rol(rol, ranking, uplift, avanzado, ya_usados=usados)
+        if salida.get("modelo"):
+            usados.add(salida["modelo"])
+        if salida.get("fuente") == "llm":
+            # el guardarrail se aplica tambien a lo que escribe el modelo
+            revisado = coherencia_informe(salida, ranking)
+            salida = revisado["informe"]
+            salida["coherencia"] = {
+                "frases_retiradas": revisado["frases_retiradas"],
+                "incidencias": revisado["incidencias"],
+            }
+        lecturas.append(salida)
+
+    resultado = {
+        "lecturas": lecturas,
+        "agregacion": agregar_lecturas(lecturas, ranking),
+        "proveedores_configurados": [
+            nombre for nombre, cfg in PROVEEDORES.items() if os.getenv(cfg["env_key"])
+        ],
+        "desde_cache": False,
+    }
+    _escribir_cache(huella, resultado)
+    return resultado
+
+
+def _autocomprobacion() -> None:
+    ranking = [
+        {"decision": "Ventana conservadora", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
+        {"decision": "Arbitraje agresivo", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
+    ]
+
+    # sin claves: los tres roles caen al camino determinista y el agregador lo dice
+    guardadas = {c["env_key"]: os.environ.pop(c["env_key"], None) for c in PROVEEDORES.values()}
+    try:
+        res = lecturas_multirol(ranking, [], None)
+        assert len(res["lecturas"]) == 3
+        assert all(l["fuente"] == "determinista" for l in res["lecturas"])
+        assert res["agregacion"]["modo"] == "determinista"
+        assert res["agregacion"]["consenso"] is None
+        assert "no aporta informacion" in res["agregacion"]["veredicto"]
+    finally:
+        for k, v in guardadas.items():
+            if v is not None:
+                os.environ[k] = v
+
+    # consenso con proveedores distintos vale mas que con el mismo
+    # mismo modelo en los dos roles: la coincidencia no informa
+    iguales = [
+        {"rol": "finanzas", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Ventana conservadora"},
+        {"rol": "operacion", "fuente": "llm", "proveedor": "openrouter", "modelo": "qwen", "decision_elegida": "Ventana conservadora"},
+    ]
+    a = agregar_lecturas(iguales, ranking)
+    assert a["consenso"] is True and a["modelos_independientes"] is False
+    assert "vale menos" in a["veredicto"]
+
+    # modelos distintos aunque compartan proveedor: la coincidencia si informa
+    distintos = [
+        {"rol": "finanzas", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Ventana conservadora"},
+        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Ventana conservadora"},
+    ]
+    b = agregar_lecturas(distintos, ranking)
+    assert b["consenso"] is True and b["modelos_independientes"] is True
+    assert "senal real de robustez" in b["veredicto"]
+
+    # desacuerdo: es hallazgo, no fallo
+    discrepan = [
+        {"rol": "finanzas", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Arbitraje agresivo"},
+        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Ventana conservadora"},
+    ]
+    c = agregar_lecturas(discrepan, ranking)
+    assert c["consenso"] is False
+    assert "Finanzas elige Arbitraje agresivo" in c["veredicto"]
+    assert "Riesgo elige Ventana conservadora" in c["veredicto"]
+
+    print("agente_multirol: todas las comprobaciones pasan")
+
+
+if __name__ == "__main__":
+    _autocomprobacion()
