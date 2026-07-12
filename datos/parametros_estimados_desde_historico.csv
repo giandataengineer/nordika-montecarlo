@@ -1,0 +1,9 @@
+parameter,sample_size,baseline_cobertura,scenario_conversion,conversion_lift_pct,profit_lift_per_window_usd,profit_lift_ci_low_usd,profit_lift_ci_high_usd,profit_lift_significativo,source
+control_fino_completo,20000,0.1373,0.2185,0.5917,22.07,21.78,22.38,True,Estimado con contrafactual ML sobre historico sintetico
+bloque_punta_noche,3494,0.2172,0.221,,55.72,,,,Historico por bloque horario de despacho
+bloque_punta_tarde,4644,0.1895,0.1912,,33.12,,,,Historico por bloque horario de despacho
+bloque_manana,3134,0.134,0.1419,,-10.29,,,,Historico por bloque horario de despacho
+bloque_valle_solar,4467,0.0582,0.0601,,-30.36,,,,Historico por bloque horario de despacho
+descarga_profunda,20000,0.1373,0.1196,-0.1292,-2.87,-3.0,-2.73,True,Estimado con contrafactual ML sobre historico sintetico
+regulacion_convocada,15439,0.1608,0.1826,0.1355,5.37,5.27,5.46,True,Estimado con contrafactual ML sobre historico sintetico
+mercado_nuevo,14041,0.1424,0.1541,0.0826,43.24,42.26,44.25,True,Estimado con contrafactual ML sobre historico sintetico
