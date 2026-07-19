@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mission Control Monte Carlo</title>
+<style>
+:root { --bg:#020713; --panel:#071424; --line:#1b4965; --cyan:#19e6ff; --green:#27f5c6; --amber:#ffd166; --pink:#ff5c8a; --blue:#58a6ff; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:Inter,Segoe UI,Arial,sans-serif; background:radial-gradient(circle at 50% -10%,#17324d 0,#06101d 36%,#020713 100%); color:#d7f7ff; overflow-x:hidden; }
+body:before { content:""; position:fixed; inset:0; background-image:linear-gradient(rgba(25,230,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(25,230,255,.04) 1px,transparent 1px); background-size:32px 32px; pointer-events:none; }
+.shell { max-width:1480px; margin:0 auto; padding:28px; position:relative; z-index:2; }
+.top { display:grid; grid-template-columns:1.2fr .8fr; gap:18px; align-items:stretch; }
+.hero { border:1px solid var(--line); background:linear-gradient(135deg,rgba(7,20,36,.92),rgba(3,11,24,.72)); border-radius:18px; padding:24px; box-shadow:0 0 44px rgba(25,230,255,.12); position:relative; overflow:hidden; }
+.hero h1 { margin:0; font-size:42px; letter-spacing:.02em; text-transform:uppercase; }
+.hero p { margin:10px 0 0; color:#8dbcd4; font-size:17px; }
+.status { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+.chip { border:1px solid rgba(25,230,255,.35); color:#a7f7ff; padding:8px 11px; border-radius:999px; background:rgba(25,230,255,.06); font-size:13px; }
+.radar { min-height:260px; border:1px solid var(--line); border-radius:18px; background:radial-gradient(circle,#0b2338 0 1px,transparent 2px),rgba(4,13,28,.85); background-size:24px 24px; position:relative; overflow:hidden; }
+.radar:before { content:""; position:absolute; inset:22px; border-radius:50%; border:1px solid rgba(25,230,255,.22); box-shadow:0 0 0 42px rgba(25,230,255,.03),0 0 0 84px rgba(25,230,255,.025),0 0 0 126px rgba(25,230,255,.018); }
+.sweep { position:absolute; width:50%; height:50%; left:50%; top:50%; transform-origin:0 0; background:linear-gradient(55deg,rgba(25,230,255,.34),transparent 62%); animation:sweep 4s linear infinite; }
+@keyframes sweep { to { transform:rotate(360deg); } }
+.dot { position:absolute; width:10px; height:10px; border-radius:50%; background:var(--green); box-shadow:0 0 18px var(--green); }
+.grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:18px; }
+.card { border:1px solid var(--line); border-radius:16px; background:rgba(7,20,36,.86); padding:18px; position:relative; overflow:hidden; }
+.card:after { content:""; position:absolute; inset:auto 0 0 0; height:3px; background:var(--accent,var(--cyan)); box-shadow:0 0 24px var(--accent,var(--cyan)); }
+.kicker { color:#8dbcd4; text-transform:uppercase; font-size:12px; letter-spacing:.16em; }
+.metric { font-size:32px; margin-top:8px; font-weight:800; color:white; }
+.sub { color:#9bb8ca; margin-top:4px; font-size:13px; }
+.main { display:grid; grid-template-columns:1.1fr .9fr; gap:18px; margin-top:18px; }
+.panel { border:1px solid var(--line); background:rgba(7,20,36,.82); border-radius:18px; padding:18px; min-height:380px; }
+.panel h2 { margin:0 0 14px; font-size:18px; text-transform:uppercase; letter-spacing:.08em; }
+.bars { display:flex; flex-direction:column; gap:12px; }
+.barrow { display:grid; grid-template-columns:190px 1fr 90px; gap:12px; align-items:center; }
+.barlabel { color:#d7f7ff; font-size:14px; }
+.track { height:20px; background:#06101d; border:1px solid #153752; border-radius:999px; overflow:hidden; }
+.fill { height:100%; width:var(--w); background:linear-gradient(90deg,var(--accent),rgba(255,255,255,.9)); box-shadow:0 0 22px var(--accent); }
+.risk { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.risk .tile { border:1px solid #153752; border-radius:14px; padding:14px; background:#06101d; }
+.big { font-size:26px; color:white; font-weight:800; }
+svg { width:100%; height:320px; background:rgba(2,7,19,.45); border-radius:14px; border:1px solid #153752; }
+.axis { stroke:#2d5870; stroke-width:1; }
+.point { stroke:white; stroke-width:1; }
+.footer { margin-top:18px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+@media (max-width:1000px) { .top,.main,.footer { grid-template-columns:1fr; } .grid { grid-template-columns:1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <section class="hero">
+      <div class="kicker">AI Decision Mission Control</div>
+      <h1>10.000 futuros simulados</h1>
+      <p>Comparativa de crecimiento: funnel, ads, webinar y nuevo producto. El sistema no busca la decision mas espectacular, busca la decision mas robusta.</p>
+      <div class="status">
+        <span class="chip">MODELO ML: AUC 0.735</span>
+        <span class="chip">DATASET: 20.000 TRANSACCIONES</span>
+        <span class="chip">MONTE CARLO: 40.000 ESCENARIOS</span>
+        <span class="chip">RECOMENDACION: FUNNEL</span>
+      </div>
+    </section>
+    <section class="radar">
+      <div class="sweep"></div>
+      <div class="dot" style="left:28%;top:38%"></div>
+      <div class="dot" style="left:66%;top:42%;background:var(--amber);box-shadow:0 0 18px var(--amber)"></div>
+      <div class="dot" style="left:52%;top:68%;background:var(--blue);box-shadow:0 0 18px var(--blue)"></div>
+      <div class="dot" style="left:75%;top:25%;background:var(--pink);box-shadow:0 0 18px var(--pink)"></div>
+    </section>
+  </div>
+  <div class="grid" id="cards"></div>
+  <div class="main">
+    <section class="panel">
+      <h2>Ranking beneficio esperado</h2>
+      <div class="bars" id="bars"></div>
+    </section>
+    <section class="panel">
+      <h2>Matriz beneficio / riesgo</h2>
+      <svg id="scatter" viewBox="0 0 620 320"></svg>
+    </section>
+  </div>
+  <div class="footer">
+    <section class="panel">
+      <h2>Senal aprendida: funnel</h2>
+      <div class="big">+41,7%</div>
+      <div class="sub">uplift de conversion estimado por contrafactual ML</div>
+    </section>
+    <section class="panel">
+      <h2>Senal aprendida: ads</h2>
+      <div class="big">Saturacion detectada</div>
+      <div class="sub">el nivel saturado cae en conversion y beneficio por oportunidad</div>
+    </section>
+    <section class="panel">
+      <h2>Decision final</h2>
+      <div class="big">Mejorar funnel</div>
+      <div class="sub">alto impacto, bajo coste, riesgo casi nulo</div>
+    </section>
+  </div>
+</div>
+<script>
+const DATA = {"resumen": [{"ranking": 1, "decision": "Mejorar landing + CTA + lead magnet", "beneficio_esperado_eur": 66105.792822, "p10_eur": 55967.132, "p50_eur": 65864.695, "p90_eur": 76455.136, "probabilidad_perdida": 0.0, "roi_esperado": 55.088160450000004}, {"ranking": 2, "decision": "Webinar de ventas", "beneficio_esperado_eur": 31357.565689, "p10_eur": 20267.125, "p50_eur": 30947.894999999997, "p90_eur": 43062.143, "probabilidad_perdida": 0.0, "roi_esperado": 12.54302611}, {"ranking": 3, "decision": "Duplicar inversion en Ads", "beneficio_esperado_eur": 30843.562283, "p10_eur": 4936.396, "p50_eur": 29999.260000000002, "p90_eur": 57612.846, "probabilidad_perdida": 0.0606, "roi_esperado": 3.42706264}, {"ranking": 4, "decision": "Nuevo producto", "beneficio_esperado_eur": 27213.805775999997, "p10_eur": -25849.68, "p50_eur": 2758.7799999999997, "p90_eur": 77908.057, "probabilidad_perdida": 0.4527, "roi_esperado": 2.26781739}], "parametros": [{"parametro": "funnel_optimizado_completo", "tamano_muestra": 20000, "conversion_base": 0.1053, "conversion_escenario": 0.1492, "uplift_conversion_pct": 0.4173, "uplift_beneficio_por_oportunidad_eur": 33.84, "fuente": "Estimado con contrafactual ML sobre historico sintetico"}, {"parametro": "ads_presupuesto_bajo", "tamano_muestra": 787, "conversion_base": 0.0635, "conversion_escenario": 0.0548, "uplift_conversion_pct": "", "uplift_beneficio_por_oportunidad_eur": 29.07, "fuente": "Historico por nivel de inversion en ads"}, {"parametro": "ads_presupuesto_medio", "tamano_muestra": 3290, "conversion_base": 0.0669, "conversion_escenario": 0.0692, "uplift_conversion_pct": "", "uplift_beneficio_por_oportunidad_eur": 38.85, "fuente": "Historico por nivel de inversion en ads"}, {"parametro": "ads_presupuesto_alto", "tamano_muestra": 2029, "conversion_base": 0.0527, "conversion_escenario": 0.0566, "uplift_conversion_pct": "", "uplift_beneficio_por_oportunidad_eur": 28.31, "fuente": "Historico por nivel de inversion en ads"}, {"parametro": "ads_presupuesto_saturado", "tamano_muestra": 1762, "conversion_base": 0.0255, "conversion_escenario": 0.0226, "uplift_conversion_pct": "", "uplift_beneficio_por_oportunidad_eur": -5.03, "fuente": "Historico por nivel de inversion en ads"}, {"parametro": "asistencia_webinar", "tamano_muestra": 13555, "conversion_base": 0.1343, "conversion_escenario": 0.1809, "uplift_conversion_pct": 0.3471, "uplift_beneficio_por_oportunidad_eur": 44.51, "fuente": "Estimado con contrafactual ML sobre historico sintetico"}, {"parametro": "oferta_nuevo_producto", "tamano_muestra": 11615, "conversion_base": 0.1197, "conversion_escenario": 0.0897, "uplift_conversion_pct": -0.2504, "uplift_beneficio_por_oportunidad_eur": 64.38, "fuente": "Estimado con contrafactual ML sobre historico sintetico"}]};
+const colors = {
+  "Mejorar landing + CTA + lead magnet": "#27f5c6",
+  "Webinar de ventas": "#58a6ff",
+  "Duplicar inversion en Ads": "#ffd166",
+  "Nuevo producto": "#ff5c8a"
+};
+const fmt = n => new Intl.NumberFormat('es-ES', {maximumFractionDigits:0}).format(n);
+const cards = document.getElementById('cards');
+DATA.resumen.forEach(row => {
+  const c = document.createElement('section');
+  c.className = 'card';
+  c.style.setProperty('--accent', colors[row.decision]);
+  c.innerHTML = `<div class="kicker">Ranking #${row.ranking}</div><div class="metric">${fmt(row.beneficio_esperado_eur)} EUR</div><div class="sub">${row.decision}</div><div class="sub">P90: ${fmt(row.p90_eur)} EUR · perdida: ${(row.probabilidad_perdida*100).toFixed(1)}%</div>`;
+  cards.appendChild(c);
+});
+const maxProfit = Math.max(...DATA.resumen.map(d => d.beneficio_esperado_eur));
+const bars = document.getElementById('bars');
+DATA.resumen.forEach(row => {
+  const b = document.createElement('div');
+  b.className = 'barrow';
+  b.style.setProperty('--accent', colors[row.decision]);
+  b.innerHTML = `<div class="barlabel">${row.decision}</div><div class="track"><div class="fill" style="--w:${Math.max(3,row.beneficio_esperado_eur/maxProfit*100)}%"></div></div><div>${fmt(row.beneficio_esperado_eur)} EUR</div>`;
+  bars.appendChild(b);
+});
+const svg = document.getElementById('scatter');
+const W=620,H=320,pad=44;
+const maxRisk = Math.max(...DATA.resumen.map(d => d.probabilidad_perdida))*1.15;
+const maxY = Math.max(...DATA.resumen.map(d => d.p90_eur))*1.08;
+function x(r) { return pad + (r.probabilidad_perdida / maxRisk) * (W-pad*1.8); }
+function y(r) { return H-pad - (r.beneficio_esperado_eur / maxY) * (H-pad*1.7); }
+svg.innerHTML = `<line class="axis" x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}"/><line class="axis" x1="${pad}" y1="${pad/2}" x2="${pad}" y2="${H-pad}"/><text x="${pad}" y="24" fill="#8dbcd4" font-size="12">beneficio esperado</text><text x="${W-150}" y="${H-12}" fill="#8dbcd4" font-size="12">riesgo de perdida</text>`;
+DATA.resumen.forEach(row => {
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  const cx=x(row), cy=y(row);
+  g.innerHTML = `<circle class="point" cx="${cx}" cy="${cy}" r="${10 + row.p90_eur/maxY*16}" fill="${colors[row.decision]}" opacity=".82"><animate attributeName="r" values="${10 + row.p90_eur/maxY*16};${14 + row.p90_eur/maxY*16};${10 + row.p90_eur/maxY*16}" dur="2.8s" repeatCount="indefinite"/></circle><text x="${cx+14}" y="${cy+4}" fill="#d7f7ff" font-size="12">${row.decision}</text>`;
+  svg.appendChild(g);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2242 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fluenta · Despacho bajo incertidumbre</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* paleta clara editorial, inspirada en legend.xyz (ver diseno/03_referencias.md) */
+      --bg: #ededed;
+      --bg-deep: #ededed;
+      --bg-soft: #f2f2f2;
+      --panel: #f2f2f2;
+      --panel-strong: #faf9f5;
+      --line: #dedddc;
+      --text: #131313;
+      --muted: #6c6c6c;
+      --faint: #949494;
+      --ghost: #b2b2b2;
+      --accent: #d9531e;
+      --accent2: #1fa971;
+      --amber: #d9531e;
+      --pink: #7c3aed;
+      --red: #d9531e;
+      --blue: #2f80ed;
+      --ink: #131313;
+      --ink-soft: #2d2d2d;
+      --on-ink: #ffffff;
+      --shadow: 0 12px 32px rgba(19, 19, 19, 0.08);
+      --glow: none;
+      --font-display: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
+      --font-text: "Inter", -apple-system, "Segoe UI", sans-serif;
+    }
+    /* rotacion de acento por fase, tomada del hero rotativo de legend.xyz */
+    [data-phase-accent="briefing"] { --phase-accent: var(--accent); }
+    [data-phase-accent="ingesta"] { --phase-accent: var(--blue); }
+    [data-phase-accent="uplift"] { --phase-accent: var(--pink); }
+    [data-phase-accent="montecarlo"] { --phase-accent: var(--accent2); }
+    [data-phase-accent="reporte"] { --phase-accent: var(--accent); }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--bg-deep);
+      font-family: var(--font-text);
+      min-height: 100vh;
+      position: relative;
+    }
+    /* grid editorial de 3 columnas con divisores 1px, la firma visual de
+       legend.xyz: sensacion de papel cuadriculado detras de todo el contenido */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        repeating-linear-gradient(180deg, var(--line) 0 5px, transparent 5px 11px),
+        repeating-linear-gradient(180deg, var(--line) 0 5px, transparent 5px 11px),
+        repeating-linear-gradient(180deg, var(--line) 0 5px, transparent 5px 11px);
+      background-size: 1px 100%, 1px 100%, 1px 100%;
+      background-position: 25% 0, 50% 0, 75% 0;
+      background-repeat: no-repeat;
+      opacity: 0.85;
+    }
+    /* barra sticky de estado, patron de la barra de anuncio de legend.xyz */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 11px 20px;
+      background: var(--panel-strong);
+      border-bottom: 1px solid var(--line);
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .topbar-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--phase-accent, var(--accent));
+      flex: none;
+      transition: background 0.4s ease;
+    }
+    .topbar-msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar-right { text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); white-space: nowrap; }
+    @media (max-width: 640px) { .topbar-right { display: none; } }
+    .shell {
+      width: min(1660px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero, .panel, .metric, .tool-card, .stage-button, .console, .table-wrap {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      border-radius: 24px;
+    }
+    .hero {
+      padding: clamp(28px, 4vw, 52px);
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 28px;
+    }
+    .hero-copy, .hero-status { position: relative; z-index: 1; }
+    h1, .verdict, .panel-title, .stage-title, .metric-value, .status-big {
+      font-family: var(--font-text);
+      font-weight: 500;
+      letter-spacing: -0.025em;
+    }
+    /* etiquetas tecnicas: unico lugar donde vive la mono, como legend.xyz */
+    .eyebrow, .stage-index, .hero-coord, .ticker-item, .topbar,
+    .metric-label, .hud-chip-label, .footer-meta, .status-chip {
+      font-family: var(--font-display);
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(38px, 5vw, 68px);
+      line-height: 1.04;
+      letter-spacing: -0.03em;
+      text-wrap: balance;
+      font-weight: 500;
+    }
+    /* titular a dos tonos: la segunda mitad en gris fantasma, firma de legend */
+    .ghost-line { color: var(--ghost); }
+    .hero p {
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0;
+    }
+    /* hero rotativo: palabra + acento cambian juntos cada ~3s, como legend.xyz */
+    .hero p.hero-rotator {
+      margin-top: 16px;
+      max-width: none;
+      font-family: var(--font-display);
+      font-size: clamp(18px, 2.2vw, 24px);
+      font-weight: 600;
+    }
+    .hero p.hero-rotator .hero-rotator-word {
+      color: var(--phase-accent, var(--accent));
+      transition: color 0.4s ease;
+    }
+    .hero p.hero-rotator .hero-rotator-rest {
+      color: var(--text);
+    }
+    .hero-coord {
+      position: absolute;
+      top: 20px;
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--ghost);
+      z-index: 1;
+    }
+    .hero-coord-left { left: 24px; }
+    .hero-coord-right { right: 24px; }
+    @media (max-width: 640px) {
+      .hero-coord { display: none; }
+    }
+    /* footer oscuro con resplandor radial detras del logo, como legend.xyz */
+    .site-footer {
+      color: #d9d9d9;
+      margin-top: 56px;
+      border-radius: 24px;
+      background: var(--ink);
+      padding: 72px 28px 56px;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+    .footer-glow {
+      position: absolute;
+      top: 22%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(560px, 90%);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.16), transparent 62%);
+      pointer-events: none;
+    }
+    .footer-mark {
+      position: relative;
+      width: 66px;
+      height: 66px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 42% 34%, #ffffff, #c9c9c9 52%, #6f6f6f 100%);
+      box-shadow: 0 0 60px rgba(255,255,255,0.28);
+      margin-bottom: 22px;
+    }
+    .footer-meta {
+      position: relative;
+      font-family: var(--font-display);
+      font-size: 11.5px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #8f8f8f;
+    }
+    /* ticker de metricas reales, mismo patron que el marquee de logos de
+       partners de legend.xyz, pero con datos del caso en vez de logos */
+    .ticker {
+      margin-top: 18px;
+      overflow: hidden;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 0;
+      -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+      mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+    }
+    .ticker-track {
+      display: flex;
+      width: max-content;
+      gap: 48px;
+      animation: ticker-scroll 28s linear infinite;
+    }
+    .ticker-item {
+      font-family: var(--font-display);
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .ticker-item strong { color: var(--text); }
+    @keyframes ticker-scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .ticker-track { animation: none; }
+    }
+    .hero-grid {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .metric {
+      padding: 16px;
+      min-height: 110px;
+      position: relative;
+      overflow: hidden;
+    }
+    .metric::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 20px rgba(217, 142, 74, 0.45);
+    }
+    .metric-label {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .metric-value {
+      margin-top: 10px;
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .hero-status {
+      display: grid;
+      gap: 16px;
+      align-content: stretch;
+    }
+    .mission-hud {
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      border-radius: 24px;
+      box-shadow: var(--shadow), var(--glow);
+      padding: 18px;
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mission-hud::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 28%, transparent 72%, rgba(217,142,74,0.05));
+      pointer-events: none;
+    }
+    .status-orbit {
+      width: 100%;
+    }
+    .status-ring {
+      width: 100%;
+      border-radius: 12px;
+      position: relative;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--accent);
+      padding: 20px 22px;
+    }
+    .status-core {
+      position: relative;
+      z-index: 1;
+      text-align: left;
+    }
+    .status-big {
+      font-size: 24px;
+      line-height: 1.2;
+      margin-top: 6px;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .status-sub {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-content: center;
+    }
+    .hud-chip {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel-strong);
+      padding: 14px 16px;
+      min-height: 88px;
+    }
+    .hud-chip-label {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .hud-chip-value {
+      margin-top: 10px;
+      font-size: 21px;
+      line-height: 1.1;
+      color: var(--text);
+    }
+    .hud-chip-copy {
+      margin-top: 8px;
+      color: var(--faint);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .console {
+      /* bloque oscuro deliberado, seccion "core actions" al estilo legend.xyz:
+         contraste editorial claro/oscuro, no es un accidente de tema */
+      padding: 18px;
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+      background: var(--ink) !important;
+      border-color: var(--ink) !important;
+      color: #d9d9d9;
+    }
+    .console::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 35%, transparent 70%, rgba(217,83,30,0.08));
+      pointer-events: none;
+    }
+    .console-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #9a9a9a;
+    }
+    .console-head-right {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .console-command {
+      color: var(--accent);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+    }
+    .console-log {
+      display: grid;
+      gap: 10px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      color: #d9d9d9;
+    }
+    .progress-shell {
+      margin-top: 18px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--amber));
+      box-shadow: 0 0 24px rgba(217,142,74,0.35);
+      transition: width 0.18s linear;
+    }
+    .toolbar {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    /* pastilla ghost/outline (secundario), como pide la guia legend.xyz */
+    .action {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+      border-radius: 999px;
+      padding: 12px 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 11px;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+    .action:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: var(--ink);
+    }
+    .action:disabled {
+      opacity: 0.45;
+      cursor: wait;
+    }
+    /* pastilla negra solida (primario), como pide la guia legend.xyz */
+    .action-primary {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--on-ink);
+    }
+    .action-primary:hover:not(:disabled) {
+      background: var(--ink-soft);
+      border-color: var(--ink-soft);
+    }
+    .action-warn {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .action-warn:hover:not(:disabled) {
+      background: var(--accent);
+      color: var(--on-ink);
+    }
+    .layout {
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 40px;
+    }
+    .rail {
+      display: grid;
+      gap: 22px;
+      align-content: start;
+      position: sticky;
+      top: 20px;
+      height: max-content;
+    }
+    #stage-buttons {
+      display: grid;
+      gap: 18px;
+    }
+    .stage-button, .tool-card, .panel, .table-wrap {
+      padding: 18px;
+    }
+    /* icono circular de color por fase, patron "core actions" de legend.xyz */
+    .phase-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--icon-bg);
+      display: grid;
+      place-items: center;
+      margin-bottom: 10px;
+      transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+    }
+    .phase-icon svg { width: 17px; height: 17px; color: #fff; }
+    .stage-button:hover .phase-icon { transform: scale(1.09) rotate(-4deg); }
+    .stage-button.active .phase-icon { transform: scale(1.06); }
+
+    /* corner brackets: marcas en L en las esquinas, detalle editorial de legend */
+    .panel { position: relative; }
+    .panel::before, .panel::after {
+      content: "";
+      position: absolute;
+      width: 14px; height: 14px;
+      border: 1px solid var(--ghost);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .panel::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+    .panel::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+    .panel:hover::before, .panel:hover::after { opacity: 0.65; }
+
+    /* entrada escalonada de las tarjetas al cambiar de fase */
+    .stage-pane.active > * { animation: rise-in 0.5s cubic-bezier(0.16,1,0.3,1) backwards; }
+    .stage-pane.active > *:nth-child(1) { animation-delay: 0.02s; }
+    .stage-pane.active > *:nth-child(2) { animation-delay: 0.09s; }
+    .stage-pane.active > *:nth-child(3) { animation-delay: 0.16s; }
+    .stage-pane.active > *:nth-child(4) { animation-delay: 0.23s; }
+    @keyframes rise-in {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .stage-pane.active > * { animation: none; }
+      .phase-icon { transition: none; }
+    }
+
+    /* bloque de feature numerado, patron "01 Cash in, cash out" de legend.xyz */
+    .stage-button {
+      color: var(--text);
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), border-color 0.22s ease, box-shadow 0.22s ease;
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 14px;
+      align-items: start;
+      text-align: left;
+      padding: 22px 20px;
+    }
+    .stage-index {
+      font-family: var(--font-display);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--ghost);
+      padding-top: 4px;
+      transition: color 0.22s ease;
+    }
+    .stage-button.active .stage-index { color: var(--phase-accent, var(--accent)); }
+    .stage-body { display: grid; gap: 6px; min-width: 0; }
+    .stage-button::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 2px;
+      background: transparent;
+      transition: background 0.22s ease;
+    }
+    .stage-button:hover, .stage-button.active {
+      transform: translateY(-2px);
+      border-color: var(--ink);
+      box-shadow: 0 10px 26px rgba(19,19,19,0.10);
+    }
+    .stage-button.active::after {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 24px rgba(217,142,74,0.4);
+    }
+    .stage-button.running::after {
+      background: linear-gradient(90deg, var(--amber), var(--accent));
+      box-shadow: 0 0 24px rgba(224,179,77,0.35);
+    }
+    .stage-button.done::after {
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      box-shadow: 0 0 24px rgba(127,174,142,0.30);
+    }
+    .stage-button.locked {
+      opacity: 0.45;
+      filter: grayscale(0.5);
+    }
+    .stage-button.locked:hover {
+      transform: none;
+      border-color: inherit;
+      box-shadow: none;
+    }
+    .stage-title {
+      display: block;
+      font-size: 18px;
+      line-height: 1.25;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .stage-copy {
+      display: block;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .main {
+      display: grid;
+      gap: 22px;
+    }
+    .stage-pane {
+      display: none;
+      gap: 32px;
+    }
+    .stage-pane.active {
+      display: grid;
+      animation: fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .stage-pane.active { animation: none; }
+      .placeholder-ring { animation: none; border-top-color: rgba(217, 142, 74, 0.4); }
+    }
+    .briefing-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      min-height: 100%;
+    }
+    .briefing-stack {
+      display: grid;
+      gap: 22px;
+      align-content: start;
+    }
+    .panel-title {
+      margin: 0 0 6px;
+      font-size: 20px;
+      color: var(--text);
+    }
+    .panel-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .kpi-grid, .insight-grid, .summary-grid, .report-grid, .model-grid, .tech-grid, .montecarlo-grid {
+      display: grid;
+      gap: 14px;
+    }
+    .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .insight-grid, .report-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .model-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tech-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .montecarlo-grid { grid-template-columns: 1fr; }
+    .tool-name {
+      font-size: 16px;
+      color: var(--text);
+      margin: 8px 0;
+    }
+    .tool-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .tool-purpose {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .bars, .uplift-cards, .summary-cards {
+      display: grid;
+      gap: 12px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 220px 1fr 110px;
+      gap: 12px;
+      align-items: center;
+    }
+    .bar-track {
+      height: 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(196, 188, 172, 0.12);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      position: relative;
+    }
+    .bar-fill.red { background: linear-gradient(90deg, var(--red), #ff9c7a); }
+    .bar-fill.amber { background: linear-gradient(90deg, var(--amber), #ffef99); }
+    .line-shell {
+      height: 280px;
+      position: relative;
+      border-radius: 18px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(196, 188, 172, 0.14);
+      overflow: hidden;
+    }
+    .line-shell svg { width: 100%; height: 100%; display: block; }
+    .mini-chart {
+      height: 240px;
+      border-radius: 18px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(196, 188, 172, 0.14);
+      overflow: hidden;
+    }
+    .mini-chart svg { width: 100%; height: 100%; display: block; }
+    .table-wrap {
+      overflow: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(196, 188, 172, 0.10);
+      font-size: 13px;
+    }
+    th {
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-size: 11px;
+      color: var(--muted);
+      position: sticky;
+      top: 0;
+      background: var(--panel-strong);
+    }
+    .iframe-shell {
+      position: relative;
+      border-radius: 22px;
+      overflow: hidden;
+      border: 1px solid rgba(196, 188, 172, 0.16);
+      background: #101014;
+      min-height: 1040px;
+      box-shadow: inset 0 0 80px rgba(217,142,74,0.08);
+    }
+    .montecarlo-placeholder {
+      position: absolute;
+      inset: 18px;
+      z-index: 3;
+      display: none;
+      place-items: center;
+      border-radius: 18px;
+      border: 1px solid rgba(196, 188, 172, 0.18);
+      background: var(--panel-strong);
+      padding: 28px;
+      text-align: center;
+    }
+    .montecarlo-placeholder.is-visible {
+      display: grid;
+    }
+    .placeholder-ring {
+      width: 124px;
+      height: 124px;
+      border-radius: 50%;
+      border: 2px solid rgba(196, 188, 172, 0.16);
+      border-top-color: var(--accent);
+      box-shadow: 0 0 32px rgba(217,142,74,0.16);
+      animation: rotate 1.2s linear infinite;
+      margin: 0 auto 18px;
+    }
+    .placeholder-title {
+      font-size: 24px;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .placeholder-copy {
+      margin-top: 10px;
+      max-width: 520px;
+      color: #9c968c;
+      line-height: 1.7;
+    }
+    .wait-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 7, 13, 0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: none;
+      place-items: center;
+      z-index: 60;
+      padding: 24px;
+    }
+    .wait-modal-overlay.is-visible {
+      display: grid;
+      animation: fadeIn 0.18s ease-out;
+    }
+    .wait-modal {
+      width: min(440px, 100%);
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      box-shadow: 0 40px 120px rgba(19,19,19,0.18);
+      padding: 36px 30px 28px;
+      text-align: center;
+      position: relative;
+    }
+    /* corner brackets, detalle editorial de legend.xyz (marcas en L) */
+    .wait-modal::before,
+    .wait-modal::after {
+      content: "";
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--accent);
+      opacity: 0.7;
+      pointer-events: none;
+    }
+    .wait-modal::before {
+      top: -1px;
+      left: -1px;
+      border-right: none;
+      border-bottom: none;
+      border-radius: 6px 0 0 0;
+    }
+    .wait-modal::after {
+      bottom: -1px;
+      right: -1px;
+      border-left: none;
+      border-top: none;
+      border-radius: 0 0 6px 0;
+    }
+    .wait-modal .placeholder-ring {
+      width: 84px;
+      height: 84px;
+      margin-bottom: 18px;
+    }
+    .wait-modal-title {
+      font-size: 19px;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .wait-modal-copy {
+      margin-top: 10px;
+      color: #9c968c;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .wait-modal-progress {
+      margin-top: 22px;
+    }
+    .wait-modal-pct {
+      font-variant-numeric: tabular-nums;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .wait-modal-actions {
+      margin-top: 26px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .wait-modal .placeholder-ring { animation: none; border-top-color: rgba(196, 188, 172, 0.16); }
+      .wait-modal-overlay.is-visible { animation: none; }
+    }
+    .iframe-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle, rgba(25,230,255,.06) 0 1px, transparent 1px),
+        linear-gradient(90deg, rgba(25,230,255,.05) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(25,230,255,.05) 1px, transparent 1px);
+      background-size: 28px 28px, 28px 28px, 28px 28px;
+      mask-image: radial-gradient(circle at center, black 30%, transparent 86%);
+      opacity: 0.85;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .iframe-shell::after {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, rgba(127,174,142,.18), transparent 52deg, transparent 360deg);
+      filter: blur(2px);
+      mix-blend-mode: screen;
+      animation: rotate 6s linear infinite;
+      opacity: 0.55;
+      pointer-events: none;
+      z-index: 1;
+    }
+    iframe {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      min-height: 1040px;
+      border: 0;
+      background: #101014;
+      overflow: hidden;
+    }
+    .panel-radar {
+      background: var(--panel);
+    }
+    .panel-hud {
+      background: var(--panel);
+    }
+    .bullet-list {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .audience-switch {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0 10px;
+    }
+    .audience-chip {
+      min-width: 132px;
+      border: 1px solid rgba(196, 188, 172, 0.22);
+      background: var(--panel-strong);
+      color: var(--text);
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .audience-chip.active {
+      color: #1a1408;
+      background: linear-gradient(135deg, #7fae8e, #d98e4a);
+      border-color: transparent;
+      box-shadow: 0 12px 30px rgba(127, 174, 142, 0.24);
+    }
+    .audience-chip:hover {
+      transform: translateY(-1px);
+    }
+    .audience-caption {
+      color: #d98e4a;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .audience-summary {
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.6;
+    }
+    .trace-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .trace-item {
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+    }
+    .trace-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+    .trace-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.04em;
+    }
+    .trace-args {
+      color: var(--accent);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .trace-purpose {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .trace-outcome {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .tag-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .tag {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      background: var(--panel-strong);
+    }
+    .status-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      background: var(--panel-strong);
+    }
+    .status-chip.ready {
+      border-color: rgba(31, 169, 113, 0.35);
+      color: #157a52;
+    }
+    .status-chip.running {
+      border-color: rgba(217, 83, 30, 0.35);
+      color: #a53f16;
+    }
+    .status-chip.alert {
+      border-color: rgba(217, 83, 30, 0.5);
+      color: #a53f16;
+      background: rgba(217, 83, 30, 0.08);
+    }
+    .verdict {
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.05;
+      margin: 6px 0 12px;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .flash {
+      animation: flash 0.4s ease;
+    }
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes scan { from { transform: translateY(-4px); } to { transform: translateY(4px); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes flash {
+      0% { box-shadow: 0 0 0 1px rgba(217,142,74,0.15), 0 24px 80px rgba(0,0,0,0.35); }
+      50% { box-shadow: 0 0 0 1px rgba(217,142,74,0.35), 0 0 40px rgba(217,142,74,0.20), 0 24px 80px rgba(0,0,0,0.35); }
+      100% { box-shadow: 0 0 0 1px rgba(217,142,74,0.15), 0 24px 80px rgba(0,0,0,0.35); }
+    }
+    @media (max-width: 1200px) {
+      .hero, .layout, .insight-grid, .report-grid, .model-grid, .mission-hud, .briefing-grid { grid-template-columns: 1fr; }
+      .kpi-grid, .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tech-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .rail { position: static; }
+    }
+    @media (max-width: 760px) {
+      .shell { width: min(100vw - 16px, 100%); padding-top: 16px; }
+      .hero-grid, .kpi-grid, .summary-grid, .tech-grid { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; }
+      .status-grid { grid-template-columns: 1fr; }
+      .stage-button, .tool-card, .panel, .table-wrap, .console { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-dot"></span>
+      <span class="topbar-msg" id="topbar-msg">Consola lista para recorrer el caso completo.</span>
+    </div>
+    <div class="topbar-right" id="topbar-right">Decision Intelligence</div>
+  </div>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Consola ejecutiva</div>
+        <h1 id="hero-title"></h1>
+        <p id="hero-subtitle"></p>
+        <p class="hero-rotator">
+          <span id="hero-rotator-word" class="hero-rotator-word"></span>
+          <span id="hero-rotator-rest" class="hero-rotator-rest"></span>
+        </p>
+        <div class="hero-grid" id="hero-kpis"></div>
+        <div class="hero-coord hero-coord-left" id="hero-coord-left"></div>
+        <div class="hero-coord hero-coord-right" id="hero-coord-right"></div>
+      </div>
+      <div class="hero-status">
+        <section class="mission-hud">
+          <div class="status-orbit">
+            <div class="status-ring">
+              <div class="status-core">
+                <div class="eyebrow" id="hud-active-stage">Fase 01</div>
+                <div class="status-big" id="hud-active-title">Introduccion</div>
+                <div class="status-sub" id="hud-active-copy">Consola lista para recorrer el caso completo.</div>
+              </div>
+            </div>
+          </div>
+          <div class="status-grid">
+            <article class="hud-chip">
+              <div class="hud-chip-label">Runtime</div>
+              <div class="hud-chip-value" id="hud-runtime">Modo local</div>
+              <div class="hud-chip-copy">Estado del backend y de la sincronizacion de etapas.</div>
+            </article>
+            <article class="hud-chip">
+              <div class="hud-chip-label">Estado live</div>
+              <div class="hud-chip-value" id="hud-live">Sin backend</div>
+              <div class="hud-chip-copy">Situacion actual del panel Monte Carlo en tiempo real.</div>
+            </article>
+            <article class="hud-chip">
+              <div class="hud-chip-label">Cobertura</div>
+              <div class="hud-chip-value">5 fases</div>
+              <div class="hud-chip-copy">De exploracion inicial a recomendacion priorizada.</div>
+            </article>
+            <article class="hud-chip">
+              <div class="hud-chip-label">Simulacion</div>
+              <div class="hud-chip-value">10.000 futuros</div>
+              <div class="hud-chip-copy">Exploracion de retorno esperado, dispersion y riesgo de perdida.</div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track" id="ticker-track"></div>
+    </div>
+
+    <section class="layout">
+      <aside class="rail">
+        <div id="stage-buttons"></div>
+      </aside>
+
+      <main class="main">
+        <section class="stage-pane" id="pane-briefing">
+          <div class="briefing-grid">
+            <div class="briefing-stack">
+              <section class="panel">
+                <div class="eyebrow">Vision general</div>
+                <h2 class="panel-title">Una sola interfaz para recorrer todo el caso</h2>
+                <p class="panel-copy">La aplicacion articula un flujo completo para analizar la base historica, estimar el comportamiento esperado, cuantificar el uplift de cada palanca, simular miles de escenarios y cerrar con una recomendacion priorizada.</p>
+                <div class="tag-row" id="briefing-tags"></div>
+              </section>
+              <section class="console" id="console-panel">
+              <div class="console-head">
+                <span>Estado operativo</span>
+                <div class="console-head-right">
+                  <span class="status-chip" id="console-runtime-badge">Modo local</span>
+                  <span class="status-chip" id="console-live-badge">Sin backend</span>
+                  <span id="console-stage-label"></span>
+                </div>
+              </div>
+              <div class="console-command" id="console-command"></div>
+              <div class="console-log" id="console-log"></div>
+              <div class="progress-shell"><div class="progress-fill" id="progress-fill"></div></div>
+              <div class="toolbar">
+                <button class="action" id="autoplay-btn">Secuencia automatica</button>
+                <button class="action" id="reset-btn">Volver al briefing</button>
+              </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section class="stage-pane" id="pane-ingesta">
+          <div class="kpi-grid" id="dataset-kpis"></div>
+          <div class="insight-grid">
+            <section class="panel">
+              <div class="eyebrow">Cobertura del caso</div>
+              <h2 class="panel-title">Que informacion tiene disponible el agente</h2>
+              <p class="panel-copy">Antes de modelizar conviene comprobar que el historico cubre suficiente variedad de condiciones: bloques horarios, productos de mercado, nodos, estados de red y ventana temporal.</p>
+              <div class="kpi-grid" id="dataset-structure-cards"></div>
+            </section>
+            <section class="panel">
+              <div class="eyebrow">Serie temporal</div>
+              <h2 class="panel-title">Evolucion mensual del negocio</h2>
+              <p class="panel-copy">La serie de revenue y beneficio de contribucion da contexto sobre la estabilidad del negocio antes de evaluar nuevas palancas.</p>
+              <div class="line-shell"><svg id="monthly-chart" viewBox="0 0 680 280" preserveAspectRatio="none"></svg></div>
+            </section>
+          </div>
+          <section class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Canal</th>
+                  <th>Segmento</th>
+                  <th>Objetivo</th>
+                  <th>Lead score</th>
+                  <th>Conversion</th>
+                  <th>Revenue</th>
+                  <th>Beneficio contribucion</th>
+                </tr>
+              </thead>
+              <tbody id="sample-table"></tbody>
+            </table>
+          </section>
+        </section>
+
+        <section class="stage-pane" id="pane-uplift">
+          <div class="model-grid">
+            <section class="panel">
+              <div class="eyebrow">Modelo 01</div>
+              <h2 class="panel-title">Regresion logistica para probabilidad de exito</h2>
+              <p class="panel-copy">Este modelo estima la probabilidad de cierre de cada oportunidad usando señales de canal, segmento, calidad del lead y contexto comercial.</p>
+              <div class="tech-grid" id="classification-kpis"></div>
+              <div class="mini-chart" style="margin-top:14px"><svg id="gain-chart" viewBox="0 0 680 240" preserveAspectRatio="none"></svg></div>
+            </section>
+            <section class="panel">
+              <div class="eyebrow">Modelo 02</div>
+              <h2 class="panel-title">Gradient boosting para valor esperado</h2>
+              <p class="panel-copy">Este modelo estima el valor economico de las oportunidades que convierten y ayuda a traducir propension en impacto monetario.</p>
+              <div class="tech-grid" id="regression-kpis"></div>
+              <div class="bars" id="residual-bars" style="margin-top:14px"></div>
+            </section>
+          </div>
+          <section class="panel">
+            <div class="eyebrow">Palancas de negocio</div>
+            <h2 class="panel-title">Escenarios con mayor uplift esperado</h2>
+            <p class="panel-copy">Aqui se muestran las iniciativas mejor posicionadas segun el analisis contrafactual: cuanto mejoran la conversion y cuanto valor añaden por oportunidad.</p>
+            <div class="uplift-cards" id="uplift-cards"></div>
+          </section>
+        </section>
+
+        <section class="stage-pane" id="pane-montecarlo">
+          <div class="montecarlo-grid">
+            <section class="panel">
+              <div class="eyebrow">Simulacion en directo</div>
+              <h2 class="panel-title">Panel live de Monte Carlo</h2>
+              <p class="panel-copy">El radar, la telemetria y el ranking evolucionan en tiempo real mientras el agente recorre 10.000 escenarios posibles para cada decision.</p>
+              <button class="action action-warn" id="relanzar-montecarlo-btn">Relanzar simulacion desde 0%</button>
+              <div class="iframe-shell">
+                <div class="montecarlo-placeholder" id="montecarlo-placeholder">
+                  <div>
+                    <div class="placeholder-ring"></div>
+                    <div class="placeholder-title" id="montecarlo-placeholder-title">Precalculando simulacion</div>
+                    <div class="placeholder-copy" id="montecarlo-placeholder-copy">El backend está preparando los elementos previos al lanzamiento. El dashboard live se mostrará en cuanto arranque la simulación real.</div>
+                  </div>
+                </div>
+                <iframe id="live-frame" title="Monte Carlo live"></iframe>
+              </div>
+            </section>
+          </div>
+          <section class="panel panel-radar">
+            <div class="eyebrow">Lectura consolidada</div>
+            <h2 class="panel-title">Ranking final de alternativas</h2>
+            <p class="panel-copy">La comparativa final resume retorno esperado, dispersión y riesgo de perdida para que la conclusion sea inmediata.</p>
+            <div class="summary-cards" id="summary-cards"></div>
+          </section>
+        </section>
+
+        <section class="stage-pane" id="pane-reporte">
+          <div class="report-grid">
+            <section class="panel">
+              <div class="eyebrow">Recomendacion final</div>
+              <div class="audience-caption">Selecciona enfoque de lectura</div>
+              <div class="audience-switch" id="audience-switch">
+                <button class="audience-chip active" data-audience="finanzas">Finanzas</button>
+                <button class="audience-chip" data-audience="operacion">Operacion</button>
+                <button class="audience-chip" data-audience="riesgo">Riesgo</button>
+              </div>
+              <div class="audience-summary" id="audience-summary"></div>
+              <div class="verdict" id="verdict-headline"></div>
+              <p class="panel-copy" id="verdict-copy"></p>
+              <ul class="bullet-list" id="reason-list"></ul>
+            </section>
+            <section class="panel">
+              <div class="eyebrow">Riesgos y siguientes pasos</div>
+              <h2 class="panel-title">Puntos de control para la decision</h2>
+              <ul class="bullet-list" id="watchouts-list"></ul>
+              <div class="tag-row" id="report-checks"></div>
+            </section>
+          </div>
+          <div class="report-grid">
+            <section class="panel">
+              <div class="eyebrow">Consultas realizadas</div>
+              <h2 class="panel-title">Huella de herramientas</h2>
+              <div class="trace-list" id="tool-trace"></div>
+            </section>
+            <section class="panel">
+              <div class="eyebrow">Hallazgos adicionales</div>
+              <h2 class="panel-title">Lecturas complementarias</h2>
+              <ul class="bullet-list" id="agent-findings"></ul>
+            </section>
+          </div>
+          <div class="report-grid">
+            <section class="panel">
+              <div class="eyebrow">Cuando cambiaria la recomendacion</div>
+              <h2 class="panel-title">Senales para rotar la apuesta</h2>
+              <ul class="bullet-list" id="switch-signals"></ul>
+            </section>
+            <section class="panel">
+              <div class="eyebrow">Ejecucion y due diligence</div>
+              <h2 class="panel-title">Plan recomendado</h2>
+              <ul class="bullet-list" id="next-actions"></ul>
+              <h2 class="panel-title" style="margin-top:20px;">Preguntas antes de ejecutar</h2>
+              <ul class="bullet-list" id="due-diligence"></ul>
+            </section>
+          </div>
+        </section>
+      </main>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-glow" aria-hidden="true"></div>
+      <div class="footer-mark" aria-hidden="true"></div>
+      <div class="footer-meta" id="footer-meta"></div>
+    </footer>
+  </div>
+
+  <script>
+    const PAYLOAD = {"title": "Fluenta · Despacho bajo incertidumbre", "subtitle": "Consola de decision para el BESS Pampa Alta: aprende del historico de despacho, estima que aporta cada palanca de operacion y simula 10.000 futuros antes de comprometer la estrategia del anio.", "stages": [{"key": "briefing", "title": "El problema", "eyebrow": "Fase 01", "tagline": "Una bateria de 20 MW / 80 MWh y cuatro formas de operarla durante un anio. Solo se puede elegir una, y la que mas factura es la que puede dejar el activo sin vida util antes de amortizarlo.", "command": "AGENTE.PLANTEAR_LA_DECISION()", "duration_ms": 1100}, {"key": "ingesta", "title": "20.000 ventanas de despacho", "eyebrow": "Fase 02", "tagline": "Carga el historico hora a hora: precio spot, diferencial capturado, estado de carga, ciclos consumidos y si cada ciclo llego a cubrir su propio coste de degradacion.", "command": "AGENTE.CARGAR_Y_VALIDAR_DATOS()", "duration_ms": 1400}, {"key": "uplift", "title": "Que aporta cada palanca", "eyebrow": "Fase 03", "tagline": "Contrafactual sobre la misma ventana con una palanca cambiada. Aqui aparece el mecanismo del caso: descargar profundo mueve mas energia y destruye margen, porque el desgaste crece con el cuadrado de la profundidad.", "command": "AGENTE.EVALUAR_MODELOS_Y_PALANCAS()", "duration_ms": 1500}, {"key": "montecarlo", "title": "10.000 futuros", "eyebrow": "Fase 04", "tagline": "Inyecta volatilidad de precio, riesgo de no ser convocado y error residual. El resultado no es un numero: es una distribucion con su suelo, su techo y su probabilidad de perdida.", "command": "AGENTE.SIMULAR_10000_FUTUROS()", "duration_ms": 1600}, {"key": "reporte", "title": "La decision, en dolares", "eyebrow": "Fase 05", "tagline": "Tres lecturas independientes sobre las mismas cifras: Finanzas, Operacion del activo y Riesgo. Cuando coinciden, la decision es solida; cuando no, ese desacuerdo es el dato.", "command": "AGENTE.EMITIR_RECOMENDACION()", "duration_ms": 1500}], "tools": [{"name": "Tool 01 · Carga de datos", "purpose": "Carga la base historica y valida que el caso tenga cobertura suficiente antes de analizar decisiones."}, {"name": "Tool 02 · Modelo de propension", "purpose": "Estima la probabilidad de exito de cada oportunidad para priorizar mejor las palancas de crecimiento."}, {"name": "Tool 03 · Modelo de valor esperado", "purpose": "Estima el ticket esperado de las oportunidades que convierten para traducir conversion en impacto economico."}, {"name": "Tool 04 · Uplift de negocio", "purpose": "Compara las cuatro estrategias de operacion sobre el mismo historico de despacho."}, {"name": "Tool 05 · Monte Carlo", "purpose": "Simula 10.000 futuros para ordenar decisiones por retorno esperado, dispersion y riesgo de perdida."}], "dataset": {"summary": {"rows": 20000, "period_start": "2024-01-01", "period_end": "2026-04-30", "conversion_rate": 0.1341, "ingreso_usd": 951040.11, "margen_neto_usd": 9818.87999999999, "avg_ticket_usd": 4.92869500372856, "avg_lead_score": 65.10545, "campaign_count": 21, "variable_count": 30, "channel_count": 6, "segment_count": 4, "geography_count": 5, "objective_count": 4, "precio_spot_medio": 68.918892, "diferencial_medio": 41.531169000000006, "ciclos_consumidos": 1044.583, "energia_total_mwh": 13218.760000000002, "time_windows": 28}, "monthly": [{"month": "2024-01", "ingreso_usd": 10302.09, "margen_neto_usd": 306.57999999999987, "conversion_rate": 0.11433756805807622}, {"month": "2024-02", "ingreso_usd": 8776.97, "margen_neto_usd": -736.02, "conversion_rate": 0.10800744878957169}, {"month": "2024-03", "ingreso_usd": 9754.5, "margen_neto_usd": -706.9999999999999, "conversion_rate": 0.13494809688581316}, {"month": "2024-04", "ingreso_usd": 22250.64, "margen_neto_usd": 7639.61, "conversion_rate": 0.17569786535303777}, {"month": "2024-05", "ingreso_usd": 21207.18, "margen_neto_usd": 6885.61, "conversion_rate": 0.1494435612082671}, {"month": "2024-06", "ingreso_usd": 21815.35, "margen_neto_usd": 7103.9400000000005, "conversion_rate": 0.17329093799682035}, {"month": "2024-07", "ingreso_usd": 23978.35, "margen_neto_usd": 8658.92, "conversion_rate": 0.17405582922824303}, {"month": "2024-08", "ingreso_usd": 21206.24, "margen_neto_usd": 7280.2300000000005, "conversion_rate": 0.166383701188455}, {"month": "2024-09", "ingreso_usd": 17326.29, "margen_neto_usd": 312.25999999999976, "conversion_rate": 0.14209591474245115}, {"month": "2024-10", "ingreso_usd": 19734.27, "margen_neto_usd": -3356.36, "conversion_rate": 0.1318864774624374}, {"month": "2024-11", "ingreso_usd": 20696.42, "margen_neto_usd": -2857.9500000000003, "conversion_rate": 0.10685805422647528}, {"month": "2024-12", "ingreso_usd": 16786.08, "margen_neto_usd": -7862.43, "conversion_rate": 0.10229007633587786}, {"month": "2025-01", "ingreso_usd": 14873.08, "margen_neto_usd": -17680.88, "conversion_rate": 0.09565217391304348}, {"month": "2025-02", "ingreso_usd": 14213.3, "margen_neto_usd": -18178.18, "conversion_rate": 0.09261939218523878}, {"month": "2025-03", "ingreso_usd": 18565.15, "margen_neto_usd": -17614.57, "conversion_rate": 0.09480519480519481}, {"month": "2025-04", "ingreso_usd": 78280.72, "margen_neto_usd": 26309.56, "conversion_rate": 0.19869281045751633}, {"month": "2025-05", "ingreso_usd": 59046.71, "margen_neto_usd": 9398.18, "conversion_rate": 0.17288557213930347}, {"month": "2025-06", "ingreso_usd": 79890.51, "margen_neto_usd": 26062.760000000002, "conversion_rate": 0.19896640826873385}, {"month": "2025-07", "ingreso_usd": 31826.73, "margen_neto_usd": -9350.68, "conversion_rate": 0.12833545108005082}, {"month": "2025-08", "ingreso_usd": 27375.77, "margen_neto_usd": -13934.0, "conversion_rate": 0.1297229219143577}, {"month": "2025-09", "ingreso_usd": 27946.69, "margen_neto_usd": -8118.17, "conversion_rate": 0.12073863636363637}, {"month": "2025-10", "ingreso_usd": 58716.69, "margen_neto_usd": 10168.61, "conversion_rate": 0.14285714285714285}, {"month": "2025-11", "ingreso_usd": 45609.11, "margen_neto_usd": 1589.43, "conversion_rate": 0.149519890260631}, {"month": "2025-12", "ingreso_usd": 66335.33, "margen_neto_usd": 9501.22, "conversion_rate": 0.1522248243559719}, {"month": "2026-01", "ingreso_usd": 87495.16, "margen_neto_usd": 23859.11, "conversion_rate": 0.13131313131313133}, {"month": "2026-02", "ingreso_usd": 73256.99, "margen_neto_usd": 14632.390000000001, "conversion_rate": 0.13652275379229872}, {"month": "2026-03", "ingreso_usd": 25778.16, "margen_neto_usd": -26142.71, "conversion_rate": 0.07921810699588477}, {"month": "2026-04", "ingreso_usd": 27995.63, "margen_neto_usd": -23350.579999999998, "conversion_rate": 0.08119218910585817}], "sample": [{"date": "2024-01-01", "bloque_horario": "madrugada", "zona_red": "Nodo Costa", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 26.57, "diferencial_usd_mwh": 14.51, "indice_despacho": 67, "cubrio_degradacion": 0, "coste_degradacion_usd": 11.49, "margen_neto_usd": -11.49}, {"date": "2024-01-01", "bloque_horario": "madrugada", "zona_red": "Nodo Centro", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 46.14, "diferencial_usd_mwh": 18.24, "indice_despacho": 57, "cubrio_degradacion": 0, "coste_degradacion_usd": 4.26, "margen_neto_usd": -4.26}, {"date": "2024-01-01", "bloque_horario": "madrugada", "zona_red": "Nodo Norte", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 25.54, "diferencial_usd_mwh": 0.0, "indice_despacho": 61, "cubrio_degradacion": 0, "coste_degradacion_usd": 14.03, "margen_neto_usd": -14.03}, {"date": "2024-01-01", "bloque_horario": "madrugada", "zona_red": "Nodo Norte", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 23.15, "diferencial_usd_mwh": 0.0, "indice_despacho": 58, "cubrio_degradacion": 0, "coste_degradacion_usd": 6.97, "margen_neto_usd": -6.97}, {"date": "2024-01-01", "bloque_horario": "madrugada", "zona_red": "Nodo Centro", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 27.31, "diferencial_usd_mwh": 0.0, "indice_despacho": 43, "cubrio_degradacion": 0, "coste_degradacion_usd": 12.42, "margen_neto_usd": -12.42}, {"date": "2024-01-01", "bloque_horario": "manana", "zona_red": "Nodo Costa", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 51.59, "diferencial_usd_mwh": 29.68, "indice_despacho": 59, "cubrio_degradacion": 1, "coste_degradacion_usd": 8.75, "margen_neto_usd": 39.59}, {"date": "2024-01-01", "bloque_horario": "valle_solar", "zona_red": "Nodo Sierra", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 22.15, "diferencial_usd_mwh": 0.0, "indice_despacho": 69, "cubrio_degradacion": 0, "coste_degradacion_usd": 9.93, "margen_neto_usd": -9.93}, {"date": "2024-01-01", "bloque_horario": "valle_solar", "zona_red": "Nodo Norte", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 23.38, "diferencial_usd_mwh": 0.0, "indice_despacho": 32, "cubrio_degradacion": 0, "coste_degradacion_usd": 8.02, "margen_neto_usd": -8.02}, {"date": "2024-01-01", "bloque_horario": "valle_solar", "zona_red": "Nodo Sur", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 25.6, "diferencial_usd_mwh": 0.0, "indice_despacho": 49, "cubrio_degradacion": 0, "coste_degradacion_usd": 7.44, "margen_neto_usd": -7.44}, {"date": "2024-01-01", "bloque_horario": "punta_tarde", "zona_red": "Nodo Sur", "profundidad_descarga": "conservadora", "precio_spot_usd_mwh": 86.91, "diferencial_usd_mwh": 58.78, "indice_despacho": 84, "cubrio_degradacion": 1, "coste_degradacion_usd": 8.98, "margen_neto_usd": 96.4}]}, "models": {"classification": {"name": "Regresion logistica", "purpose": "Calcula la probabilidad de exito de cada oportunidad a partir de canal, segmento, contexto comercial y señales de calidad.", "auc": 0.7209811556923404, "positive_rate": 0.1178, "avg_predicted_prob": 0.13041381472587915, "gain_chart": [{"decile": 1, "avg_score": 0.34946020454370336, "conversion_rate": 0.324, "capture_pct": 0.27504244482173174, "population_pct": 0.1}, {"decile": 2, "avg_score": 0.23032079248224607, "conversion_rate": 0.196, "capture_pct": 0.44142614601018676, "population_pct": 0.2}, {"decile": 3, "avg_score": 0.17862968271089993, "conversion_rate": 0.148, "capture_pct": 0.567062818336163, "population_pct": 0.3}, {"decile": 4, "avg_score": 0.14395634182053793, "conversion_rate": 0.128, "capture_pct": 0.6757215619694398, "population_pct": 0.4}, {"decile": 5, "avg_score": 0.11487808989253652, "conversion_rate": 0.12, "capture_pct": 0.7775891341256367, "population_pct": 0.5}, {"decile": 6, "avg_score": 0.091530002036564, "conversion_rate": 0.09, "capture_pct": 0.8539898132427843, "population_pct": 0.6}, {"decile": 7, "avg_score": 0.07242626068173359, "conversion_rate": 0.06, "capture_pct": 0.9049235993208828, "population_pct": 0.7}, {"decile": 8, "avg_score": 0.05674024577989279, "conversion_rate": 0.042, "capture_pct": 0.9405772495755518, "population_pct": 0.8}, {"decile": 9, "avg_score": 0.04159045242935599, "conversion_rate": 0.038, "capture_pct": 0.9728353140916808, "population_pct": 0.9}, {"decile": 10, "avg_score": 0.024606074881321136, "conversion_rate": 0.032, "capture_pct": 1.0, "population_pct": 1.0}]}, "regression": {"name": "Gradient Boosting Regressor", "purpose": "Estima el ingreso esperado del ciclo para traducir cobertura de degradacion en dolares.", "mae_usd": 534.7640617585946, "r2": -104830.27434789509, "mean_residual_usd": -534.3633724973985, "p90_abs_error_usd": 1225.8568434514466, "residual_bands": [{"label": "Sobreestima > 300 USD", "count": 387}, {"label": "Sobreestima 100-300 USD", "count": 152}, {"label": "Ajuste fino +/- 100 USD", "count": 132}, {"label": "Infraestima 100-300 USD", "count": 0}, {"label": "Infraestima > 300 USD", "count": 0}]}}, "uplift": {"main": [{"parameter": "control_fino_completo", "sample_size": 20000, "baseline_cobertura": 0.1373, "scenario_conversion": 0.2185, "conversion_lift_pct": 0.5917, "profit_lift_per_window_usd": 22.07, "profit_lift_ci_low_usd": 21.78, "profit_lift_ci_high_usd": 22.38, "profit_lift_significativo": true, "source": "Estimado con contrafactual ML sobre historico sintetico", "label": "Control fino de carga y rampa", "description": "Ventana de carga optimizada, rampa suave y reserva comprometida. Es el paquete barato: casi todo consignas y software, sin obra sobre el activo."}, {"parameter": "descarga_profunda", "sample_size": 20000, "baseline_cobertura": 0.1373, "scenario_conversion": 0.1196, "conversion_lift_pct": -0.1292, "profit_lift_per_window_usd": -2.87, "profit_lift_ci_low_usd": -3.0, "profit_lift_ci_high_usd": -2.73, "profit_lift_significativo": true, "source": "Estimado con contrafactual ML sobre historico sintetico", "label": "Descarga profunda del banco", "description": "Bajar el estado de carga mas alla del umbral conservador. Mueve mas energia por ciclo, pero el desgaste de las celdas crece con el cuadrado de esa profundidad, no de forma lineal."}, {"parameter": "regulacion_convocada", "sample_size": 15439, "baseline_cobertura": 0.1608, "scenario_conversion": 0.1826, "conversion_lift_pct": 0.1355, "profit_lift_per_window_usd": 5.37, "profit_lift_ci_low_usd": 5.27, "profit_lift_ci_high_usd": 5.46, "profit_lift_significativo": true, "source": "Estimado con contrafactual ML sobre historico sintetico", "label": "Regulacion de frecuencia convocada", "description": "Ventanas en las que la bateria oferta regulacion de frecuencia y el operador la convoca. Paga por disponibilidad y desgasta poco."}, {"parameter": "mercado_nuevo", "sample_size": 14041, "baseline_cobertura": 0.1424, "scenario_conversion": 0.1541, "conversion_lift_pct": 0.0826, "profit_lift_per_window_usd": 43.24, "profit_lift_ci_low_usd": 42.26, "profit_lift_ci_high_usd": 44.25, "profit_lift_significativo": true, "source": "Estimado con contrafactual ML sobre historico sintetico", "label": "Habilitacion en mercado nuevo", "description": "Habilitacion en un producto de mercado nuevo. Techo de ingreso alto, pero exige certificacion previa y anade variabilidad de ejecucion."}], "ads": [{"parameter": "bloque_punta_noche", "sample_size": 3494, "baseline_cobertura": 0.2172, "scenario_conversion": 0.221, "conversion_lift_pct": null, "profit_lift_per_window_usd": 55.72, "profit_lift_ci_low_usd": null, "profit_lift_ci_high_usd": null, "profit_lift_significativo": null, "source": "Historico por bloque horario de despacho", "label": "Punta de noche"}, {"parameter": "bloque_punta_tarde", "sample_size": 4644, "baseline_cobertura": 0.1895, "scenario_conversion": 0.1912, "conversion_lift_pct": null, "profit_lift_per_window_usd": 33.12, "profit_lift_ci_low_usd": null, "profit_lift_ci_high_usd": null, "profit_lift_significativo": null, "source": "Historico por bloque horario de despacho", "label": "Punta de tarde"}, {"parameter": "bloque_manana", "sample_size": 3134, "baseline_cobertura": 0.134, "scenario_conversion": 0.1419, "conversion_lift_pct": null, "profit_lift_per_window_usd": -10.29, "profit_lift_ci_low_usd": null, "profit_lift_ci_high_usd": null, "profit_lift_significativo": null, "source": "Historico por bloque horario de despacho", "label": "Manana"}, {"parameter": "bloque_valle_solar", "sample_size": 4467, "baseline_cobertura": 0.0582, "scenario_conversion": 0.0601, "conversion_lift_pct": null, "profit_lift_per_window_usd": -30.36, "profit_lift_ci_low_usd": null, "profit_lift_ci_high_usd": null, "profit_lift_significativo": null, "source": "Historico por bloque horario de despacho", "label": "Valle solar"}]}, "simulation": {"summary": [{"ranking": 1, "decision": "Ventana conservadora", "expected_profit_usd": 56271.508484000005, "p10_usd": 45156.025, "p50_usd": 56173.06, "p90_usd": 67395.01, "probability_loss": 0.0, "expected_roi": 3.1261943100000003}, {"ranking": 2, "decision": "Servicios de regulacion", "expected_profit_usd": -18801.691109, "p10_usd": -24600.134, "p50_usd": -18854.795, "p90_usd": -12946.017, "probability_loss": 0.9999, "expected_roi": -0.67148934}, {"ranking": 3, "decision": "Arbitraje agresivo", "expected_profit_usd": -31993.281858, "p10_usd": -67555.269, "p50_usd": -33230.62, "p90_usd": 5366.328000000005, "probability_loss": 0.8653, "expected_roi": -0.33677162}, {"ranking": 4, "decision": "Hibrido certificado", "expected_profit_usd": -102219.929503, "p10_usd": -154210.89200000002, "p50_usd": -125839.42, "p90_usd": -53890.603, "probability_loss": 0.9429, "expected_roi": -0.73014238}], "total_simulations": 10000, "live_dashboard": "dashboards/dashboard_live_montecarlo.html", "recent": [{"decision": "Servicios de regulacion", "simulation": 9995, "incremental_profit_usd": -23052.06, "roi": -0.8233}, {"decision": "Hibrido certificado", "simulation": 9995, "incremental_profit_usd": -124595.82, "roi": -0.89}, {"decision": "Arbitraje agresivo", "simulation": 9995, "incremental_profit_usd": 46142.46, "roi": 0.4857}, {"decision": "Ventana conservadora", "simulation": 9995, "incremental_profit_usd": 61081.62, "roi": 3.3934}, {"decision": "Ventana conservadora", "simulation": 9996, "incremental_profit_usd": 66723.86, "roi": 3.7069}, {"decision": "Arbitraje agresivo", "simulation": 9996, "incremental_profit_usd": -17888.25, "roi": -0.1883}, {"decision": "Servicios de regulacion", "simulation": 9996, "incremental_profit_usd": -21853.34, "roi": -0.7805}, {"decision": "Hibrido certificado", "simulation": 9996, "incremental_profit_usd": -112767.65, "roi": -0.8055}, {"decision": "Ventana conservadora", "simulation": 9997, "incremental_profit_usd": 63276.24, "roi": 3.5153}, {"decision": "Arbitraje agresivo", "simulation": 9997, "incremental_profit_usd": -17332.67, "roi": -0.1824}, {"decision": "Servicios de regulacion", "simulation": 9997, "incremental_profit_usd": -18056.64, "roi": -0.6449}, {"decision": "Hibrido certificado", "simulation": 9997, "incremental_profit_usd": -135705.72, "roi": -0.9693}, {"decision": "Hibrido certificado", "simulation": 9998, "incremental_profit_usd": -122078.08, "roi": -0.872}, {"decision": "Ventana conservadora", "simulation": 9998, "incremental_profit_usd": 59947.64, "roi": 3.3304}, {"decision": "Arbitraje agresivo", "simulation": 9998, "incremental_profit_usd": -58405.63, "roi": -0.6148}, {"decision": "Servicios de regulacion", "simulation": 9998, "incremental_profit_usd": -19412.27, "roi": -0.6933}, {"decision": "Servicios de regulacion", "simulation": 9999, "incremental_profit_usd": -16347.24, "roi": -0.5838}, {"decision": "Hibrido certificado", "simulation": 9999, "incremental_profit_usd": -89547.99, "roi": -0.6396}, {"decision": "Ventana conservadora", "simulation": 9999, "incremental_profit_usd": 64634.03, "roi": 3.5908}, {"decision": "Arbitraje agresivo", "simulation": 9999, "incremental_profit_usd": -46205.82, "roi": -0.4864}, {"decision": "Arbitraje agresivo", "simulation": 10000, "incremental_profit_usd": -7072.17, "roi": -0.0744}, {"decision": "Servicios de regulacion", "simulation": 10000, "incremental_profit_usd": -17515.68, "roi": -0.6256}, {"decision": "Ventana conservadora", "simulation": 10000, "incremental_profit_usd": 48550.42, "roi": 2.6972}, {"decision": "Hibrido certificado", "simulation": 10000, "incremental_profit_usd": -117934.15, "roi": -0.8424}]}, "recommendation": {"headline": "El agente no solo elige Ventana conservadora: explica por que gana ahora y que tendria que pasar para cambiar de idea.", "decision": "Ventana conservadora", "expected_profit_usd": 56271.508484000005, "expected_roi": 3.1261943100000003, "probability_loss": 0.0, "gap_vs_second_usd": 75073.199593, "agent_summary": "Ventana conservadora se mantiene como primera apuesta porque combina el mayor beneficio esperado (56.272 USD), un ROI de 3.1x y una probabilidad de perdida de 0.0%.", "reasons": ["La ventaja economica frente a la segunda opcion es de 75.073 USD, suficiente para que la recomendacion no dependa de un empate estadistico.", "El suelo del escenario sigue siendo defendible: P10 de 45.156 USD frente a alternativas con colas mas fragiles.", "El historico ya contiene uplift observable en el control fino de carga y rampa (0.6% de mejora en cobertura estimada)."], "watchouts": ["Servicios de regulacion sigue viva como plan B con un suelo negativo de -24.600 USD y 1.0% de perdida.", "Servicios de regulacion es la opcion que mas puede deteriorar el caso si se ejecuta antes de tiempo: 1.0% de perdida esperada.", "La dispersion mas agresiva sigue en Hibrido certificado: una banda P10-P90 de 100.320 USD obliga a revisar la exposicion antes de comprometer el regimen del anio."], "next_actions": ["Fijar las consignas de estado de carga y profundidad de descarga como piloto acotado, con responsable, plazo y lectura de margen por bloque horario.", "Preparar en paralelo la oferta de regulacion de frecuencia como palanca complementaria, especialmente si se confirma un uplift cercano al 0.1% en las ventanas aptas.", "Bloquear una revision trimestral para decidir si se amplia el ciclado, se mantiene el regimen o se rota a la segunda opcion."], "switch_signals": ["Cambiar a Servicios de regulacion si el diferencial capturado no sostiene el margen esperado o si el coste real de degradacion supera al modelado.", "Abrir Arbitraje agresivo solo si se acepta un riesgo superior al 0.9% o si el objetivo pasa de eficiencia a expansion agresiva.", "Retrasar cualquier aumento del ciclado si el coste de degradacion por MWh sube mas rapido que el diferencial capturado, porque ese punto de saturacion ya aparece en el historico."], "due_diligence": ["Verificar que el margen se pueda atribuir por bloque horario y por profundidad de descarga, para saber que parte del retorno viene de cada palanca.", "Definir umbrales de exito y criterios de salida antes del despliegue para que la decision no se convierta en opinion post-hoc.", "Contrastar la curva de degradacion asumida contra la garantia del fabricante antes de activar regimenes de mayor dispersion."], "findings": ["La diferencia frente a la segunda opcion es de 75.073 USD, asi que la primera plaza no depende de ruido marginal.", "Servicios de regulacion no gana en media y presenta un suelo negativo de -24.600 USD y 1.0% de perdida.", "Arbitraje agresivo solo merece entrar si se acepta una estrategia claramente mas agresiva: 0.9% de perdida y mayor dispersion operativa."], "tool_trace": [{"name": "comparar_decisiones", "purpose": "Ordena las alternativas lado a lado por beneficio esperado, ROI y probabilidad de perdida.", "args": "sin parametros", "outcome": "Ventana conservadora lidera con 56.272 USD y abre una brecha de 75.073 USD frente a la segunda opcion."}, {"name": "distribucion_montecarlo", "purpose": "Lee la distribucion de 10.000 futuros de una decision para medir suelo, techo y riesgo.", "args": "decision=Ventana conservadora", "outcome": "Ventana conservadora mantiene un suelo de 45.156 USD en P10 y 0.0% de probabilidad de perdida."}, {"name": "distribucion_montecarlo", "purpose": "Lee la distribucion de 10.000 futuros de una decision para medir suelo, techo y riesgo.", "args": "decision=Servicios de regulacion", "outcome": "Servicios de regulacion queda por detras en media, con un suelo negativo de -24.600 USD y 1.0% de perdida."}, {"name": "obtener_uplift_ml", "purpose": "Consulta el uplift contrafactual estimado por el modelo para una palanca concreta.", "args": "decision=control_fino_completo", "outcome": "El historico muestra un uplift estimado del 0.6% en cobertura de degradacion con control fino de carga y rampa."}], "audience_views": {"finanzas": {"headline": "Finanzas: comprometer el anio a Ventana conservadora es hoy la estrategia con mejor retorno ajustado a riesgo.", "summary": "La recomendacion prioriza eficiencia del capital inmovilizado en el activo: 56.272 USD esperados, 3.1x de ROI y un suelo de 45.156 USD en P10.", "reasons": ["La brecha de 75.073 USD frente a la segunda opcion permite decidir con conviccion y no por desempate estadistico.", "El downside esta contenido: 0.0% de probabilidad de perdida y P10 de 45.156 USD.", "La estrategia ganadora se apoya en patrones ya presentes en el historico de despacho, no en una hipotesis de mercado sin respaldo."], "watchouts": ["Ampliar la profundidad de descarga para forzar facturacion degrada el activo mas rapido de lo que crece el ingreso: el desgaste escala con el cuadrado, no linealmente.", "Servicios de regulacion debe quedarse lista como alternativa inmediata si el diferencial de precio capturado no se materializa en el primer trimestre.", "Servicios de regulacion exige tolerancia a volatilidad y capital hundido antes de entrar en el plan del anio."], "next_actions": ["Aprobar una primera fase acotada con responsable, calendario y criterio financiero de exito por trimestre.", "Reservar la segunda estrategia del ranking como alternativa priorizada si la primera no confirma el margen esperado.", "Revisar en comite el delta real frente al caso base antes de comprometer inversion adicional en habilitaciones."], "switch_signals": ["Rotar a Servicios de regulacion si el margen realizado queda muy por debajo de la hipotesis y erosiona el payback del activo.", "Evitar aumentar el ciclado mientras el coste de degradacion por MWh suba mas rapido que el diferencial capturado.", "Abrir Arbitraje agresivo solo si cambia el mandato de eficiencia a expansion y se acepta mayor volatilidad."], "due_diligence": ["Cuantificar el coste de degradacion por ciclo equivalente y su efecto sobre el valor residual del banco al final del contrato.", "Asegurar trazabilidad del margen por bloque horario para auditar de donde sale realmente el retorno.", "Confirmar responsables y dependencias con el operador de red antes de comprometer capacidad."]}, "operacion": {"headline": "Operacion del activo: Ventana conservadora es la que mejor equilibra ingreso y vida util del banco.", "summary": "La mejor estrategia de operacion no es la que mas energia mueve, sino la que captura diferencial sin comprarlo con ciclos que no se recuperan.", "reasons": ["La estrategia ganadora concentra el despacho en las ventanas donde el diferencial paga el desgaste, en vez de ciclar por defecto.", "El margen frente a la segunda opcion es de 75.073 USD, suficiente para justificar una sola configuracion de consignas y no un regimen mixto.", "Servicios de regulacion queda como complemento para las horas en las que el arbitraje no compensa, sin cambiar el regimen de carga."], "watchouts": ["Forzar descargas profundas en punta parece rentable en la liquidacion del dia y aparece meses despues como capacidad perdida.", "Servicios de regulacion tiene techo alto, pero mezcla habilitacion tecnica con exposicion economica antes de tener datos propios.", "Sin telemetria por ciclo, el equipo puede confundir mas energia despachada con mejor operacion del activo."], "next_actions": ["Fijar consignas de estado de carga y profundidad de descarga por bloque horario, con lectura semanal de ciclos consumidos.", "Instrumentar el coste de degradacion por ciclo para que aparezca en el mismo panel que el ingreso, no en un informe aparte.", "Definir gatillos claros para ampliar el ciclado solo despues de demostrar margen neto estable."], "switch_signals": ["Mover el foco a Servicios de regulacion si el diferencial medio capturado cae por debajo del coste de degradacion del ciclo.", "Mantener la profundidad conservadora hasta que la telemetria confirme que el desgaste real esta por debajo del modelado.", "Probar Arbitraje agresivo solo con una ventana acotada si aparece evidencia firme de remuneracion superior."], "due_diligence": ["Separar la medicion por bloque horario y por profundidad de descarga para saber donde vive el margen real.", "Contrastar la curva de degradacion asumida contra la garantia del fabricante y la telemetria disponible.", "Definir de antemano que indicadores permiten pasar de una ventana piloto a regimen permanente."]}, "riesgo": {"headline": "Riesgo: Ventana conservadora es la opcion mas defendible por el suelo de su distribucion, no por su media.", "summary": "La prioridad aqui no es maximizar el techo, sino proteger el escenario adverso manteniendo un retorno claramente atractivo.", "reasons": ["El caso ganador combina 56.272 USD esperados con un P10 de 45.156 USD.", "Servicios de regulacion es la alternativa de respaldo mas limpia si hiciera falta rotar sin asumir volatilidad excesiva.", "Servicios de regulacion concentra la mayor probabilidad de perdida y no deberia entrar sin controles adicionales."], "watchouts": ["Hibrido certificado tiene un recorrido de 100.320 USD entre P10 y P90: el resultado depende mas del escenario que de la ejecucion.", "Comprometer capacidad de reserva y luego no poder entregarla tiene consecuencias con el operador de red que no aparecen en la cuenta de resultados.", "La cola derecha del precio spot es gruesa: unas pocas horas explican gran parte del ingreso, y no estan garantizadas."], "next_actions": ["Fijar limites de exposicion por estrategia antes de comprometer el regimen del anio.", "Establecer un punto de control trimestral con criterio explicito de salida.", "Documentar que compromisos con el operador quedan afectados por cada estrategia."], "switch_signals": ["Revisar la decision si la probabilidad de perdida realizada supera el 1.0% observado en simulacion.", "Salir de cualquier regimen cuyo P10 cruce a negativo tras recalibrar la volatilidad del precio.", "Reevaluar si cambia la regulacion de los productos de reserva o los requisitos de habilitacion."], "due_diligence": ["Validar la calibracion de la volatilidad del precio contra series reales antes de operar con estos numeros.", "Revisar penalizaciones contractuales por incumplimiento de reserva comprometida.", "Confirmar que el modelo de degradacion no subestima el desgaste en descargas profundas repetidas."]}}}, "report": {"checks": ["dataset_transaccional_20k: PASS", "parametros_emergen_del_historico: PASS", "conclusion_y_narrativa: PASS"], "executive_notes": ["Las hipotesis no se fijan como tabla externa: se estiman con contrafactuales del modelo entrenado sobre el historico.", "La ventana conservadora gana porque el historico contiene ventanas con ciclado suave y control fino de carga, y el modelo aprende que ahi el diferencial capturado si cubre el desgaste.", "El arbitraje agresivo usa el patron historico de saturacion del activo: al aumentar la profundidad de descarga crece la energia movida, pero el coste de degradacion escala con el cuadrado y se come el ingreso extra.", "Los servicios de regulacion emergen como segunda opcion porque el historico contiene ventanas ofertadas y convocadas, y el modelo aprende que remuneran con poco desgaste.", "El hibrido certificado mantiene el P90 mas alto por acceso a un producto mejor pagado, pero tambien mayor probabilidad de perdida por coste hundido de certificacion y variabilidad de ejecucion."]}, "avanzado": {"valor_informacion": {"decision_sin_informacion": "Ventana conservadora", "valor_sin_informacion": 56271.50848399999, "valor_con_informacion_perfecta": 66701.356231, "evpi": 10429.847747000007, "evpi_relativo": 0.18534864317642358, "acierto_de_la_apuesta": 0.9579, "reparto_de_escenarios": [{"decision": "Ventana conservadora", "cuota_escenarios": 0.9579}, {"decision": "Hibrido certificado", "cuota_escenarios": 0.038}, {"decision": "Arbitraje agresivo", "cuota_escenarios": 0.0041}], "lectura": "Reducir la incertidumbre vale como maximo 10,430 por decision. La apuesta elegida es la mejor en el 96% de los escenarios."}, "estabilidad": {"realizaciones": 30, "semillas": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], "detalle": [{"decision": "Ventana conservadora", "victorias": 30, "realizaciones": 30, "tasa_victoria": 1.0, "posicion_media": 1.0, "posicion_peor": 1, "beneficio_medio": 56273.552899899885, "beneficio_min": 56051.628130999896, "beneficio_max": 56445.067400999775}, {"decision": "Servicios de regulacion", "victorias": 0, "realizaciones": 30, "tasa_victoria": 0.0, "posicion_media": 2.0, "posicion_peor": 2, "beneficio_medio": -18808.641946799962, "beneficio_min": -18949.658378999942, "beneficio_max": -18698.14728799996}, {"decision": "Arbitraje agresivo", "victorias": 0, "realizaciones": 30, "tasa_victoria": 0.0, "posicion_media": 3.0, "posicion_peor": 3, "beneficio_medio": -32107.055788533347, "beneficio_min": -32756.148111000173, "beneficio_max": -31420.889525000126}, {"decision": "Hibrido certificado", "victorias": 0, "realizaciones": 30, "tasa_victoria": 0.0, "posicion_media": 4.0, "posicion_peor": 4, "beneficio_medio": -102490.33975456658, "beneficio_min": -105116.69793299984, "beneficio_max": -100558.70265899978}], "ganador_estable": true, "veredicto": "Ventana conservadora gana en 30 de 30 realizaciones", "alcance": "varia la semilla del Monte Carlo; el dataset y los modelos se mantienen fijos"}, "sensibilidad": {"ganador_base": "Ventana conservadora", "factores": [0.5, 1.0, 1.5, 2.0], "resultados": [{"ruido": "incertidumbre", "puntos": [{"factor": 0.5, "ganador": "Ventana conservadora", "beneficio_ganador": 52203.730425, "cambia": false}, {"factor": 1.0, "ganador": "Ventana conservadora", "beneficio_ganador": 52392.5596, "cambia": false}, {"factor": 1.5, "ganador": "Ventana conservadora", "beneficio_ganador": 52664.639325000004, "cambia": false}, {"factor": 2.0, "ganador": "Ventana conservadora", "beneficio_ganador": 53020.131025, "cambia": false}], "punto_de_quiebre": null}, {"ruido": "ejecucion", "puntos": [{"factor": 0.5, "ganador": "Ventana conservadora", "beneficio_ganador": 52076.592275, "cambia": false}, {"factor": 1.0, "ganador": "Ventana conservadora", "beneficio_ganador": 52392.5596, "cambia": false}, {"factor": 1.5, "ganador": "Ventana conservadora", "beneficio_ganador": 52708.5259, "cambia": false}, {"factor": 2.0, "ganador": "Ventana conservadora", "beneficio_ganador": 53024.492775, "cambia": false}], "punto_de_quiebre": null}, {"ruido": "residual", "puntos": [{"factor": 0.5, "ganador": "Ventana conservadora", "beneficio_ganador": 52456.191075, "cambia": false}, {"factor": 1.0, "ganador": "Ventana conservadora", "beneficio_ganador": 52392.5596, "cambia": false}, {"factor": 1.5, "ganador": "Ventana conservadora", "beneficio_ganador": 52328.927825, "cambia": false}, {"factor": 2.0, "ganador": "Ventana conservadora", "beneficio_ganador": 52265.296200000004, "cambia": false}], "punto_de_quiebre": null}], "robusto": true, "veredicto": "La recomendacion aguanta duplicar cualquiera de los tres ruidos"}, "validacion": {"train_start": "2024-01-01", "train_end": "2025-11-12", "test_start": "2025-11-12", "test_end": "2026-04-30", "train_rows": 15000, "test_rows": 5000}}, "multirol": {"lecturas": [{"decision_elegida": "Ventana conservadora", "headline": "Ventana conservadora ofrece el mayor retorno esperado y cero probabilidad de pérdida", "summary": "Con un beneficio esperado de 56,271 USD y un ROI de 3.13, esta opción no muestra riesgo de pérdida (probability_loss = 0.0). Además, se mantiene ganadora en 30 de 30 realizaciones y resiste duplicar los ruidos de entrada, lo que la convierte en la alternativa más defensible ante el comité.", "reasons": ["Beneficio esperado de 56,271 USD supera ampliamente a cualquier otra opción", "ROI de 3.126 indica más de tres veces el capital comprometido", "Probabilidad de pérdida nula y estabilidad total en simulaciones"], "watchouts": ["Dependencia del modelo de carga optimizada (control_fino_completo)", "Posibles cambios regulatorios que reduzcan la disponibilidad de la batería", "Riesgo de saturación del mercado nuevo que podría afectar el uplift de 22.07 USD por ventana"], "next_actions": ["Validar los supuestos del modelo de carga y rampa con datos operacionales reales", "Formalizar contratos de reserva de capacidad para asegurar la cobertura del 13.73 %", "Implementar un panel de monitoreo de disponibilidad y desempeño para detectar desviaciones tempranas"], "switch_signals": ["Caída del ROI por debajo de 2.0", "Aumento de la probabilidad de pérdida superior a 0.1", "Reducción del uplift de profit por ventana por debajo de 15 USD"], "due_diligence": ["Confirmar costos operativos y de mantenimiento reales versus los estimados", "Verificar la capacidad de reserva comprometida y su alineación con los requisitos regulatorios", "Evaluar el impacto de posibles cambios regulatorios en la disponibilidad y remuneración de la batería"], "rol": "finanzas", "fuente": "llm", "proveedor": "groq", "modelo": "openai/gpt-oss-120b", "intentos_previos": 1, "coherencia": {"frases_retiradas": 0, "incidencias": []}}, {"decision_elegida": "Ventana conservadora", "headline": "La ventana conservadora maximiza ganancias sin riesgo de pérdida y preserva la vida útil del banco.", "summary": "Con un beneficio esperado de 56.271 USD y un P10 de 45.156 USD, esta opción nunca muestra pérdida (probabilidad_loss = 0,0) y ofrece un ROI del 3,13. Su bajo desgaste por profundidad de descarga mantiene los ciclos consumidos dentro de los límites que garantizan disponibilidad a largo plazo.", "reasons": ["Beneficio esperado de 56.271 USD, superior a todas las alternativas (el siguiente mejor es -18.802 USD).", "Probabilidad de pérdida nula (0,0) y P10 positivo de 45.156 USD, lo que asegura rentabilidad incluso en escenarios adversos.", "Menor profundidad de descarga implica desgaste cuadráticamente menor, preservando ciclos y disponibilidad del activo a cinco años."], "watchouts": ["Verificar que la ventana de carga no se expanda inadvertidamente hacia descargas profundas que incrementen el desgaste.", "Monitorear la precisión del pronóstico de precios para evitar perder oportunidades de regulación que podrían sumar ingresos menores pero sin riesgo.", "Asegurar que el software de control fino se mantenga actualizado; cualquier fallo podría forzar operaciones fuera de la ventana conservadora."], "next_actions": ["Implementar el paquete de control fino de carga y rampa (control_fino_completo) que aporta un uplift de 22,07 USD por ventana con alta significancia.", "Establecer KPIs de ciclos consumidos y profundidad media de descarga para revisión mensual.", "Programar una revisión trimestral de la disponibilidad del activo y comparar con el objetivo de cinco años."], "switch_signals": ["Si el P10 de la ventana conservadora cae bajo 0 USD en simulaciones actualizadas, reconsiderar la estrategia.", "Si el uplift estimado de regulación de frecuencia convocada supera los 10 USD por ventana con probabilidad de pérdida < 0,1, evaluar un híbrido.", "Si un nuevo mercado certificado muestra un uplift > 50 USD por ventana y la probabilidad de pérdida se mantiene < 0,05, considerar su adopción."], "due_diligence": ["¿Cuál es el desgaste esperado por ciclo a la profundidad de descarga propuesta por la ventana conservadora frente al límite de garantía del fabricante?", "¿Cuál es la variabilidad histórica del precio de la energía en las ventanas seleccionadas y cómo afecta al P10?", "¿Qué nivel de inversión y tiempo se requiere para mantener el software de control fino actualizado y asegurar su compatibilidad con el BMS?"], "rol": "operacion", "fuente": "llm", "proveedor": "openrouter", "modelo": "nvidia/nemotron-3-super-120b-a12b:free", "intentos_previos": 0, "coherencia": {"frases_retiradas": 0, "incidencias": []}}, {"decision_elegida": "Ventana conservadora", "headline": "Aprobación única para Ventana conservadora por blindaje del capital y riesgo de pérdida nulo.", "summary": "Desde la dirección de riesgos, la Ventana conservadora es la única opción que garantiza la integridad financiera con un P10 de 45,156.03 USD y probabilidad de pérdida cero. El resto de las alternativas presentan colas izquierdas inasumibles con pérdidas esperadas que comprometerían la viabilidad de la operación.", "reasons": ["Probabilidad de pérdida del 0.0% frente a riesgos de insolvencia superiores al 86% en todas las demás estrategias simuladas.", "Suelo de seguridad (P10) de 45,156.03 USD, lo que asegura retornos positivos incluso en escenarios de estrés del mercado.", "Protección de activos mediante el control fino de rampa, evitando el desgaste acelerado por descarga profunda que penaliza el ROI a largo plazo."], "watchouts": ["Desviaciones en la implementación del software de control de rampa que puedan afectar la precisión de la carga.", "Mantenimiento estricto de la reserva comprometida para evitar penalizaciones del operador de red no reflejadas en el P&L.", "Posible complacencia operativa ante la baja volatilidad del escenario conservador."], "next_actions": ["Implementar el paquete de software de control fino de carga y rampa de forma inmediata.", "Configurar alertas de monitoreo en tiempo real para asegurar que el estado de carga no cruce el umbral conservador.", "Formalizar los protocolos de reserva comprometida con el operador de red para blindar la seguridad jurídica."], "switch_signals": ["Reducción drástica de la variabilidad en el mercado de servicios de regulación que mueva su P10 a terreno positivo.", "Mejora tecnológica en la química de las celdas que reduzca el coste del desgaste por descarga profunda en un 50%.", "Aparición de incentivos estatales que cubran el 90% del riesgo de pérdida en mercados nuevos."], "due_diligence": ["¿Se ha verificado que el software de control fino no introduce latencia en la respuesta a las consignas del operador?", "¿Cuál es el coste exacto de oportunidad de mantener la reserva comprometida frente a picos de precio inesperados?", "¿Existe respaldo contractual de los proveedores de celdas sobre el modelo de degradación lineal asumido?"], "rol": "riesgo", "fuente": "llm", "proveedor": "gemini", "modelo": "gemini-3-flash-preview", "intentos_previos": 3, "coherencia": {"frases_retiradas": 0, "incidencias": []}}], "agregacion": {"modo": "llm", "consenso": true, "decision_consenso": "Ventana conservadora", "veredicto": "Los 3 roles coinciden en Ventana conservadora. Al correr en modelos independientes, la coincidencia es una senal real de robustez.", "elecciones": {"finanzas": "Ventana conservadora", "operacion": "Ventana conservadora", "riesgo": "Ventana conservadora"}, "roles_con_llm": 3, "modelos_independientes": true}, "proveedores_configurados": ["groq", "cerebras", "openrouter", "gemini", "zai", "nvidia", "mistral"], "desde_cache": true}};
+    const AUDIENCE_META = {
+      finanzas: 'Prioriza asignacion de capital, payback y claridad de decision ejecutiva.',
+      operacion: 'Prioriza velocidad de aprendizaje, iteracion y escalado de palancas.',
+      riesgo: 'Prioriza control del downside, robustez del suelo y criterios de contencion.',
+    };
+    const API_BASE = window.location.protocol.startsWith('http') ? window.location.origin : '';
+    const BACKEND_ENABLED = Boolean(API_BASE);
+    const PRECOMPUTED_STAGE_KEYS = new Set(['briefing', 'ingesta', 'uplift']);
+    // briefing/ingesta/uplift no dependen de ejecucion real (son datos ya
+    // calculados), se marcan "done" desde el arranque para que la fase 4
+    // (montecarlo) nunca aparezca bloqueada por una carrera con hydratePayload.
+    const stageStatusInicial = {};
+    PRECOMPUTED_STAGE_KEYS.forEach((key) => {
+      stageStatusInicial[key] = { running: false, done: true };
+    });
+    const state = {
+      activeStage: 'briefing',
+      audience: 'finanzas',
+      autoTimer: null,
+      progressTimer: null,
+      autoplay: false,
+      montecarloPollHandle: null,
+      stageStatus: stageStatusInicial,
+      backendReady: false,
+    };
+
+    function replacePayload(nextPayload) {
+      Object.keys(PAYLOAD).forEach((key) => delete PAYLOAD[key]);
+      Object.assign(PAYLOAD, nextPayload);
+    }
+
+    async function fetchJson(url, options = {}) {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    }
+
+    function setConsoleBadges(runtimeText, runtimeMode, liveText, liveMode) {
+      const runtime = document.getElementById('console-runtime-badge');
+      const live = document.getElementById('console-live-badge');
+      runtime.className = `status-chip ${runtimeMode || ''}`.trim();
+      runtime.textContent = runtimeText;
+      live.className = `status-chip ${liveMode || ''}`.trim();
+      live.textContent = liveText;
+      const hudRuntime = document.getElementById('hud-runtime');
+      const hudLive = document.getElementById('hud-live');
+      if (hudRuntime) hudRuntime.textContent = runtimeText;
+      if (hudLive) hudLive.textContent = liveText;
+    }
+
+    function setConsoleOutput(stage, lines) {
+      if (!stage) return;
+      document.getElementById('console-stage-label').textContent = `${stage.eyebrow} · ${stage.title}`;
+      document.getElementById('console-command').textContent = stage.command;
+      document.getElementById('console-log').innerHTML = lines.map((line) => `<div>${line}</div>`).join('');
+      const hudStage = document.getElementById('hud-active-stage');
+      const hudTitle = document.getElementById('hud-active-title');
+      const hudCopy = document.getElementById('hud-active-copy');
+      if (hudStage) hudStage.textContent = stage.eyebrow;
+      if (hudTitle) hudTitle.textContent = stage.title;
+      if (hudCopy) hudCopy.textContent = stage.tagline;
+
+      // la barra sticky superior refleja la fase activa y hereda su acento
+      const topbarMsg = document.getElementById('topbar-msg');
+      const topbarRight = document.getElementById('topbar-right');
+      if (topbarMsg) topbarMsg.textContent = stage.tagline;
+      if (topbarRight) topbarRight.textContent = `${stage.eyebrow} · ${stage.title}`;
+      document.body.dataset.phaseAccent = stage.key;
+    }
+
+    function isStageLocked(stageKey) {
+      const stages = asArray(PAYLOAD.stages);
+      const index = stages.findIndex((s) => s.key === stageKey);
+      if (index <= 0) return false;
+      const previousKey = stages[index - 1].key;
+      return !Boolean((state.stageStatus[previousKey] || {}).done);
+    }
+
+    function updateStageDecorators() {
+      document.querySelectorAll('.stage-button').forEach((button) => {
+        const stageKey = button.dataset.stage;
+        const status = state.stageStatus[stageKey] || {};
+        button.classList.toggle('running', Boolean(status.running));
+        button.classList.toggle('done', Boolean(status.done));
+        button.classList.toggle('active', stageKey === state.activeStage);
+        // no se deshabilita el boton (el click debe seguir funcionando para
+        // poder mostrar el modal de espera), solo se atenua visualmente.
+        button.classList.toggle('locked', isStageLocked(stageKey) && stageKey !== state.activeStage);
+      });
+    }
+
+    function fmtCurrency(value) {
+      return Number(value || 0).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' USD';
+    }
+
+    function fmtPct(value) {
+      return (Number(value || 0) * 100).toFixed(1) + '%';
+    }
+
+    function fmtPctNumber(value) {
+      return Number(value || 0).toFixed(1) + '%';
+    }
+
+    function asArray(value) {
+      return Array.isArray(value) ? value : [];
+    }
+
+    function asObject(value) {
+      return value && typeof value === 'object' ? value : {};
+    }
+
+    function createMetric(label, value, sub) {
+      return `<article class="metric"><div class="metric-label">${label}</div><div class="metric-value">${value}</div><div class="stage-copy">${sub}</div></article>`;
+    }
+
+    // iconos de linea propios (sin libreria externa), circulo de color por fase
+    const PHASE_ICONS = {
+      briefing:  '<path d="M4 5h16M4 12h10M4 19h7"/>',
+      ingesta:   '<path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z"/><path d="M4 7v10c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+      uplift:    '<path d="M3 17l5-5 4 3 6-7"/><path d="M14 8h5v5"/>',
+      montecarlo:'<circle cx="12" cy="12" r="8"/><path d="M12 4v8l5 3"/>',
+      reporte:   '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h5"/>',
+    };
+    const PHASE_COLORS = {
+      briefing: 'var(--accent)', ingesta: 'var(--blue)', uplift: 'var(--pink)',
+      montecarlo: 'var(--accent2)', reporte: 'var(--accent)',
+    };
+    const phaseIcon = (key) => `<span class="phase-icon" style="--icon-bg:${PHASE_COLORS[key] || 'var(--accent)'}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${PHASE_ICONS[key] || ''}</svg></span>`;
+
+    const HERO_ROTATION = [
+      { word: 'Carga y valida.', rest: '20,000 ventanas de despacho historicas, listas para modelizar.', phase: 'ingesta' },
+      { word: 'Modela el uplift.', rest: 'Regresion logistica + HistGradientBoosting por palanca.', phase: 'uplift' },
+      { word: 'Simula 10,000 futuros.', rest: 'Montecarlo con incertidumbre real, no un escenario unico.', phase: 'montecarlo' },
+      { word: 'Decide con datos.', rest: 'Recomendacion ejecutiva desde 3 roles de negocio.', phase: 'reporte' },
+    ];
+
+    function startHeroRotator() {
+      const wordEl = document.getElementById('hero-rotator-word');
+      const restEl = document.getElementById('hero-rotator-rest');
+      const hero = document.querySelector('.hero');
+      if (!wordEl || !restEl || !hero) return;
+
+      let i = 0;
+      const paint = () => {
+        const state = HERO_ROTATION[i];
+        wordEl.textContent = state.word;
+        restEl.textContent = state.rest;
+        hero.dataset.phaseAccent = state.phase;
+        i = (i + 1) % HERO_ROTATION.length;
+      };
+      paint();
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      setInterval(paint, 3000);
+    }
+
+    function renderHero() {
+      const rawTitle = String(PAYLOAD.title || '');
+      const cut = rawTitle.indexOf(' ', Math.floor(rawTitle.length / 2));
+      const head = cut > 0 ? rawTitle.slice(0, cut) : rawTitle;
+      const tail = cut > 0 ? rawTitle.slice(cut) : '';
+      document.getElementById('hero-title').innerHTML =
+        `${head}<span class="ghost-line">${tail}</span>`;
+      document.getElementById('hero-subtitle').textContent = PAYLOAD.subtitle;
+      const ds = asObject(asObject(PAYLOAD.dataset).summary);
+      const simulation = asObject(PAYLOAD.simulation);
+      const totalSimulations = Number(simulation.total_simulations || 0);
+      const metrics = [
+        createMetric('Ventanas analizadas', ds.rows.toLocaleString('es-ES'), `${ds.period_start} -> ${ds.period_end}`),
+        createMetric('Futuros a evaluar', totalSimulations.toLocaleString('es-ES'), 'Escenarios preparados para visualizar la toma de decision'),
+        createMetric('Variables disponibles', ds.variable_count.toLocaleString('es-ES'), `${ds.segment_count} segmentos · ${ds.geography_count} geografias`),
+        createMetric('Ventanas temporales', ds.time_windows.toLocaleString('es-ES'), 'Meses historicos disponibles para la decision'),
+      ];
+      document.getElementById('hero-kpis').innerHTML = metrics.join('');
+      // coordenadas decorativas reales: periodo real del dataset, no lat/long inventado
+      const coordLeft = document.getElementById('hero-coord-left');
+      const coordRight = document.getElementById('hero-coord-right');
+      if (coordLeft) coordLeft.textContent = ds.period_start || '';
+      if (coordRight) coordRight.textContent = ds.period_end || '';
+
+      renderTicker(ds, totalSimulations);
+
+      const footerMeta = document.getElementById('footer-meta');
+      if (footerMeta) {
+        footerMeta.textContent = `${PAYLOAD.title} · ${ds.period_start} — ${ds.period_end}`;
+      }
+    }
+
+    function renderTicker(ds, totalSimulations) {
+      const track = document.getElementById('ticker-track');
+      if (!track) return;
+      const items = [
+        `<strong>${ds.rows.toLocaleString('es-ES')}</strong> ventanas de despacho históricas`,
+        `<strong>${fmtPct(ds.conversion_rate)}</strong> conversión promedio`,
+        `<strong>${fmtCurrency(ds.avg_ticket_usd)}</strong> ticket medio`,
+        `<strong>${totalSimulations.toLocaleString('es-ES')}</strong> futuros simulados`,
+        `<strong>${ds.variable_count}</strong> variables por oportunidad`,
+        `<strong>${ds.geography_count}</strong> geografías cubiertas`,
+      ];
+      const html = items.map((item) => `<span class="ticker-item">${item}</span>`).join('');
+      track.innerHTML = html + html; // duplicado para el loop continuo
+    }
+
+    function renderBriefing() {
+      document.getElementById('briefing-tags').innerHTML = asArray(PAYLOAD.stages).map((stage) => `<span class="tag">${stage.eyebrow} · ${stage.title}</span>`).join('');
+    }
+
+    function renderStageButtons() {
+      const root = document.getElementById('stage-buttons');
+      root.innerHTML = asArray(PAYLOAD.stages).map((stage, idx) => `
+        <button class="stage-button" data-stage="${stage.key}">
+          <span class="stage-index">${String(idx + 1).padStart(2, '0')}</span>
+          <span class="stage-body">
+            ${phaseIcon(stage.key)}
+            <span class="stage-title">${stage.title}</span>
+            <span class="stage-copy">${stage.tagline}</span>
+          </span>
+        </button>
+      `).join('');
+      root.querySelectorAll('.stage-button').forEach((button) => {
+        button.addEventListener('click', () => runStage(button.dataset.stage));
+      });
+      updateStageDecorators();
+    }
+
+    function renderDataset() {
+      const dataset = asObject(PAYLOAD.dataset);
+      const ds = asObject(dataset.summary);
+      document.getElementById('dataset-kpis').innerHTML = [
+        createMetric('Periodo cubierto', `${ds.period_start} -> ${ds.period_end}`, 'Ventana historica utilizada en el analisis'),
+        createMetric('Conversion observada', fmtPct(ds.conversion_rate), 'Tasa media de exito del historico'),
+        createMetric('Ticket medio', fmtCurrency(ds.avg_ticket_usd), 'Valor medio de las operaciones convertidas'),
+        createMetric('Beneficio acumulado', fmtCurrency(ds.margen_neto_usd), 'Beneficio de contribucion total del historico'),
+      ].join('');
+
+      document.getElementById('dataset-structure-cards').innerHTML = [
+        createMetric('Regímenes', ds.campaign_count.toLocaleString('es-ES'), 'Combinaciones distintas de bloque horario y producto de mercado'),
+        createMetric('Variables', ds.variable_count.toLocaleString('es-ES'), 'Campos disponibles para explicar comportamiento y resultado'),
+        createMetric('Productos', ds.segment_count.toLocaleString('es-ES'), 'Productos de mercado a los que puede acudir la bateria'),
+        createMetric('Nodos', ds.geography_count.toLocaleString('es-ES'), 'Nodos de la red donde inyecta el activo'),
+      ].join('');
+
+      document.getElementById('sample-table').innerHTML = asArray(dataset.sample).map((row) => `
+        <tr>
+          <td>${row.date}</td>
+          <td>${row.bloque_horario}</td>
+          <td>${row.zona_red}</td>
+          <td>${row.profundidad_descarga}</td>
+          <td>${fmtCurrency(row.diferencial_usd_mwh)}</td>
+          <td>${row.indice_despacho}</td>
+          <td>${row.cubrio_degradacion ? 'Si' : 'No'}</td>
+          <td>${fmtCurrency(row.coste_degradacion_usd)}</td>
+          <td>${fmtCurrency(row.margen_neto_usd)}</td>
+        </tr>
+      `).join('');
+
+      renderMonthlyChart();
+    }
+
+    function renderMonthlyChart() {
+      const svg = document.getElementById('monthly-chart');
+      const data = asArray(asObject(PAYLOAD.dataset).monthly);
+      if (!data.length) {
+        svg.innerHTML = '';
+        return;
+      }
+      const width = 680;
+      const height = 280;
+      const left = 42;
+      const right = 22;
+      const top = 24;
+      const bottom = 28;
+      const revenueValues = data.map((row) => Number(row.ingreso_usd));
+      const profitValues = data.map((row) => Number(row.margen_neto_usd));
+      const maxValue = Math.max(...revenueValues, ...profitValues, 1);
+      const x = (index) => left + (index / Math.max(1, data.length - 1)) * (width - left - right);
+      const y = (value) => height - bottom - (value / maxValue) * (height - top - bottom);
+      const revenuePath = data.map((row, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(Number(row.ingreso_usd))}`).join(' ');
+      const profitPath = data.map((row, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(Number(row.margen_neto_usd))}`).join(' ');
+      const ticks = [0, 0.33, 0.66, 1].map((ratio) => {
+        const tickY = y(maxValue * ratio);
+        return `<line x1="${left}" y1="${tickY}" x2="${width - right}" y2="${tickY}" stroke="rgba(196, 188, 172, 0.10)" />`;
+      }).join('');
+      const labels = [data[0], data[Math.floor(data.length / 2)], data[data.length - 1]].map((row, idx) => {
+        const positions = [left, width / 2, width - right];
+        return `<text x="${positions[idx]}" y="${height - 8}" fill="#9c968c" font-size="11" text-anchor="middle">${row.month}</text>`;
+      }).join('');
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="rev-gradient" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#d98e4a"></stop>
+            <stop offset="100%" stop-color="#58a6ff"></stop>
+          </linearGradient>
+          <linearGradient id="profit-gradient" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stop-color="#27f5c6"></stop>
+            <stop offset="100%" stop-color="#ffd166"></stop>
+          </linearGradient>
+        </defs>
+        ${ticks}
+        <path d="${revenuePath}" fill="none" stroke="url(#rev-gradient)" stroke-width="4" stroke-linecap="round"></path>
+        <path d="${profitPath}" fill="none" stroke="url(#profit-gradient)" stroke-width="4" stroke-linecap="round" stroke-dasharray="8 8"></path>
+        ${labels}
+      `;
+    }
+
+    function renderUplift() {
+      const models = asObject(PAYLOAD.models);
+      const classification = asObject(models.classification);
+      const regression = asObject(models.regression);
+      const gainChart = asArray(classification.gain_chart);
+      const residualBands = asArray(regression.residual_bands);
+      const uplift = asObject(PAYLOAD.uplift);
+      const mainUplift = asArray(uplift.main);
+      const adsUplift = asArray(uplift.ads);
+      document.getElementById('classification-kpis').innerHTML = [
+        createMetric('AUC', Number(classification.auc).toFixed(3), 'Capacidad de separar oportunidades con mayor y menor probabilidad de exito'),
+        createMetric('Base de conversion', fmtPct(classification.positive_rate), 'Frecuencia observada de cierres en el conjunto de validacion'),
+        createMetric('Probabilidad media', fmtPct(classification.avg_predicted_prob), 'Propension media estimada por el modelo'),
+        createMetric('Top decil', fmtPct(gainChart[0] ? gainChart[0].conversion_rate : 0), 'Tasa de conversion del 10% de casos con mayor puntuacion'),
+      ].join('');
+
+      document.getElementById('regression-kpis').innerHTML = [
+        createMetric('MAE', fmtCurrency(regression.mae_usd), 'Error absoluto medio sobre el valor estimado'),
+        createMetric('R²', Number(regression.r2).toFixed(3), 'Capacidad del modelo para explicar variacion del ticket'),
+        createMetric('Sesgo medio', fmtCurrency(regression.mean_residual_usd), 'Diferencia media entre valor real y valor estimado'),
+        createMetric('P90 error', fmtCurrency(regression.p90_abs_error_usd), 'Error absoluto en el percentil 90'),
+      ].join('');
+
+      renderGainChart();
+      const maxResidualCount = Math.max(...residualBands.map((row) => Number(row.count)), 1);
+      document.getElementById('residual-bars').innerHTML = residualBands.map((row) => `
+        <div class="bar-row">
+          <div>
+            <div class="stage-title" style="font-size:15px">${row.label}</div>
+            <div class="stage-copy">Numero de observaciones dentro de esta banda de error</div>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.max(8, Number(row.count) / maxResidualCount * 100)}%"></div></div>
+          <div style="text-align:right">${Number(row.count).toLocaleString('es-ES')}</div>
+        </div>
+      `).join('');
+
+      const upliftRoot = document.getElementById('uplift-cards');
+      upliftRoot.innerHTML = mainUplift.map((row) => `
+        <article class="tool-card flash">
+          <div class="eyebrow">${row.label}</div>
+          <div class="tool-name">${fmtPct(row.baseline_cobertura)} → ${fmtPct(row.scenario_conversion)} de conversion esperada</div>
+          <div class="tool-purpose">${row.description} Uplift estimado: ${fmtPctNumber(Number(row.conversion_lift_pct) * 100)} · Impacto incremental por oportunidad: ${fmtCurrency(row.profit_lift_per_window_usd)}</div>
+        </article>
+      `).join('');
+
+    }
+
+    function renderGainChart() {
+      const svg = document.getElementById('gain-chart');
+      const data = asArray(asObject(asObject(PAYLOAD.models).classification).gain_chart);
+      if (!data.length) {
+        svg.innerHTML = '';
+        return;
+      }
+      const width = 680;
+      const height = 240;
+      const left = 42;
+      const right = 18;
+      const top = 20;
+      const bottom = 28;
+      const x = (index) => left + (index / Math.max(1, data.length - 1)) * (width - left - right);
+      const y = (value) => height - bottom - value * (height - top - bottom);
+      const gainPath = data.map((row, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(Number(row.capture_pct))}`).join(' ');
+      const basePath = `M ${left} ${y(0.1)} ${data.map((row, index) => `L ${x(index)} ${y((index + 1) / 10)}`).join(' ')}`;
+      const points = data.map((row, index) => `<circle cx="${x(index)}" cy="${y(Number(row.capture_pct))}" r="4" fill="#d98e4a"></circle>`).join('');
+      svg.innerHTML = `
+        <line x1="${left}" y1="${y(0)}" x2="${width - right}" y2="${y(0)}" stroke="rgba(196, 188, 172, 0.12)" />
+        <line x1="${left}" y1="${y(0.5)}" x2="${width - right}" y2="${y(0.5)}" stroke="rgba(196, 188, 172, 0.12)" />
+        <line x1="${left}" y1="${y(1)}" x2="${width - right}" y2="${y(1)}" stroke="rgba(196, 188, 172, 0.12)" />
+        <path d="${basePath}" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="8 8"></path>
+        <path d="${gainPath}" fill="none" stroke="#d98e4a" stroke-width="4" stroke-linecap="round"></path>
+        ${points}
+        <text x="${left}" y="18" fill="#9c968c" font-size="11">Captura acumulada de conversiones</text>
+        <text x="${width - right}" y="18" text-anchor="end" fill="#9c968c" font-size="11">Gain chart</text>
+      `;
+    }
+
+    function renderSimulation() {
+      const simulation = asObject(PAYLOAD.simulation);
+      const summary = asArray(simulation.summary);
+      document.getElementById('summary-cards').innerHTML = summary.map((row) => `
+        <article class="tool-card">
+          <div class="eyebrow">Ranking ${row.ranking}</div>
+          <div class="tool-name">${row.decision}</div>
+          <div class="tool-purpose">Beneficio esperado: ${fmtCurrency(row.expected_profit_usd)} · P10: ${fmtCurrency(row.p10_usd)} · P90: ${fmtCurrency(row.p90_usd)} · ROI: ${Number(row.expected_roi).toFixed(1)}x</div>
+        </article>
+      `).join('');
+      refreshLiveFrame(false);
+    }
+
+    function renderReport() {
+      const recommendation = asObject(PAYLOAD.recommendation);
+      const report = asObject(PAYLOAD.report);
+      const audienceViews = asObject(recommendation.audience_views);
+      const selectedView = asObject(audienceViews[state.audience]);
+      const activeView = Object.keys(selectedView).length ? selectedView : recommendation;
+      document.getElementById('audience-summary').textContent = AUDIENCE_META[state.audience] || '';
+      document.getElementById('verdict-headline').textContent = activeView.headline || recommendation.headline;
+      document.getElementById('verdict-copy').textContent = activeView.summary || recommendation.agent_summary || `${recommendation.decision} lidera la simulacion con ${fmtCurrency(recommendation.expected_profit_usd)}, ROI esperado de ${Number(recommendation.expected_roi).toFixed(1)}x y probabilidad de perdida de ${fmtPct(recommendation.probability_loss)}.`;
+      document.getElementById('reason-list').innerHTML = asArray(activeView.reasons || recommendation.reasons).map((item) => `<li>${item}</li>`).join('');
+      document.getElementById('watchouts-list').innerHTML = asArray(activeView.watchouts || recommendation.watchouts).map((item) => `<li>${item}</li>`).join('');
+      document.getElementById('next-actions').innerHTML = asArray(activeView.next_actions || recommendation.next_actions).map((item) => `<li>${item}</li>`).join('');
+      document.getElementById('switch-signals').innerHTML = asArray(activeView.switch_signals || recommendation.switch_signals).map((item) => `<li>${item}</li>`).join('');
+      document.getElementById('due-diligence').innerHTML = asArray(activeView.due_diligence || recommendation.due_diligence).map((item) => `<li>${item}</li>`).join('');
+      document.getElementById('agent-findings').innerHTML = asArray(recommendation.findings).map((item) => `<li>${item}</li>`).join('');
+      document.getElementById('tool-trace').innerHTML = asArray(recommendation.tool_trace).map((item) => `
+        <article class="trace-item">
+          <div class="trace-top">
+            <div class="trace-name">${item.name}</div>
+            <div class="trace-args">${item.args}</div>
+          </div>
+          <div class="trace-purpose">${item.purpose}</div>
+          <div class="trace-outcome">${item.outcome}</div>
+        </article>
+      `).join('');
+      document.querySelectorAll('[data-audience]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.audience === state.audience);
+      });
+      document.getElementById('report-checks').innerHTML = asArray(report.checks).map((item) => `<span class="tag">${item}</span>`).join('');
+    }
+
+    function consoleLines(stage) {
+      const base = [
+        `> ${stage.command}`,
+        '> preparando la vista ejecutiva',
+        '> actualizando la consola con informacion del caso',
+      ];
+      if (stage.key === 'ingesta') return base.concat(['> cargando base historica', '> validando cobertura y estructura de variables']);
+      if (stage.key === 'uplift') return base.concat(['> calculando metricas tecnicas de los modelos', '> traduciendo resultados a escenarios de negocio']);
+      if (stage.key === 'montecarlo') return base.concat(['> iniciando simulacion de escenarios', '> sincronizando radar y telemetria en directo']);
+      if (stage.key === 'reporte') return base.concat(['> consolidando conclusiones', '> preparando recomendacion ejecutiva']);
+      return base.concat(['> consola lista para iniciar la presentacion']);
+    }
+
+    function showPane(stageKey) {
+      document.querySelectorAll('.stage-pane').forEach((pane) => pane.classList.remove('active'));
+      document.getElementById(`pane-${stageKey}`).classList.add('active');
+      state.activeStage = stageKey;
+      updateStageDecorators();
+    }
+
+    function runProgress(stage, durationMs, onDone) {
+      clearInterval(state.progressTimer);
+      const fill = document.getElementById('progress-fill');
+      const start = performance.now();
+      fill.style.width = '0%';
+      state.progressTimer = setInterval(() => {
+        const elapsed = performance.now() - start;
+        const pct = Math.min(100, elapsed / Math.max(1, durationMs) * 100);
+        fill.style.width = pct + '%';
+        if (pct >= 100) {
+          clearInterval(state.progressTimer);
+          showPane(stage.key);
+          if (onDone) onDone();
+        }
+      }, 32);
+    }
+
+    function refreshLiveFrame(withTimestamp = true) {
+      const frame = document.getElementById('live-frame');
+      const base = asObject(PAYLOAD.simulation).live_dashboard || 'dashboards/dashboard_live_montecarlo.html';
+      frame.src = withTimestamp ? `${base}?ts=${Date.now()}` : base;
+    }
+
+    function setMontecarloPlaceholder(visible, title = '', copy = '') {
+      const root = document.getElementById('montecarlo-placeholder');
+      if (!root) return;
+      root.classList.toggle('is-visible', Boolean(visible));
+      if (title) document.getElementById('montecarlo-placeholder-title').textContent = title;
+      if (copy) document.getElementById('montecarlo-placeholder-copy').textContent = copy;
+    }
+
+    function syncLiveFrameHeight() {
+      const frame = document.getElementById('live-frame');
+      if (!frame) return;
+      try {
+        const doc = frame.contentDocument || frame.contentWindow?.document;
+        if (!doc) return;
+        const shell = doc.querySelector('.shell');
+        const measuredHeight = shell
+          ? shell.scrollHeight + 32
+          : Math.max(doc.documentElement.scrollHeight || 0, doc.body ? doc.body.scrollHeight : 0);
+        const nextHeight = Math.min(1800, Math.max(1040, measuredHeight));
+        frame.style.height = `${nextHeight}px`;
+      } catch (error) {
+        // same-origin in local mode, but keep this resilient if the source changes.
+      }
+    }
+
+    function renderAll() {
+      renderHero();
+      renderBriefing();
+      renderDataset();
+      renderUplift();
+      renderSimulation();
+      renderReport();
+      updateStageDecorators();
+    }
+
+    function activateStage(stageKey, instant = false) {
+      const stage = asArray(PAYLOAD.stages).find((item) => item.key === stageKey);
+      if (!stage) return;
+      setConsoleOutput(stage, consoleLines(stage));
+      if (instant) {
+        document.getElementById('progress-fill').style.width = '100%';
+        showPane(stage.key);
+        return;
+      }
+      runProgress(stage, stage.duration_ms);
+    }
+
+    async function hydratePayload() {
+      if (!BACKEND_ENABLED) {
+        setConsoleBadges('Modo local', 'ready', 'Sin backend', '');
+        return;
+      }
+      try {
+        const response = await fetchJson(`${API_BASE}/api/payload`);
+        replacePayload(response.payload);
+        state.backendReady = true;
+
+        // las 3 primeras fases ya vienen precalculadas del backend: al
+        // recargar la pagina no hace falta re-clickearlas para desbloquear
+        // el resto de la secuencia.
+        PRECOMPUTED_STAGE_KEYS.forEach((key) => {
+          state.stageStatus[key] = { running: false, done: true };
+        });
+
+        renderAll();
+        setConsoleBadges('Backend online', 'ready', 'Aplicacion sincronizada', 'ready');
+        const live = await fetchJson(`${API_BASE}/api/montecarlo-status`);
+        if (live.preparing) {
+          setMontecarloPlaceholder(true, 'Precalculando simulacion', live.status_message || 'Preparando dataset y modelos antes de arrancar la simulacion real.');
+          beginMontecarloPolling();
+        } else if (live.running || live.is_running) {
+          setMontecarloPlaceholder(false);
+          state.stageStatus.montecarlo = { running: true, done: false };
+          beginMontecarloPolling();
+        } else if (live.completed) {
+          // la simulacion ya termino en una sesion anterior del servidor:
+          // se recupera el estado "done" en vez de dejar la fase bloqueada.
+          setMontecarloPlaceholder(false);
+          state.stageStatus.montecarlo = { running: false, done: true };
+        }
+        updateStageDecorators();
+      } catch (error) {
+        setConsoleBadges('Modo local', 'alert', 'Backend no accesible', 'alert');
+      }
+    }
+
+    async function runStage(stageKey, options = {}) {
+      const stage = asArray(PAYLOAD.stages).find((item) => item.key === stageKey);
+      if (!stage) return;
+
+      // fase todavia no alcanzable (la anterior no ha terminado): en vez de
+      // no hacer nada, se explica por que con un modal.
+      if (!options.fromWaitModal && isStageLocked(stageKey)) {
+        showWaitModal(stageKey);
+        return;
+      }
+
+      // montecarlo ya corriendo o ya terminado: solo muestra el panel, nunca
+      // relanza la simulacion desde 0% por un click repetido.
+      if (stageKey === 'montecarlo') {
+        const mcStatus = state.stageStatus.montecarlo || {};
+        if (mcStatus.running || mcStatus.done) {
+          state.activeStage = stageKey;
+          updateStageDecorators();
+          showPane(stageKey);
+          return;
+        }
+      }
+
+      if (!options.keepAutoplay) {
+        state.autoplay = false;
+        clearTimeout(state.autoTimer);
+      }
+
+      if (!BACKEND_ENABLED) {
+        activateStage(stageKey, options.instant === true);
+        return;
+      }
+
+      if (state.backendReady && PRECOMPUTED_STAGE_KEYS.has(stageKey)) {
+        state.stageStatus[stageKey] = { running: false, done: true };
+        updateStageDecorators();
+        showPane(stage.key);
+        setConsoleBadges('Backend online', 'ready', `${stage.title} preparada`, 'ready');
+        setConsoleOutput(stage, consoleLines(stage));
+        document.getElementById('progress-fill').style.width = '100%';
+        return;
+      }
+
+      const autoplayButton = document.getElementById('autoplay-btn');
+      autoplayButton.disabled = true;
+      state.stageStatus[stageKey] = { running: true, done: false };
+      updateStageDecorators();
+      setConsoleOutput(stage, ['> contactando backend local', '> preparando ejecucion real de la etapa']);
+      if (stageKey === 'montecarlo') {
+        showPane(stage.key);
+        document.getElementById('progress-fill').style.width = '0%';
+      }
+
+      try {
+        const response = await fetchJson(`${API_BASE}/api/stage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stage: stageKey }),
+        });
+        if (response.payload) {
+          replacePayload(response.payload);
+          renderAll();
+        }
+        setConsoleOutput(stage, response.logs || consoleLines(stage));
+        const liveLabel = stageKey === 'montecarlo'
+          ? 'Simulacion en directo'
+          : `${stage.title} completada`;
+        if (stageKey === 'montecarlo' && response.status === 'preparing') {
+          setConsoleBadges('Backend online', 'ready', 'Precalculando simulacion', 'running');
+          setMontecarloPlaceholder(true, 'Precalculando simulacion', 'El backend está preparando dataset y modelos. El dashboard live aparecerá cuando arranque la simulación real.');
+          beginMontecarloPolling();
+          return;
+        }
+        setConsoleBadges('Backend online', 'ready', liveLabel, stageKey === 'montecarlo' ? 'running' : 'ready');
+        if (stageKey === 'montecarlo') {
+          state.stageStatus[stageKey] = {
+            running: Boolean(response.montecarlo && response.montecarlo.running),
+            done: false,
+          };
+          updateStageDecorators();
+          setMontecarloPlaceholder(false);
+          refreshLiveFrame(true);
+          beginMontecarloPolling();
+          return;
+        }
+        const delayMs = options.instant ? 1 : Number(response.delay_ms || stage.duration_ms || 900);
+        runProgress(stage, delayMs, () => {
+          state.stageStatus[stageKey] = {
+            running: stageKey === 'montecarlo' && response.montecarlo && response.montecarlo.running,
+            done: stageKey !== 'montecarlo',
+          };
+          updateStageDecorators();
+          if (stageKey === 'montecarlo') {
+            refreshLiveFrame(true);
+            beginMontecarloPolling();
+          }
+        });
+      } catch (error) {
+        state.stageStatus[stageKey] = { running: false, done: false };
+        updateStageDecorators();
+        setConsoleBadges('Backend error', 'alert', 'Etapa no ejecutada', 'alert');
+        setConsoleOutput(stage, [`> error al ejecutar la etapa`, `> ${error.message}`]);
+      } finally {
+        autoplayButton.disabled = false;
+      }
+    }
+
+    function typewriteText(el, text) {
+      // efecto maquina de escribir, como el modal "a note from us" de
+      // legend.xyz. se salta la animacion si el usuario pide menos movimiento.
+      if (el._typewriteTimer) clearInterval(el._typewriteTimer);
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduce) {
+        el.textContent = text;
+        return;
+      }
+      el.textContent = '';
+      let i = 0;
+      el._typewriteTimer = setInterval(() => {
+        i += 1;
+        el.textContent = text.slice(0, i);
+        if (i >= text.length) clearInterval(el._typewriteTimer);
+      }, 14);
+    }
+
+    function showWaitModal(stageKey) {
+      const stages = asArray(PAYLOAD.stages);
+      const stage = stages.find((s) => s.key === stageKey);
+      const index = stages.findIndex((s) => s.key === stageKey);
+      const blocking = index > 0 ? stages[index - 1] : null;
+      const overlay = document.getElementById('wait-modal-overlay');
+      const title = document.getElementById('wait-modal-title');
+      const copy = document.getElementById('wait-modal-copy');
+      const progressBlock = document.querySelector('.wait-modal-progress');
+      const gotoBtn = document.getElementById('wait-modal-goto');
+
+      const waitingOnMontecarlo = blocking && blocking.key === 'montecarlo';
+      if (waitingOnMontecarlo) {
+        title.textContent = 'Simulacion en curso';
+        typewriteText(copy, `${stage ? stage.title : 'Esta fase'} se arma con los resultados de la simulacion Monte Carlo. Espera a que termine para poder verla.`);
+        progressBlock.style.display = '';
+        gotoBtn.style.display = '';
+      } else {
+        title.textContent = 'Fase anterior pendiente';
+        typewriteText(copy, `Antes de "${stage ? stage.title : 'esta fase'}" hace falta completar "${blocking ? blocking.title : 'la fase anterior'}".`);
+        progressBlock.style.display = 'none';
+        gotoBtn.style.display = 'none';
+      }
+
+      overlay.dataset.pendingStage = stageKey;
+      overlay.classList.add('is-visible');
+      const mcStatus = state.stageStatus.montecarlo || {};
+      updateWaitModalProgress(0, Boolean(mcStatus.running));
+      if (waitingOnMontecarlo && !mcStatus.running && !mcStatus.done) {
+        // la simulacion ni siquiera se ha lanzado todavia: lanzarla ahora
+        // para que el usuario no tenga que cerrar el modal y hacerlo aparte.
+        runStage('montecarlo');
+      }
+    }
+
+    function hideWaitModal() {
+      document.getElementById('wait-modal-overlay').classList.remove('is-visible');
+    }
+
+    function updateWaitModalProgress(pct, isRunning) {
+      const overlay = document.getElementById('wait-modal-overlay');
+      if (!overlay.classList.contains('is-visible')) return;
+      document.getElementById('wait-modal-pct').textContent = `${pct.toFixed(0)}%`;
+      document.getElementById('wait-modal-bar').style.width = `${pct}%`;
+      if (!isRunning && pct >= 100) {
+        const pending = overlay.dataset.pendingStage;
+        hideWaitModal();
+        if (pending) runStage(pending, { fromWaitModal: true });
+      }
+    }
+
+    async function pollMontecarloStatus() {
+      try {
+        const status = await fetchJson(`${API_BASE}/api/montecarlo-status`);
+        const pct = Number(status.progress_pct || 0);
+        document.getElementById('progress-fill').style.width = `${pct}%`;
+        updateWaitModalProgress(pct, Boolean(status.running || status.is_running));
+        if (status.preparing && !status.running && !status.is_running) {
+          const montecarloStage = asArray(PAYLOAD.stages).find((item) => item.key === 'montecarlo');
+          setConsoleBadges('Backend online', 'ready', 'Precalculando simulacion', 'running');
+          setConsoleOutput(
+            montecarloStage,
+            [
+              '> precalculando dataset y modelos',
+              '> preparando el punto de partida de la simulacion real',
+              `> estado: ${status.status_message || 'esperando activos de simulacion'}`,
+            ],
+          );
+          setMontecarloPlaceholder(true, 'Precalculando simulacion', status.status_message || 'Preparando dataset y modelos antes de arrancar la simulación real.');
+          return;
+        }
+        if (status.running || status.is_running) {
+          const leaderText = status.leader ? status.leader.decision : 'calculando ranking';
+          const montecarloStage = asArray(PAYLOAD.stages).find((item) => item.key === 'montecarlo');
+          setConsoleBadges('Backend online', 'ready', `Monte Carlo ${pct.toFixed(1)}%`, 'running');
+          setMontecarloPlaceholder(false);
+          setConsoleOutput(
+            montecarloStage,
+            [
+              '> simulacion Monte Carlo en curso',
+              `> iteracion ${Number(status.current_simulation || 0).toLocaleString('es-ES')} de ${Number(status.total_simulations || 0).toLocaleString('es-ES')}`,
+              `> avance visible: ${pct.toFixed(1)}%`,
+              `> mejor alternativa provisional: ${leaderText}`,
+            ],
+          );
+          if (state.activeStage === 'montecarlo') {
+            refreshLiveFrame(true);
+            syncLiveFrameHeight();
+          }
+          return;
+        }
+
+        clearInterval(state.montecarloPollHandle);
+        state.montecarloPollHandle = null;
+        state.stageStatus.montecarlo = { running: false, done: true };
+        if (status.payload) {
+          replacePayload(status.payload);
+          renderAll();
+        }
+        document.getElementById('progress-fill').style.width = '100%';
+        const montecarloStage = asArray(PAYLOAD.stages).find((item) => item.key === 'montecarlo');
+        setConsoleBadges('Backend online', 'ready', 'Monte Carlo completada', 'ready');
+        setMontecarloPlaceholder(false);
+        setConsoleOutput(
+          montecarloStage,
+          [
+            '> simulacion finalizada',
+            `> iteraciones finales: ${Number(status.total_simulations || 0).toLocaleString('es-ES')}`,
+            `> mejor alternativa: ${status.leader ? status.leader.decision : 'sin ranking'}`,
+            '> resultados consolidados listos para la recomendacion final',
+          ],
+        );
+        updateStageDecorators();
+        refreshLiveFrame(true);
+        syncLiveFrameHeight();
+      } catch (error) {
+        clearInterval(state.montecarloPollHandle);
+        state.montecarloPollHandle = null;
+        setConsoleBadges('Backend online', 'ready', 'Error monitorizando live', 'alert');
+      }
+    }
+
+    function beginMontecarloPolling() {
+      clearInterval(state.montecarloPollHandle);
+      state.montecarloPollHandle = setInterval(pollMontecarloStatus, 1200);
+      pollMontecarloStatus();
+    }
+
+    function autoplaySequence() {
+      clearTimeout(state.autoTimer);
+      const order = asArray(PAYLOAD.stages).map((stage) => stage.key);
+      let index = 0;
+      state.autoplay = true;
+      async function next() {
+        await runStage(order[index], { keepAutoplay: true });
+        index += 1;
+        if (index < order.length && state.autoplay) {
+          const previous = order[index - 1];
+          const waitMs = previous === 'montecarlo' ? 42000 : 4800;
+          state.autoTimer = setTimeout(next, waitMs);
+        }
+      }
+      next();
+    }
+
+    async function relanzarMontecarlo() {
+      const boton = document.getElementById('relanzar-montecarlo-btn');
+      boton.disabled = true;
+      try {
+        await fetchJson(`${API_BASE}/api/montecarlo-reset`, { method: 'POST' });
+      } catch (error) {
+        setConsoleBadges('Backend error', 'alert', 'No se pudo relanzar', 'alert');
+        boton.disabled = false;
+        return;
+      }
+      // limpia el estado local de montecarlo y reporte (el informe depende
+      // de la simulacion anterior, ya no es valido) y relanza desde 0%.
+      state.stageStatus.montecarlo = { running: false, done: false };
+      state.stageStatus.reporte = { running: false, done: false };
+      updateStageDecorators();
+      boton.disabled = false;
+      runStage('montecarlo');
+    }
+
+    function bindActions() {
+      document.getElementById('autoplay-btn').addEventListener('click', autoplaySequence);
+      const relanzarBtn = document.getElementById('relanzar-montecarlo-btn');
+      if (relanzarBtn) relanzarBtn.addEventListener('click', relanzarMontecarlo);
+      const waitOverlay = document.getElementById('wait-modal-overlay');
+      document.getElementById('wait-modal-close').addEventListener('click', hideWaitModal);
+      document.getElementById('wait-modal-goto').addEventListener('click', () => {
+        hideWaitModal();
+        runStage('montecarlo');
+      });
+      waitOverlay.addEventListener('click', (event) => {
+        if (event.target === waitOverlay) hideWaitModal();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') hideWaitModal();
+      });
+      document.querySelectorAll('[data-audience]').forEach((button) => {
+        button.addEventListener('click', () => {
+          state.audience = button.dataset.audience || 'finanzas';
+          renderReport();
+        });
+      });
+      document.getElementById('reset-btn').addEventListener('click', () => {
+        state.autoplay = false;
+        state.audience = 'finanzas';
+        clearTimeout(state.autoTimer);
+        clearInterval(state.montecarloPollHandle);
+        state.montecarloPollHandle = null;
+        activateStage('briefing', true);
+        setConsoleBadges(BACKEND_ENABLED ? 'Backend online' : 'Modo local', 'ready', BACKEND_ENABLED ? 'Consola lista' : 'Sin backend', BACKEND_ENABLED ? 'ready' : '');
+      });
+      const liveFrame = document.getElementById('live-frame');
+      if (liveFrame) {
+        liveFrame.addEventListener('load', syncLiveFrameHeight);
+      }
+    }
+
+    async function init() {
+      renderAll();
+      renderStageButtons();
+      bindActions();
+      startHeroRotator();
+      activateStage('briefing', true);
+      await hydratePayload();
+    }
+
+    init();
+  </script>
+
+  <div class="wait-modal-overlay" id="wait-modal-overlay">
+    <div class="wait-modal" role="dialog" aria-modal="true" aria-labelledby="wait-modal-title">
+      <div class="placeholder-ring"></div>
+      <div class="wait-modal-title" id="wait-modal-title">Simulacion en curso</div>
+      <p class="wait-modal-copy" id="wait-modal-copy">
+        El informe final se arma con los resultados de la simulacion Monte Carlo. Espera a que
+        termine para poder verlo.
+      </p>
+      <div class="wait-modal-progress">
+        <div class="wait-modal-pct" id="wait-modal-pct">0%</div>
+        <div class="bar-track"><div class="bar-fill" id="wait-modal-bar" style="width: 0%"></div></div>
+      </div>
+      <div class="wait-modal-actions">
+        <button type="button" class="action action-primary" id="wait-modal-goto">Ver simulacion en vivo</button>
+        <button type="button" class="action" id="wait-modal-close">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
