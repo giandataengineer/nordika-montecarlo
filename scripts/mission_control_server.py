@@ -823,3 +823,29 @@ class MissionControlHandler(SimpleHTTPRequestHandler):
 
     def log_message(self, format: str, *args: Any) -> None:
         return
+
+
+def serve(host: str = HOST, port: int = PORT) -> None:
+    os.chdir(PROJECT_ROOT)
+    generate_mission_dashboard(MISSION_DASHBOARD_PATH)
+    _reset_live_status()
+    RUNTIME.ensure_prepared_async()
+    server = ThreadingHTTPServer((host, port), MissionControlHandler)
+    print(f"Mission Control en http://{host}:{port}")
+    print(f"Debug log en {DEBUG_LOG_PATH}")
+    _debug_log("server_started", host=host, port=port, cwd=str(PROJECT_ROOT), python=os.sys.executable)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+        _debug_log("server_stopped")
+
+
+def main() -> None:
+    serve()
+
+
+if __name__ == "__main__":
+    main()
