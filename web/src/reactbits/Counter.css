@@ -1,0 +1,8 @@
+.counter-container { position: relative; display: inline-block; line-height: 1; }
+.counter-counter { display: flex; overflow: hidden; line-height: 1; }
+.counter-digit { position: relative; width: 1ch; font-variant-numeric: tabular-nums; overflow: hidden; }
+.counter-number { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: center; }
+.gradient-container { position: absolute; inset: 0; pointer-events: none; }
+.top-gradient, .bottom-gradient { position: absolute; left: 0; right: 0; height: 26%; }
+.top-gradient { top: 0; }
+.bottom-gradient { bottom: 0; }

@@ -1,0 +1,117 @@
+.carousel-container {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line, #dedddc);
+  border-radius: 22px;
+  background: var(--panel-warm, #faf9f5);
+  padding: 18px;
+}
+
+.carousel-container.round {
+  border-radius: 50%;
+}
+
+.carousel-track {
+  display: flex;
+}
+
+.carousel-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border: 1px solid var(--line, #dedddc);
+  border-radius: 16px;
+  background: #fff;
+  padding: 20px;
+  margin-right: 16px;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.carousel-item:active {
+  cursor: grabbing;
+}
+
+.carousel-item-header {
+  margin-bottom: 18px;
+}
+
+.carousel-icon-container {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent, #d9531e);
+  color: #fff;
+}
+
+.carousel-icon-container svg {
+  width: 19px;
+  height: 19px;
+}
+
+.carousel-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.carousel-item-title {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.carousel-item-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted, #565656);
+}
+
+.carousel-indicators-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.carousel-indicators {
+  display: flex;
+  gap: 8px;
+}
+
+/* el punto se ve de 7px pero el área de toque es de 44px */
+.carousel-indicator {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.carousel-indicator::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line, #dedddc);
+  transition: background 0.3s var(--ease), transform 0.3s var(--ease);
+}
+
+.carousel-indicator.active::before {
+  background: var(--accent, #d9531e);
+  transform: scale(1.4);
+}
+
+.card--dark .carousel-indicator::before {
+  background: var(--ink-line, #262626);
+}
+
+.card--dark .carousel-indicator.active::before {
+  background: var(--accent, #d9531e);
+}

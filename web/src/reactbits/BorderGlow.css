@@ -1,0 +1,68 @@
+.border-glow-card {
+  position: relative;
+  border-radius: var(--border-radius, 22px);
+  background: var(--card-bg, #faf9f5);
+  isolation: isolate;
+  --edge-proximity: 0;
+  --cursor-angle: 0deg;
+}
+
+/* La banda que recorre el borde siguiendo al cursor */
+.border-glow-card .edge-light {
+  position: absolute;
+  /* inset 0: con el negativo original el resplandor se salía del ancho
+     de página y provocaba scroll horizontal en móvil */
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: calc(var(--edge-proximity) / 100);
+  background:
+    var(--gradient-one),
+    var(--gradient-two),
+    var(--gradient-three),
+    var(--gradient-four),
+    var(--gradient-five),
+    var(--gradient-six),
+    var(--gradient-seven),
+    var(--gradient-base);
+  mask:
+    conic-gradient(
+      from var(--cursor-angle),
+      #000 0deg,
+      #000 calc(var(--cone-spread, 60) * 1deg),
+      transparent calc(var(--cone-spread, 60) * 1deg + 40deg),
+      transparent 320deg,
+      #000 360deg
+    ),
+    linear-gradient(#000 0 100%) content-box;
+  mask-composite: intersect;
+  -webkit-mask:
+    conic-gradient(
+      from var(--cursor-angle),
+      #000 0deg,
+      #000 calc(var(--cone-spread, 60) * 1deg),
+      transparent calc(var(--cone-spread, 60) * 1deg + 40deg),
+      transparent 320deg,
+      #000 360deg
+    ),
+    linear-gradient(#000 0 100%) content-box;
+  -webkit-mask-composite: source-in;
+  transition: opacity 0.4s ease;
+}
+
+.border-glow-inner {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--card-bg, #faf9f5);
+  border: 1px solid var(--line, #dedddc);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .border-glow-card .edge-light {
+    transition: none;
+  }
+}

@@ -1,0 +1,67 @@
+.dock-outer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* Centrado, no pegado abajo: el crecimiento hacia arriba es el gesto del dock
+   de macOS y aqui dejaba los circulos hundidos dentro de la pastilla. */
+.dock-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  border: 1px solid var(--line, #dedddc);
+  border-radius: 999px;
+  background: var(--panel-warm, #faf9f5);
+  pointer-events: auto;
+}
+
+.dock-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  cursor: pointer;
+  outline: none;
+}
+
+.dock-item:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent, #d9531e);
+}
+
+/* El contenedor del icono se posiciona absoluto sobre el círculo: así queda
+   centrado exacto aunque el padre esté animando su tamaño. Un porcentaje sobre
+   una caja en movimiento produce redondeos y descentra el trazo. */
+.dock-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.dock-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.dock-label {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 5px 11px;
+  border-radius: 8px;
+  background: var(--ink, #131313);
+  color: var(--on-ink, #fff);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+}

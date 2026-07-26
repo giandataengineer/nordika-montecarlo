@@ -1,0 +1,77 @@
+/* Borde orbitando.
+
+   El montaje original ponía las dos bandas con `top: -11px` y altura 24px
+   detrás de un contenido opaco de 46px: quedaban tapadas por completo y el
+   botón se veía plano. Aquí el contenedor es el borde (2px de padding) y las
+   bandas recorren toda su superficie, así que el barrido sí se ve. */
+.star-border-container {
+  position: relative;
+  display: inline-block;
+  padding: 2px;
+  border: 0;
+  background: var(--line, #dedddc);
+  overflow: hidden;
+  border-radius: 999px;
+  isolation: isolate;
+}
+
+.border-gradient-top,
+.border-gradient-bottom {
+  position: absolute;
+  width: 260%;
+  height: 260%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(2px);
+}
+
+.border-gradient-top {
+  top: -80%;
+  left: -180%;
+  opacity: 0.95;
+  animation: star-move-top linear infinite alternate;
+}
+
+.border-gradient-bottom {
+  bottom: -80%;
+  right: -180%;
+  opacity: 0.8;
+  animation: star-move-bottom linear infinite alternate;
+}
+
+@keyframes star-move-top {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(115%); }
+}
+
+@keyframes star-move-bottom {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-115%); }
+}
+
+.star-border-container .inner-content {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 26px;
+  border-radius: 999px;
+  background: var(--ink, #131313);
+  color: var(--on-ink, #fff);
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .border-gradient-top,
+  .border-gradient-bottom {
+    animation: none;
+  }
+}

@@ -1,0 +1,62 @@
+.scroll-list-container {
+  position: relative;
+}
+
+.scroll-list {
+  max-height: 420px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.scroll-list.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-list.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-list-container .item {
+  border-radius: 14px;
+  background: var(--panel, #f2f2f2);
+  border: 1px solid var(--line, #dedddc);
+  padding: 16px 18px;
+  transition: border-color 0.3s var(--ease), background 0.3s var(--ease),
+    transform 0.3s var(--ease);
+}
+
+.scroll-list-container .item:hover {
+  transform: translateX(4px);
+  border-color: var(--accent, #d9531e);
+}
+
+.scroll-list-container .item.selected {
+  border-color: var(--accent, #d9531e);
+  background: var(--panel-warm, #faf9f5);
+}
+
+.scroll-list-container .item-text {
+  margin: 0;
+}
+
+.scroll-list-container .top-gradient,
+.scroll-list-container .bottom-gradient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 44px;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.scroll-list-container .top-gradient {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg, #ededed), transparent);
+}
+
+.scroll-list-container .bottom-gradient {
+  bottom: 0;
+  background: linear-gradient(to top, var(--bg, #ededed), transparent);
+}
