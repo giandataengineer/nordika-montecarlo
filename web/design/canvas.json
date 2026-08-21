@@ -1,0 +1,62 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 920,
+      "title": "01 · Hero"
+    },
+    {
+      "file": "Fases.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1000,
+      "title": "02 · Fases 02-03"
+    },
+    {
+      "file": "Simulacion.dc.html",
+      "x": 0,
+      "y": 1120,
+      "w": 1440,
+      "h": 940,
+      "title": "03 · Simulación"
+    },
+    {
+      "file": "Informe.dc.html",
+      "x": 1560,
+      "y": 1120,
+      "w": 1440,
+      "h": 1300,
+      "title": "04 · Informe, FAQ y footer"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "sistema",
+      "x": -420,
+      "y": 0,
+      "w": 340,
+      "text": "SISTEMA\n\nTipografía: Instrument Sans (display + texto, 400/500/600) + JetBrains Mono solo para etiquetas técnicas.\n\nAcento único rotativo por fase: naranja #d9531e (intro/informe), azul #2f80ed (datos), morado #7c3aed (modelos), verde #1fa971 (simulación).\n\nGrid editorial de 3 columnas con líneas de 1px #dedddc atravesando toda la página."
+    },
+    {
+      "id": "movimiento",
+      "x": -420,
+      "y": 1120,
+      "w": 340,
+      "text": "MOVIMIENTO IMPLEMENTADO EN REACT\n\nStrands (WebGL): hebras de color detrás del hero.\nSpecularButton (WebGL): reflejo que sigue al cursor en el CTA.\nStarBorder: borde que orbita el botón secundario.\nCursorGrid (canvas): la rejilla de las bandas oscuras se ilumina al pasar el ratón.\nParticleText (canvas): el nombre del pie se rehace con partículas.\nDock: iconos de fase que se magnifican y recuperan color por turno.\nCounter: odómetro de dígitos en el mockup.\nCountUp: KPIs contando al entrar en pantalla.\nBlurText: titulares palabra a palabra con desenfoque.\nDecryptedText: etiquetas mono que se descifran.\nLogoLoop: marquee del stack.\nMagnet: botones que se acercan al cursor.\nBorderGlow: borde de tarjeta iluminado por el puntero.\nAnimatedList: ranking de estrategias.\nCarousel: las 3 lecturas del informe.\nParallax propio en las frases fantasma.\n\nDescartado: FadeContent dejaba visibility:hidden y los paneles no aparecían nunca.\nSin usar: MaskedHeading (necesita un vídeo), SplitText (plugin de pago de GSAP)."
+    },
+    {
+      "id": "contraste",
+      "x": -420,
+      "y": 2200,
+      "w": 340,
+      "text": "CONTRASTE Y ACCESIBILIDAD\n\nLos grises de legend no llegan a AA. Recalculados sobre #ededed:\n--muted #565656 (5,7:1)\n--faint #6b6b6b (4,6:1)\n--ghost #828282 (3,3:1, solo titulares)\n\nEl verde #1fa971 daba 2,6:1 en el rotador a 62px: oscurecido a #158a5c (3,7:1).\n\n0 textos por debajo de AA, 0 por debajo de 12px, 0 objetivos táctiles por debajo de 44px, 0 scroll horizontal a 390 / 768 / 1440.\n\nMoneda en USD. Todas las cifras salen de /api/payload."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Intelligence — Metodología</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #080f17; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #c0d8e8; }
+
+/* ── DECK SHELL ── */
+.deck { height: 100vh; display: flex; flex-direction: column; }
+.deck::before { content: ''; display: block; height: 2px; flex-shrink: 0; background: linear-gradient(90deg, transparent, #00c6ff88, #0072ff55, transparent); }
+
+/* ── SLIDE ── */
+.slide { display: none; flex-direction: column; flex: 1; min-height: 0; }
+.slide.active { display: flex; }
+
+/* ── HEADER (compact) ── */
+.sh {
+  padding: 16px 44px 12px;
+  border-bottom: 0.5px solid #0d1f2f;
+  flex-shrink: 0;
+}
+.stag {
+  display: inline-block; font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: #00c6ff; padding: 3px 10px; border: 0.5px solid #00c6ff33; border-radius: 2px;
+  font-weight: 500; margin-bottom: 8px;
+}
+.stitle { font-size: 26px; font-weight: 500; color: #ddeeff; letter-spacing: -0.4px; line-height: 1.2; margin-bottom: 4px; }
+.ssub { font-size: 15px; color: #2e6080; font-style: italic; }
+
+/* ── NAV ── */
+.nav-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 44px; border-top: 0.5px solid #0d1f2f;
+  background: #040b12; flex-shrink: 0;
+}
+.nav-btn {
+  background: transparent; border: 0.5px solid #0f2a3f;
+  color: #2a6080; font-size: 14px; padding: 8px 24px;
+  border-radius: 3px; cursor: pointer; letter-spacing: 1px;
+}
+.nav-btn:hover:not(:disabled) { border-color: #00c6ff55; color: #00c6ff; }
+.nav-btn:disabled { opacity: 0.2; cursor: default; }
+.nav-center { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.nav-label { font-size: 12px; letter-spacing: 1.5px; color: #1a3a55; text-transform: uppercase; }
+.nav-dots { display: flex; gap: 10px; }
+.nav-dot { width: 7px; height: 7px; border-radius: 50%; background: #0f2a3f; cursor: pointer; transition: all 0.15s; }
+.nav-dot.active { background: #00c6ff; }
+
+/* ── SHARED ATOMS ── */
+.sec { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #1a4060; margin-bottom: 10px; font-weight: 500; }
+mono { font-family: 'Courier New', monospace; font-size: 13px; color: #3a8aaa; }
+
+/* ════════════════════════════════════════
+   SLIDE 1 — ML
+   Layout: header / 3-col equal grid / formula bar
+════════════════════════════════════════ */
+.s1-body {
+  flex: 1; min-height: 0;
+  display: flex; flex-direction: column;
+  padding: 20px 44px 16px; gap: 16px;
+}
+.s1-models {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  flex: 1; min-height: 0;
+}
+.model-card {
+  background: #07111e; border: 0.5px solid #0f2538; border-radius: 6px;
+  padding: 20px 22px; display: flex; flex-direction: column; gap: 14px;
+}
+.model-head { display: flex; align-items: center; gap: 10px; }
+.badge { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 10px; border-radius: 2px; font-weight: 500; }
+.badge-clf { background: #00304a; color: #00c6ff; border: 0.5px solid #005577; }
+.badge-reg { background: #1a2a08; color: #70b030; border: 0.5px solid #3a5518; }
+.mname { font-size: 19px; color: #90c0d8; font-weight: 500; }
+.mrows { display: flex; flex-direction: column; gap: 0; flex: 1; }
+.mrow {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 9px 0; border-bottom: 0.5px solid #07101a; font-size: 15px; line-height: 1.5;
+}
+.mrow:last-child { border-bottom: none; }
+.mlbl { font-size: 12px; letter-spacing: 0.5px; color: #1e4a60; min-width: 130px; flex-shrink: 0; padding-top: 1px; }
+.mval { color: #4a8aaa; font-size: 15px; }
+
+.formula-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #040c16; border: 0.5px solid #0a1e2e; border-radius: 4px;
+  padding: 16px 20px; flex-shrink: 0;
+}
+.fb { font-size: 14px; color: #3a7090; text-align: center; padding: 10px 14px;
+  background: #07111e; border-radius: 3px; border: 0.5px solid #0f2538; line-height: 1.4; }
+.fb strong { display: block; color: #70a8c0; font-size: 16px; font-weight: 500; }
+.fb.accent { border-color: #00c6ff44; background: #041424; }
+.fb.accent strong { color: #00c6ff; font-size: 17px; }
+.fop { font-size: 22px; color: #0f3050; flex-shrink: 0; }
+
+/* ════════════════════════════════════════
+   SLIDE 2 — CONTRAFACTUALES
+   Layout: header / steps row / table fills rest
+════════════════════════════════════════ */
+.s2-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 20px 44px 16px; gap: 16px; }
+
+.steps-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex-shrink: 0; }
+.step-card {
+  background: #07111e; border: 0.5px solid #0f2538; border-radius: 5px;
+  padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start;
+}
+.step-num {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: #041424; border: 0.5px solid #005577;
+  color: #00c6ff; font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-title { font-size: 15px; color: #7aaec8; font-weight: 500; margin-bottom: 5px; }
+.step-desc { font-size: 13px; color: #2a5570; line-height: 1.55; }
+
+.cf-table-wrap { flex: 1; min-height: 0; overflow: hidden; }
+.cf-table { width: 100%; border-collapse: collapse; height: 100%; }
+.cf-table th {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: #1a4060; padding: 10px 14px; text-align: left;
+  border-bottom: 0.5px solid #0a1e2e; font-weight: 500; background: #040c16;
+}
+.cf-table td {
+  font-size: 15px; color: #4a7a90; padding: 14px 14px;
+  border-bottom: 0.5px solid #08111c; vertical-align: top; line-height: 1.6;
+}
+.cf-table tr:last-child td { border-bottom: none; }
+.cf-table tr.rec td { background: #040e18; }
+.cf-table tr.rec td:first-child { color: #00c6ff; font-weight: 500; font-size: 16px; }
+.cf-table td:first-child { font-size: 16px; color: #5590a8; font-weight: 500; }
+.tag { font-size: 12px; padding: 3px 8px; border-radius: 2px; display: inline-block; margin: 2px 3px 2px 0; }
+.tag-b { background: #001a28; color: #00a0c0; border: 0.5px solid #003a54; }
+.tag-w { background: #1a1000; color: #c08020; border: 0.5px solid #604010; }
+
+/* ════════════════════════════════════════
+   SLIDE 3 — MONTE CARLO
+   Layout: header / 3 layers (flex: equal) / calibration table
+════════════════════════════════════════ */
+.s3-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 20px 44px 16px; gap: 14px; }
+.mc-layers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; flex: 1; min-height: 0; }
+.mc-layer {
+  background: #07111e; border: 0.5px solid #0f2538; border-radius: 5px;
+  padding: 20px 20px; display: flex; flex-direction: column; gap: 12px;
+}
+.mc-icon-wrap {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #041424; border: 0.5px solid #004a60;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #00a0c0; flex-shrink: 0;
+}
+.mc-layer-title { font-size: 17px; color: #7aaec8; font-weight: 500; line-height: 1.3; }
+.mc-layer-desc { font-size: 14px; color: #2a5570; line-height: 1.65; flex: 1; }
+.mc-layer-desc strong { color: #4a7a90; font-weight: 500; }
+
+.mc-table { width: 100%; border-collapse: collapse; flex-shrink: 0; }
+.mc-table th {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: #1a4060; padding: 10px 14px; border-bottom: 0.5px solid #0a1e2e;
+  font-weight: 500; text-align: left; background: #040c16;
+}
+.mc-table td {
+  font-size: 15px; padding: 13px 14px;
+  border-bottom: 0.5px solid #07101a; font-family: 'Courier New', monospace; color: #3a6a80;
+}
+.mc-table tr:last-child td { border-bottom: none; }
+.mc-table td.esc { font-family: inherit; color: #5590a8; font-size: 16px; font-weight: 500; }
+.c-lo { color: #00c6aa; } .c-me { color: #c09030; } .c-hi { color: #e04040; }
+
+/* ════════════════════════════════════════
+   SLIDE 4 — OUTPUT
+   Layout: header / metric cards row / scoreboard / verdict
+════════════════════════════════════════ */
+.s4-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 20px 44px 16px; gap: 14px; }
+
+.how-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; flex-shrink: 0; }
+.how-card {
+  background: #07111e; border: 0.5px solid #0f2538; border-radius: 5px; padding: 14px 16px;
+}
+.how-lbl { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #1a4060; margin-bottom: 5px; }
+.how-name { font-size: 17px; color: #5590a8; font-weight: 500; margin-bottom: 5px; }
+.how-desc { font-size: 13px; color: #1e4060; line-height: 1.55; }
+
+.sb-wrap { flex: 1; min-height: 0; overflow: hidden; }
+.sb { width: 100%; border-collapse: collapse; }
+.sb th {
+  font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: #1a4060; padding: 10px 12px; border-bottom: 0.5px solid #0a1e2e;
+  font-weight: 500; text-align: right; background: #040c16;
+}
+.sb th:first-child { text-align: left; }
+.sb td {
+  font-size: 16px; color: #4a7a90; padding: 15px 12px;
+  border-bottom: 0.5px solid #07101a; text-align: right; vertical-align: middle;
+}
+.sb td:first-child { text-align: left; font-size: 17px; font-weight: 500; }
+.sb tr.rec td { background: #040e18; }
+.sb tr.rec td:first-child { color: #00c6ff; }
+.sb tr:last-child td { border-bottom: none; }
+.sn { color: #90b8c8; font-weight: 500; }
+.sp { color: #00e0a0; font-weight: 500; }
+.sw { color: #c09030; font-weight: 500; }
+.sr { color: #d03030; font-weight: 500; }
+.rtag { font-size: 12px; padding: 5px 12px; border-radius: 2px; display: inline-block; font-weight: 500; }
+.r1 { background: #00e0a011; color: #00e0a0; border: 0.5px solid #00e0a033; }
+.r2 { background: #0080c011; color: #3090c0; border: 0.5px solid #0080c033; }
+.r3 { background: #c0802011; color: #c09030; border: 0.5px solid #c0802033; }
+.r4 { background: #d0303011; color: #c03030; border: 0.5px solid #d0303033; }
+
+.verdict-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex-shrink: 0; }
+.vbox { background: #07111e; border: 0.5px solid #0f2538; border-radius: 5px; padding: 14px 18px; }
+.vbox.accent { background: #041424; border-color: #00c6ff1a; }
+.vtitle { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #1a4060; margin-bottom: 6px; }
+.vtext { font-size: 15px; color: #2a5070; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- ══ SLIDE 1: ML ══ -->
+  <div class="slide active" id="s0">
+    <div class="sh">
+      <span class="stag">Fase 1 · Modelos predictivos</span>
+      <div class="stitle">Dos modelos independientes convierten el histórico en probabilidades individuales</div>
+      <div class="ssub">No se trabaja con promedios del pasado. Cada oportunidad recibe su propia estimación de conversión y de valor esperado.</div>
+    </div>
+    <div class="s1-body">
+      <div class="s1-models">
+        <div class="model-card">
+          <div class="model-head">
+            <span class="badge badge-clf">Clasificador</span>
+            <span class="mname">Modelo de conversión</span>
+          </div>
+          <div class="mrows">
+            <div class="mrow"><span class="mlbl">Algoritmo</span><span class="mval">Regresión logística · <mono>max_iter=1000</mono></span></div>
+            <div class="mrow"><span class="mlbl">Variables cat.</span><span class="mval">OneHotEncoder → canal, objetivo, segmento, dispositivo, geografía…</span></div>
+            <div class="mrow"><span class="mlbl">Variables num.</span><span class="mval">StandardScaler → inversión publicitaria, lead score, gasto diario…</span></div>
+            <div class="mrow"><span class="mlbl">Entrenado sobre</span><span class="mval">todo el dataset · target: <mono>conversion ∈ {0, 1}</mono></span></div>
+            <div class="mrow"><span class="mlbl">Output</span><span class="mval">P(conversión) — probabilidad individual de compra por oportunidad</span></div>
+            <div class="mrow" style="border:none; padding-top:14px; margin-top: auto;"><span style="font-size:14px; color:#1e4060; font-style:italic; line-height:1.6;">"¿Va a comprar?" — predice la probabilidad, no el evento binario. Permite comparar oportunidades en una escala continua.</span></div>
+          </div>
+        </div>
+        <div class="model-card">
+          <div class="model-head">
+            <span class="badge badge-reg">Regresor</span>
+            <span class="mname">Modelo de valor (ticket medio)</span>
+          </div>
+          <div class="mrows">
+            <div class="mrow"><span class="mlbl">Algoritmo</span><span class="mval">HistGradientBoostingRegressor</span></div>
+            <div class="mrow"><span class="mlbl">Preprocesado</span><span class="mval">mismo pipeline de categóricas y numéricas</span></div>
+            <div class="mrow"><span class="mlbl">Entrenado sobre</span><span class="mval">solo filas con <mono>conversion = 1</mono> — excluye no-compradores</span></div>
+            <div class="mrow"><span class="mlbl">Target</span><span class="mval"><mono>log1p(aov_eur)</mono> → predicción revertida con <mono>exp()</mono></span></div>
+            <div class="mrow"><span class="mlbl">Output</span><span class="mval">ticket medio esperado condicionado a que ocurra la venta</span></div>
+            <div class="mrow" style="border:none; padding-top:14px; margin-top: auto;"><span style="font-size:14px; color:#1e4060; font-style:italic; line-height:1.6;">"¿Cuánto?" — entrenarlo solo sobre conversiones evita que el ruido de los no-compradores distorsione la predicción de valor.</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec">Combinación en inferencia — beneficio esperado por oportunidad</div>
+        <div class="formula-bar">
+          <div class="fb"><strong>P(conv)</strong>modelo 1</div>
+          <div class="fop">×</div>
+          <div class="fb"><strong>ticket esp.</strong>modelo 2</div>
+          <div class="fop">×</div>
+          <div class="fb"><strong>margen</strong>del producto</div>
+          <div class="fop">−</div>
+          <div class="fb"><strong>coste atrib.</strong>por oportunidad</div>
+          <div class="fop">=</div>
+          <div class="fb accent"><strong>beneficio esperado</strong>por oportunidad</div>
+          <div style="margin-left:auto; font-size:12px; color:#1a4060; max-width:280px; line-height:1.6;">Los dos modelos se combinan solo en inferencia. Su separación en entrenamiento preserva la integridad de cada señal.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 2: CF ══ -->
+  <div class="slide" id="s1">
+    <div class="sh">
+      <span class="stag">Fase 2 · Escenarios contrafactuales</span>
+      <div class="stitle">Cuatro versiones alternativas del mismo negocio sobre una base histórica comparable</div>
+      <div class="ssub">No se comparan cuatro ideas en abstracto. Se fuerzan intervenciones concretas sobre datos reales y se re-predice con los modelos.</div>
+    </div>
+    <div class="s2-body">
+      <div class="steps-row">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Base reciente</div>
+            <div class="step-desc">Filas con fecha <mono>≥ 2025-10-01</mono>. Si hay menos de 4.500, se toman las últimas 4.500. Muestra de hasta 3.600 obs. con reemplazo.</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Copia + intervención</div>
+            <div class="step-desc"><mono>base.copy()</mono> por escenario. Se fuerzan las variables que la decisión modifica. El resto permanece intacto.</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Re-predicción ML</div>
+            <div class="step-desc">Los modelos de conversión y valor se aplican sobre la base intervenida y calculan el beneficio esperado bajo ese escenario.</div>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div>
+            <div class="step-title">Uplift incremental</div>
+            <div class="step-desc">Diferencia entre valor medio del escenario y el baseline sobre la misma base. Es un delta, no una proyección absoluta.</div>
+          </div>
+        </div>
+      </div>
+      <div class="cf-table-wrap">
+        <table class="cf-table">
+          <thead>
+            <tr>
+              <th style="width:180px;">Escenario · coste</th>
+              <th>Variables forzadas</th>
+              <th>Lógica de impacto</th>
+              <th>Principal riesgo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="rec">
+              <td>Funnel<br><span style="font-size:11px;color:#005577;font-weight:400;">1.200 €</span></td>
+              <td>
+                <span class="tag tag-b">landing_mejorada=1</span>
+                <span class="tag tag-b">cta_mejorado=1</span>
+                <span class="tag tag-b">lead_magnet=1</span>
+                <span class="tag tag-b">checkout_simple=1</span>
+              </td>
+              <td>Sube conversión sin incrementar volumen ni coste de adquisición. Actúa sobre fricción interna del embudo.</td>
+              <td style="color:#1e5060;">Mínimo. Actúa sobre variables de proceso, no de mercado.</td>
+            </tr>
+            <tr>
+              <td>Paid media<br><span style="font-size:11px;color:#1a3a50;font-weight:400;">9.000 €</span></td>
+              <td>
+                <span class="tag tag-b">inversion_pub=alta</span>
+                <span class="tag tag-b">gasto_diario↑</span>
+                <span class="tag tag-b">coste_atribuido↑</span>
+                <span class="tag tag-w">lead_score↓</span>
+                <span class="tag tag-w">+filas pool pagado</span>
+              </td>
+              <td>Más volumen, pero menor calidad media de lead. La saturación se modeliza degradando el lead score de las nuevas filas añadidas.</td>
+              <td style="color:#7a4010;">Si la landing no convierte bien, el coste de adquisición destruye el margen.</td>
+            </tr>
+            <tr>
+              <td>Webinar<br><span style="font-size:11px;color:#1a3a50;font-weight:400;">2.500 €</span></td>
+              <td>
+                <span class="tag tag-b">webinar_invitado=1</span>
+                <span class="tag tag-b">webinar_asistio=1</span>
+              </td>
+              <td>Se activa sobre base de leads más templados. Modela la secuencia comercial completa, no solo el evento aislado.</td>
+              <td style="color:#1e5060;">Depende del tamaño y calidad de la base de leads disponible para activar.</td>
+            </tr>
+            <tr>
+              <td>Nuevo producto<br><span style="font-size:11px;color:#1a3a50;font-weight:400;">12.000 €</span></td>
+              <td>
+                <span class="tag tag-b">nuevo_producto=1</span>
+                <span style="font-size:11px;color:#2a4a30;">(solo segmentos elegibles)</span>
+              </td>
+              <td>Ticket potencialmente mayor en un subconjunto de la base. Introduce variabilidad operativa estructuralmente más alta.</td>
+              <td style="color:#7a2020;">Alta volatilidad: el P10 puede ser negativo. Más upside pero también más downside.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 3: MC ══ -->
+  <div class="slide" id="s2">
+    <div class="sh">
+      <span class="stag">Fase 3 · Simulación Monte Carlo</span>
+      <div class="stitle">10.000 simulaciones por escenario para pasar del uplift medio a una distribución de resultados</div>
+      <div class="ssub">El uplift de la fase anterior asume ejecución perfecta. Monte Carlo introduce tres capas de incertidumbre real sobre el output económico ya estimado.</div>
+    </div>
+    <div class="s3-body">
+      <div class="mc-layers">
+        <div class="mc-layer">
+          <div class="mc-icon-wrap" aria-hidden="true"><i class="ti ti-wave-sine"></i></div>
+          <div class="mc-layer-title">Capa 1 — Multiplicador de incertidumbre</div>
+          <div class="mc-layer-desc">Distribución <strong>lognormal</strong> aplicada al beneficio esperado. Captura que los resultados reales se desvían del estimado de forma <strong>asimétrica</strong>: la cola del upside y la del downside no tienen la misma forma ni el mismo peso probabilístico. Refleja la incertidumbre estructural del mercado.</div>
+        </div>
+        <div class="mc-layer">
+          <div class="mc-icon-wrap" aria-hidden="true"><i class="ti ti-clock-pause"></i></div>
+          <div class="mc-layer-title">Capa 2 — Fricción y retraso de ejecución</div>
+          <div class="mc-layer-desc">Valor <strong>discreto</strong> muestreado de una distribución calibrada por escenario. Modela que las implementaciones se retrasan, se ejecutan parcialmente o generan menos impacto del previsto. Es riesgo operativo real — no estadístico. Cada escenario tiene su propia distribución de fricción.</div>
+        </div>
+        <div class="mc-layer">
+          <div class="mc-icon-wrap" aria-hidden="true"><i class="ti ti-ripple"></i></div>
+          <div class="mc-layer-title">Capa 3 — Ruido residual gaussiano</div>
+          <div class="mc-layer-desc">Componente <strong>aditivo</strong> con desviación estándar distinta por escenario (<mono>residual_sd</mono>). Captura variabilidad que no explican ni el modelo ni las otras dos capas: efectos de mercado, timing, comportamiento del cliente no observado, condiciones externas.</div>
+        </div>
+      </div>
+      <div>
+        <div class="sec">Calibración de las tres capas por escenario — el perfil de riesgo resultante es distinto para cada decisión</div>
+        <table class="mc-table">
+          <thead>
+            <tr>
+              <th style="width:200px;">Escenario</th>
+              <th>σ lognormal (capa 1)</th>
+              <th>Fricción discreta (capa 2)</th>
+              <th>Ruido residual sd (capa 3)</th>
+              <th>Perfil de dispersión resultante</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="esc" style="color:#00c6ff;">Funnel</td><td class="c-lo">baja</td><td class="c-lo">mínima</td><td class="c-lo">baja</td><td class="c-lo">banda estrecha · distribución estable</td></tr>
+            <tr><td class="esc">Webinar</td><td>moderada</td><td>moderada</td><td>moderada</td><td>dispersión contenida · comportamiento defensivo</td></tr>
+            <tr><td class="esc">Paid media</td><td class="c-me">media-alta</td><td class="c-me">media</td><td class="c-me">media</td><td class="c-me">sensible a saturación · P10 bajo</td></tr>
+            <tr><td class="esc">Nuevo producto</td><td class="c-hi">alta</td><td class="c-hi">alta</td><td class="c-hi">alta</td><td class="c-hi">banda muy amplia · P10 puede ser negativo</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SLIDE 4: OUTPUT ══ -->
+  <div class="slide" id="s3">
+    <div class="sh">
+      <span class="stag">Output · Lectura ejecutiva</span>
+      <div class="stitle">Seis métricas por escenario que convierten 10.000 simulaciones en una recomendación accionable</div>
+      <div class="ssub">La recomendación no elige el mayor upside posible. Elige el mejor perfil de retorno ajustado al riesgo real de ejecución.</div>
+    </div>
+    <div class="s4-body">
+      <div class="how-row">
+        <div class="how-card">
+          <div class="how-lbl">P50 · mediana</div>
+          <div class="how-name">Estimación central</div>
+          <div class="how-desc">El resultado más probable. Más robusta que la media ante valores extremos de las 10.000 simulaciones.</div>
+        </div>
+        <div class="how-card">
+          <div class="how-lbl">P10 · suelo</div>
+          <div class="how-name">Escenario adverso</div>
+          <div class="how-desc">En el 10% de simulaciones las cosas salen peor que esto. Es el suelo probable, no el peor caso absoluto.</div>
+        </div>
+        <div class="how-card">
+          <div class="how-lbl">P90 · techo</div>
+          <div class="how-name">Escenario favorable</div>
+          <div class="how-desc">En el 10% de simulaciones las cosas salen mejor que esto. Indica el potencial máximo realista.</div>
+        </div>
+        <div class="how-card">
+          <div class="how-lbl">ROI esperado</div>
+          <div class="how-name">Retorno por euro</div>
+          <div class="how-desc">Beneficio incremental ÷ coste fijo del escenario. No usa coste total atribuido como denominador.</div>
+        </div>
+      </div>
+      <div class="sb-wrap">
+        <table class="sb">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Escenario</th>
+              <th>Benef. esperado</th><th>P10 (suelo)</th><th>P50 (mediana)</th><th>P90 (techo)</th>
+              <th>Prob. pérdida</th><th>ROI</th><th>Lectura</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="rec">
+              <td><i class="ti ti-filter" style="font-size:14px;margin-right:6px;opacity:0.6;"></i>Funnel</td>
+              <td class="sp">+25.300 €</td><td class="sn">+18.100 €</td><td class="sn">+24.800 €</td><td class="sn">+33.200 €</td>
+              <td class="sp">0,2 %</td><td class="sp">21×</td><td><span class="rtag r1">Mejor equilibrio</span></td>
+            </tr>
+            <tr>
+              <td><i class="ti ti-presentation" style="font-size:14px;margin-right:6px;opacity:0.6;"></i>Webinar</td>
+              <td class="sn">+18.400 €</td><td class="sn">+8.200 €</td><td class="sn">+17.900 €</td><td class="sn">+29.600 €</td>
+              <td class="sn">3,1 %</td><td class="sn">7×</td><td><span class="rtag r2">Defensivo</span></td>
+            </tr>
+            <tr>
+              <td><i class="ti ti-speakerphone" style="font-size:14px;margin-right:6px;opacity:0.6;"></i>Paid media</td>
+              <td class="sn">+14.700 €</td><td class="sn">+1.200 €</td><td class="sn">+13.900 €</td><td class="sn">+34.500 €</td>
+              <td class="sw">12,1 %</td><td class="sn">1,6×</td><td><span class="rtag r3">Más frágil</span></td>
+            </tr>
+            <tr>
+              <td><i class="ti ti-package" style="font-size:14px;margin-right:6px;opacity:0.6;"></i>Nuevo prod.</td>
+              <td class="sn">+21.000 €</td><td class="sr">−4.800 €</td><td class="sn">+19.200 €</td><td class="sn">+62.400 €</td>
+              <td class="sr">28,2 %</td><td class="sn">1,75×</td><td><span class="rtag r4">Riesgo alto</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="verdict-row">
+        <div class="vbox">
+          <div class="vtitle">Por qué no gana el nuevo producto</div>
+          <div class="vtext">Su P50 es similar al del funnel. Pero su P10 es negativo y su probabilidad de pérdida es 140× mayor. El upside no compensa la asimetría del downside — en 1 de cada 4 simulaciones destruye margen.</div>
+        </div>
+        <div class="vbox accent">
+          <div class="vtitle" style="color:#005577;">Criterio de recomendación</div>
+          <div class="vtext" style="color:#1a4a60;">Mayor beneficio esperado con menor probabilidad de pérdida. El funnel maximiza el retorno por euro invertido con un riesgo prácticamente nulo — 21× ROI con solo 0,2% de probabilidad de pérdida.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav-bar">
+    <button class="nav-btn" id="btn-prev" onclick="navigate(-1)" disabled>← anterior</button>
+    <div class="nav-center">
+      <div class="nav-dots">
+        <div class="nav-dot active" onclick="goTo(0)"></div>
+        <div class="nav-dot" onclick="goTo(1)"></div>
+        <div class="nav-dot" onclick="goTo(2)"></div>
+        <div class="nav-dot" onclick="goTo(3)"></div>
+      </div>
+      <div class="nav-label" id="nav-label">Fase 1 · Modelos predictivos</div>
+    </div>
+    <button class="nav-btn" id="btn-next" onclick="navigate(1)">siguiente →</button>
+  </div>
+
+</div>
+<script>
+let cur = 0;
+const labels = ['Fase 1 · Modelos predictivos','Fase 2 · Escenarios contrafactuales','Fase 3 · Monte Carlo','Output · Lectura ejecutiva'];
+function goTo(n) {
+  document.getElementById('s'+cur).classList.remove('active');
+  document.querySelectorAll('.nav-dot')[cur].classList.remove('active');
+  cur = n;
+  document.getElementById('s'+cur).classList.add('active');
+  document.querySelectorAll('.nav-dot')[cur].classList.add('active');
+  document.getElementById('btn-prev').disabled = cur === 0;
+  document.getElementById('btn-next').disabled = cur === 3;
+  document.getElementById('nav-label').textContent = labels[cur];
+}
+function navigate(dir) { const n = cur+dir; if(n>=0&&n<4) goTo(n); }
+document.addEventListener('keydown', e => {
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') navigate(1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp') navigate(-1);
+});
+</script>
+</body>
+</html>

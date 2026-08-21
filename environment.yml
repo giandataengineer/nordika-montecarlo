@@ -1,0 +1,16 @@
+name: montecarlo
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - numpy=2.4.6
+  - pandas=3.0.3
+  - scikit-learn=1.8.0
+  - plotly=6.6.0
+  - jupyterlab
+  - ipykernel
+  - ipywidgets
+  - pip:
+    - openai==2.38.0
+    - python-dotenv==1.1.1

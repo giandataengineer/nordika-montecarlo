@@ -1,0 +1,31 @@
+{
+ "huella": "3acc56029f08429a",
+ "resultado": {
+  "lecturas": [
+   {
+    "rol": "finanzas",
+    "fuente": "determinista",
+    "motivo": "sin proveedores disponibles"
+   },
+   {
+    "rol": "operacion",
+    "fuente": "determinista",
+    "motivo": "sin proveedores disponibles"
+   },
+   {
+    "rol": "riesgo",
+    "fuente": "determinista",
+    "motivo": "sin proveedores disponibles"
+   }
+  ],
+  "agregacion": {
+   "modo": "determinista",
+   "consenso": null,
+   "veredicto": "Sin claves de API configuradas: las tres lecturas salen de plantillas deterministas contrastadas contra las cifras. Coinciden por construccion, asi que su acuerdo no aporta informacion.",
+   "elecciones": {},
+   "roles_con_llm": 0
+  },
+  "proveedores_configurados": [],
+  "desde_cache": false
+ }
+}

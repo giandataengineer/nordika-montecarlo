@@ -1,0 +1,201 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root {
+      --bg: #ededed; --warm: #faf9f5; --line: #dedddc;
+      --ink: #131313; --muted: #565656; --faint: #6b6b6b; --ghost: #828282;
+      --green: #1fa971; --orange: #d9531e;
+      --sans: "Instrument Sans", -apple-system, "Segoe UI", sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; width: 1440px; height: 940px; background: var(--bg); color: var(--ink);
+      font-family: var(--sans); overflow: hidden; position: relative; padding: 70px 40px; }
+    a { color: var(--green); text-decoration: none; }
+    a:hover { color: var(--ink); }
+
+    .rules { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, 1fr); pointer-events: none; }
+    .rules span { border-right: 1px dashed var(--line); }
+    .rules span:last-child { border-right: 0; }
+
+    .head { position: relative; display: grid; grid-template-columns: 92px 1fr 380px; gap: 44px; align-items: end; }
+    .idx { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; color: var(--faint); }
+    h2 { margin: 0; font-size: 62px; line-height: .98; letter-spacing: -.04em; font-weight: 500; }
+    h2 .ghost { color: var(--ghost); }
+    .copy { margin: 20px 0 0; max-width: 48ch; font-size: 16px; line-height: 1.65; color: var(--muted); }
+
+    .live { border: 1px solid var(--line); border-radius: 18px; background: var(--warm); padding: 18px 20px; }
+    .live .top { display: flex; align-items: center; gap: 9px; font-family: var(--mono);
+      font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .live .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+      animation: pulse 1.6s var(--ease) infinite; }
+    @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.8); opacity: .3 } }
+    .live b { display: block; margin: 12px 0 10px; font-size: 42px; font-weight: 500; letter-spacing: -.04em;
+      font-variant-numeric: tabular-nums; }
+    .bar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .bar i { display: block; height: 100%; background: var(--green); border-radius: 3px;
+      animation: run 3.4s var(--ease) both; }
+    @keyframes run { from { width: 0 } }
+    .live small { display: block; margin-top: 10px; font-family: var(--mono); font-size: 10px;
+      letter-spacing: .1em; color: var(--faint); }
+
+    .body { position: relative; display: grid; grid-template-columns: 1fr 520px; gap: 44px;
+      margin-top: 66px; align-items: start; }
+
+    .plot { position: relative; }
+    .plot .cap { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 22px; }
+    .plot .cap h4 { margin: 0; font-size: 16px; font-weight: 500; }
+    .plot .cap span { font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--faint); }
+
+    .hist { display: flex; align-items: flex-end; gap: 4px; height: 300px;
+      border-bottom: 1px solid var(--line); }
+    .hist i { flex: 1; background: #d4d4d4; border-radius: 3px 3px 0 0; transform-origin: bottom;
+      animation: grow 1.4s var(--ease) both; }
+    .hist i.mid { background: var(--green); }
+    .hist i.tail { background: var(--orange); opacity: .55; }
+    @keyframes grow { from { transform: scaleY(.03) } }
+
+    .axis { display: flex; justify-content: space-between; margin-top: 12px;
+      font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--faint); }
+
+    .marks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line);
+      border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin-top: 30px; }
+    .marks div { background: var(--warm); padding: 16px 16px 18px; }
+    .marks span { display: block; font-family: var(--mono); font-size: 9px; letter-spacing: .13em;
+      text-transform: uppercase; color: var(--faint); margin-bottom: 7px; }
+    .marks b { font-size: 24px; font-weight: 500; letter-spacing: -.03em; }
+
+    .board { border: 1px solid var(--line); border-radius: 22px; background: var(--warm); padding: 26px; }
+    .board h4 { margin: 0 0 3px; font-size: 16px; font-weight: 500; }
+    .board .sub { font-family: var(--mono); font-size: 10px; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--faint); margin-bottom: 22px; }
+    .strat { display: grid; grid-template-columns: 26px 1fr auto; gap: 14px; align-items: center;
+      padding: 16px 0; border-top: 1px solid var(--line); }
+    .strat:last-child { border-bottom: 1px solid var(--line); }
+    .strat .rank { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+    .strat .name { font-size: 15px; }
+    .strat .name em { display: block; font-style: normal; font-family: var(--mono); font-size: 10px;
+      letter-spacing: .1em; color: var(--faint); margin-top: 5px; }
+    .strat .val { text-align: right; font-size: 19px; font-weight: 500; letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums; }
+    .strat .val em { display: block; font-style: normal; font-size: 11px; font-family: var(--mono);
+      color: var(--faint); margin-top: 5px; letter-spacing: .06em; }
+    .strat.win { background: linear-gradient(90deg, rgba(31,169,113,.09), transparent 70%);
+      margin: 0 -26px; padding-left: 26px; padding-right: 26px; }
+    .strat.win .rank { color: var(--green); }
+    .strat.win .val { color: var(--green); }
+
+    .note { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line);
+      font-size: 13px; line-height: 1.6; color: var(--muted); }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+</helmet>
+
+<div class="rules"><span></span><span></span><span></span></div>
+
+<div class="head">
+  <div class="idx">04</div>
+  <div>
+    <h2>10,000 futuros<br><span class="ghost">en vez de una sola predicción.</span></h2>
+    <p class="copy">La simulación inyecta incertidumbre en los parámetros, riesgo de ejecución
+      y ruido residual. El resultado no es un número: es una distribución con suelo, techo
+      y probabilidad de perder dinero.</p>
+  </div>
+  <div class="live">
+    <div class="top"><span class="dot"></span> Simulación en curso</div>
+    <b>10,000</b>
+    <div class="bar"><i style="width: 100%"></i></div>
+    <small>escenarios completados</small>
+  </div>
+</div>
+
+<div class="body">
+  <div class="plot">
+    <div class="cap">
+      <h4>Distribución del beneficio esperado</h4>
+      <span>USD · 10,000 escenarios</span>
+    </div>
+    <div class="hist">
+      <i class="tail" style="height: 3%;  animation-delay: .02s"></i>
+      <i class="tail" style="height: 6%;  animation-delay: .04s"></i>
+      <i class="tail" style="height: 11%; animation-delay: .06s"></i>
+      <i class="tail" style="height: 18%; animation-delay: .08s"></i>
+      <i style="height: 27%; animation-delay: .10s"></i>
+      <i style="height: 38%; animation-delay: .12s"></i>
+      <i style="height: 51%; animation-delay: .14s"></i>
+      <i style="height: 64%; animation-delay: .16s"></i>
+      <i style="height: 77%; animation-delay: .18s"></i>
+      <i class="mid" style="height: 88%; animation-delay: .20s"></i>
+      <i class="mid" style="height: 96%; animation-delay: .22s"></i>
+      <i class="mid" style="height: 100%; animation-delay: .24s"></i>
+      <i class="mid" style="height: 94%; animation-delay: .26s"></i>
+      <i class="mid" style="height: 84%; animation-delay: .28s"></i>
+      <i style="height: 71%; animation-delay: .30s"></i>
+      <i style="height: 57%; animation-delay: .32s"></i>
+      <i style="height: 43%; animation-delay: .34s"></i>
+      <i style="height: 31%; animation-delay: .36s"></i>
+      <i style="height: 21%; animation-delay: .38s"></i>
+      <i style="height: 13%; animation-delay: .40s"></i>
+      <i style="height: 8%;  animation-delay: .42s"></i>
+      <i style="height: 4%;  animation-delay: .44s"></i>
+    </div>
+    <div class="axis"><span>$40k</span><span>$56k</span><span>$66k</span><span>$76k</span><span>$90k</span></div>
+
+    <div class="marks">
+      <div><span>P10 · suelo</span><b>$55,967</b></div>
+      <div><span>P50 · mediana</span><b>$65,865</b></div>
+      <div><span>P90 · techo</span><b>$76,455</b></div>
+      <div><span>P(pérdida)</span><b style="color: var(--green)">0,0 %</b></div>
+    </div>
+  </div>
+
+  <div class="board">
+    <h4>Ranking de estrategias</h4>
+    <div class="sub">Beneficio esperado ajustado a riesgo</div>
+
+    <div class="strat win">
+      <div class="rank">01</div>
+      <div class="name">Mejorar landing + CTA + lead magnet<em>ROI 55,1x</em></div>
+      <div class="val">$66,106<em>P(p&#233;rdida) 0,0 %</em></div>
+    </div>
+    <div class="strat">
+      <div class="rank">02</div>
+      <div class="name">Webinar de ventas<em>Secuencia comercial</em></div>
+      <div class="val">$31,358<em>P(p&#233;rdida) 0,0 %</em></div>
+    </div>
+    <div class="strat">
+      <div class="rank">03</div>
+      <div class="name">Duplicar inversión en Ads<em>Más presupuesto, mismo funnel</em></div>
+      <div class="val">$30,844<em>P(p&#233;rdida) 6,1 %</em></div>
+    </div>
+    <div class="strat">
+      <div class="rank">04</div>
+      <div class="name">Nuevo producto<em>Lanzamiento sin histórico</em></div>
+      <div class="val">$27,214<em>P(p&#233;rdida) 45,3 %</em></div>
+    </div>
+
+    <p class="note">La ventaja frente a la segunda opción es de $34,748, suficiente para que
+      la recomendación no dependa de un empate estadístico. Nuevo producto tiene un techo
+      parecido pero pierde dinero en el 45 % de los escenarios.</p>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

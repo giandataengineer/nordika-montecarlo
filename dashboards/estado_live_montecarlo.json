@@ -1,146 +1,146 @@
 {
-  "current_simulation": 1920,
+  "current_simulation": 2280,
   "total_simulations": 10000,
-  "progress_pct": 19.2,
+  "progress_pct": 22.8,
   "is_running": true,
   "leaderboard": [
     {
       "ranking": 1,
       "decision": "Ventana conservadora",
-      "expected_profit_usd": 56411.897859375,
-      "p10_usd": 44995.172,
-      "p50_usd": 56353.350000000006,
-      "p90_usd": 67814.24399999999,
+      "expected_profit_usd": 56425.361342105265,
+      "p10_usd": 45113.301,
+      "p50_usd": 56409.295,
+      "p90_usd": 67653.824,
       "probability_loss": 0.0,
-      "expected_roi": 3.133993385416667
+      "expected_roi": 3.1347416228070175
     },
     {
       "ranking": 2,
       "decision": "Servicios de regulacion",
-      "expected_profit_usd": -18811.461390624998,
-      "p10_usd": -24590.111,
-      "p50_usd": -18886.010000000002,
-      "p90_usd": -12961.803,
-      "probability_loss": 0.9994791666666667,
-      "expected_roi": -0.6718384895833334
+      "expected_profit_usd": -18756.731179824565,
+      "p10_usd": -24606.593,
+      "p50_usd": -18878.82,
+      "p90_usd": -12808.902000000002,
+      "probability_loss": 0.999561403508772,
+      "expected_roi": -0.6698834210526315
     },
     {
       "ranking": 3,
       "decision": "Arbitraje agresivo",
-      "expected_profit_usd": -32488.873359375,
-      "p10_usd": -68180.98300000001,
-      "p50_usd": -33483.46,
-      "p90_usd": 6252.488000000015,
-      "probability_loss": 0.86875,
-      "expected_roi": -0.3419890625
+      "expected_profit_usd": -32087.757421052633,
+      "p10_usd": -67614.715,
+      "p50_usd": -33155.545,
+      "p90_usd": 6075.999,
+      "probability_loss": 0.868421052631579,
+      "expected_roi": -0.3377665350877193
     },
     {
       "ranking": 4,
       "decision": "Hibrido certificado",
-      "expected_profit_usd": -102314.22273958333,
-      "p10_usd": -154918.952,
-      "p50_usd": -126744.495,
-      "p90_usd": -56186.05399999997,
-      "probability_loss": 0.946875,
-      "expected_roi": -0.7308152604166666
+      "expected_profit_usd": -102114.41774561405,
+      "p10_usd": -154521.86599999998,
+      "p50_usd": -126724.405,
+      "p90_usd": -58524.129000000015,
+      "probability_loss": 0.9478070175438597,
+      "expected_roi": -0.7293882456140351
     }
   ],
   "recent_runs": [
     {
       "decision": "Ventana conservadora",
-      "simulation": 1917,
-      "incremental_profit_usd": 38087.62,
-      "roi": 2.116
+      "simulation": 2277,
+      "incremental_profit_usd": 67904.98,
+      "roi": 3.7725
     },
     {
       "decision": "Arbitraje agresivo",
-      "simulation": 1917,
-      "incremental_profit_usd": -27067.21,
-      "roi": -0.2849
+      "simulation": 2277,
+      "incremental_profit_usd": -31147.81,
+      "roi": -0.3279
     },
     {
       "decision": "Servicios de regulacion",
-      "simulation": 1917,
-      "incremental_profit_usd": -20999.57,
-      "roi": -0.75
+      "simulation": 2277,
+      "incremental_profit_usd": -21425.91,
+      "roi": -0.7652
     },
     {
       "decision": "Hibrido certificado",
-      "simulation": 1917,
-      "incremental_profit_usd": -132575.42,
-      "roi": -0.947
+      "simulation": 2277,
+      "incremental_profit_usd": -116375.18,
+      "roi": -0.8313
     },
     {
       "decision": "Ventana conservadora",
-      "simulation": 1918,
-      "incremental_profit_usd": 64718.52,
-      "roi": 3.5955
+      "simulation": 2278,
+      "incremental_profit_usd": 60397.43,
+      "roi": 3.3554
     },
     {
       "decision": "Arbitraje agresivo",
-      "simulation": 1918,
-      "incremental_profit_usd": -17386.37,
-      "roi": -0.183
+      "simulation": 2278,
+      "incremental_profit_usd": -43060.98,
+      "roi": -0.4533
     },
     {
       "decision": "Servicios de regulacion",
-      "simulation": 1918,
-      "incremental_profit_usd": -24253.19,
-      "roi": -0.8662
+      "simulation": 2278,
+      "incremental_profit_usd": -22996.33,
+      "roi": -0.8213
     },
     {
       "decision": "Hibrido certificado",
-      "simulation": 1918,
-      "incremental_profit_usd": -130912.13,
-      "roi": -0.9351
+      "simulation": 2278,
+      "incremental_profit_usd": -125265.05,
+      "roi": -0.8948
     },
     {
       "decision": "Ventana conservadora",
-      "simulation": 1919,
-      "incremental_profit_usd": 51830.89,
-      "roi": 2.8795
+      "simulation": 2279,
+      "incremental_profit_usd": 55769.3,
+      "roi": 3.0983
     },
     {
       "decision": "Arbitraje agresivo",
-      "simulation": 1919,
-      "incremental_profit_usd": -26949.23,
-      "roi": -0.2837
+      "simulation": 2279,
+      "incremental_profit_usd": -28907.76,
+      "roi": -0.3043
     },
     {
       "decision": "Servicios de regulacion",
-      "simulation": 1919,
-      "incremental_profit_usd": -20099.02,
-      "roi": -0.7178
+      "simulation": 2279,
+      "incremental_profit_usd": -12174.69,
+      "roi": -0.4348
     },
     {
       "decision": "Hibrido certificado",
-      "simulation": 1919,
-      "incremental_profit_usd": -139836.32,
-      "roi": -0.9988
+      "simulation": 2279,
+      "incremental_profit_usd": 3769.6,
+      "roi": 0.0269
     },
     {
       "decision": "Ventana conservadora",
-      "simulation": 1920,
-      "incremental_profit_usd": 59906.57,
-      "roi": 3.3281
+      "simulation": 2280,
+      "incremental_profit_usd": 52224.63,
+      "roi": 2.9014
     },
     {
       "decision": "Arbitraje agresivo",
-      "simulation": 1920,
-      "incremental_profit_usd": -42293.23,
-      "roi": -0.4452
+      "simulation": 2280,
+      "incremental_profit_usd": 23789.03,
+      "roi": 0.2504
     },
     {
       "decision": "Servicios de regulacion",
-      "simulation": 1920,
-      "incremental_profit_usd": -19666.56,
-      "roi": -0.7024
+      "simulation": 2280,
+      "incremental_profit_usd": -22760.6,
+      "roi": -0.8129
     },
     {
       "decision": "Hibrido certificado",
-      "simulation": 1920,
-      "incremental_profit_usd": -106306.92,
-      "roi": -0.7593
+      "simulation": 2280,
+      "incremental_profit_usd": -168089.33,
+      "roi": -1.2006
     }
   ],
   "dashboard_path": "dashboards/dashboard_live_montecarlo.html"
