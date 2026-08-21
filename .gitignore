@@ -6,3 +6,8 @@ __pycache__/
 diseno/
 node_modules/
 dist/
+
+# artefactos regenerados en cada ejecucion
+dashboards/estado_live_montecarlo.*
+datos/mission_control_debug.log
+data/
