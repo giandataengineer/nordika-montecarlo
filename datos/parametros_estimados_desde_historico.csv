@@ -1,9 +1,8 @@
-parameter,sample_size,baseline_cobertura,scenario_conversion,conversion_lift_pct,profit_lift_per_window_usd,profit_lift_ci_low_usd,profit_lift_ci_high_usd,profit_lift_significativo,source
-control_fino_completo,20000,0.1373,0.2185,0.5917,22.07,21.78,22.38,True,Estimado con contrafactual ML sobre historico sintetico
-bloque_punta_noche,3494,0.2172,0.221,,55.72,,,,Historico por bloque horario de despacho
-bloque_punta_tarde,4644,0.1895,0.1912,,33.12,,,,Historico por bloque horario de despacho
-bloque_manana,3134,0.134,0.1419,,-10.29,,,,Historico por bloque horario de despacho
-bloque_valle_solar,4467,0.0582,0.0601,,-30.36,,,,Historico por bloque horario de despacho
-descarga_profunda,20000,0.1373,0.1196,-0.1292,-2.87,-3.0,-2.73,True,Estimado con contrafactual ML sobre historico sintetico
-regulacion_convocada,15439,0.1608,0.1826,0.1355,5.37,5.27,5.46,True,Estimado con contrafactual ML sobre historico sintetico
-mercado_nuevo,14041,0.1424,0.1541,0.0826,43.24,42.26,44.25,True,Estimado con contrafactual ML sobre historico sintetico
+parameter,sample_size,baseline_conversion,scenario_conversion,conversion_lift_pct,profit_lift_per_opportunity_usd,profit_lift_ci_low_usd,profit_lift_ci_high_usd,profit_lift_significativo,source
+funnel_full_optimized,20000,0.0959,0.1334,0.3917,29.55,29.17,30.01,True,Estimado con contrafactual ML sobre historico sintetico
+paid_budget_low,792,0.0682,0.0642,,35.46,,,,Historico por nivel de inversion en ads
+paid_budget_medium,3320,0.0645,0.0645,,34.42,,,,Historico por nivel de inversion en ads
+paid_budget_high,2030,0.0498,0.0448,,18.27,,,,Historico por nivel de inversion en ads
+paid_budget_saturated,1760,0.025,0.027,,-1.07,,,,Historico por nivel de inversion en ads
+webinar_attendance,13561,0.1239,0.1742,0.4061,48.11,47.57,48.69,True,Estimado con contrafactual ML sobre historico sintetico
+new_product_offer,11607,0.1061,0.0609,-0.426,15.39,14.79,16.01,True,Estimado con contrafactual ML sobre historico sintetico

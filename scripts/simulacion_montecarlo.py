@@ -61,34 +61,20 @@ def _should_log_live_update(current_simulation: int, total_simulations: int) -> 
     return current_simulation % checkpoint == 0
 
 
-# ---------------------------------------------------------------------------
-# Dominio: operacion de una bateria de red (BESS) de 20 MW / 80 MWh.
-# Cada fila es una VENTANA DE DESPACHO de una hora: el precio que habia, el
-# estado de carga con el que se llego, que palancas de operacion estaban
-# activas y si el ciclo llego a cubrir su propio coste de degradacion.
-# ---------------------------------------------------------------------------
-
-# Bloques horarios. El precio spot no se comporta igual a las 3 de la mañana
-# que en la punta de la tarde, y esa diferencia es de donde sale el margen.
-BLOQUES_HORARIOS = [
-    "madrugada",
-    "manana",
-    "valle_solar",
-    "punta_tarde",
-    "punta_noche",
-    "noche",
+CHANNELS = [
+    "Facebook Ads",
+    "Google Ads",
+    "TikTok Ads",
+    "SEO / Blog",
+    "Email",
+    "Afiliados",
+    "Webinar",
 ]
 
-# Nodo de la red donde inyecta. La congestion local cambia el precio.
-ZONAS = ["Nodo Sur", "Nodo Centro", "Nodo Norte", "Nodo Costa", "Nodo Sierra"]
-
-# Estado del sistema en esa hora, marcado por el operador de red.
-ESTADOS_RED = ["holgado", "normal", "ajustado", "critico"]
-
-# Producto al que se destina esa ventana.
-PRODUCTOS = ["arbitraje", "regulacion", "reserva", "ocioso"]
-
-TIPOS_DIA = ["laborable", "sabado", "domingo_festivo"]
+SEGMENTS = ["Creator", "Ecommerce", "B2B Services", "SMB", "Enterprise"]
+DEVICES = ["desktop", "mobile", "tablet"]
+REGIONS = ["ES", "MX", "CO", "US Hispanic", "AR", "CL"]
+OBJECTIVES = ["cold_acquisition", "retargeting", "nurture", "launch", "evergreen"]
 
 
 def sigmoid(x: np.ndarray | float) -> np.ndarray | float:
@@ -99,64 +85,39 @@ def choose(rng: np.random.Generator, values: list[str], probs: list[float]) -> s
     return str(rng.choice(values, p=np.array(probs) / np.sum(probs)))
 
 
-def bloque_horario(hora: int) -> str:
-    """Los seis bloques siguen la curva de demanda diaria."""
-    if hora < 6:
-        return "madrugada"
-    if hora < 11:
-        return "manana"
-    if hora < 16:
-        return "valle_solar"
-    if hora < 20:
-        return "punta_tarde"
-    if hora < 23:
-        return "punta_noche"
-    return "noche"
+def ad_budget_level(date: pd.Timestamp, channel: str) -> str:
+    if channel not in {"Facebook Ads", "Google Ads", "TikTok Ads"}:
+        return "organic_or_owned"
 
-
-def presion_del_sistema(date: pd.Timestamp) -> str:
-    """Periodos de tension del sistema, analogos a la estacionalidad real.
-
-    El estiaje y las puntas de verano aprietan la oferta y ensanchan los
-    diferenciales de precio; los meses de hidrologia abundante los estrechan.
-    """
     ym = date.year * 100 + date.month
-    if ym <= 202403:
-        return "holgado"
+    if ym <= 202404:
+        return "low"
     if ym <= 202408:
-        return "ajustado"
+        return "medium"
     if ym <= 202412:
-        return "normal"
+        return "high"
     if ym <= 202503:
-        return "holgado"
+        return "medium"
     if ym <= 202506:
-        return "critico"
+        return "saturated"
     if ym <= 202509:
-        return "normal"
+        return "medium"
     if ym <= 202512:
-        return "ajustado"
+        return "high"
     if ym <= 202602:
-        return "critico"
-    return "normal"
+        return "saturated"
+    return "medium"
 
 
 def generate_dates(rng: np.random.Generator) -> pd.DatetimeIndex:
-    """Ventanas horarias sobre el horizonte, con mas peso donde hay mas actividad.
-
-    No se muestrea el calendario completo hora a hora: la bateria no opera las
-    24 horas, solo las ventanas en las que hubo decision de despacho.
-    """
-    horas = pd.date_range("2024-01-01", "2026-04-30 23:00", freq="h")
-    t = np.arange(len(horas))
-    tendencia = 1 + 0.0009 * (t / 24)
-    estacional = 1 + 0.10 * np.sin(2 * np.pi * (horas.dayofyear.to_numpy() / 365.25))
-    # las horas de punta concentran la operacion
-    hora_del_dia = horas.hour.to_numpy()
-    perfil = np.where((hora_del_dia >= 16) & (hora_del_dia < 23), 1.9, 1.0)
-    perfil = np.where((hora_del_dia >= 11) & (hora_del_dia < 16), 1.45, perfil)
-    pesos = tendencia * estacional * perfil
-    pesos = pesos / pesos.sum()
-    return pd.DatetimeIndex(rng.choice(horas, size=N_ROWS, replace=True, p=pesos)).sort_values()
+    dates = pd.date_range("2024-01-01", "2026-04-30", freq="D")
+    t = np.arange(len(dates))
+    trend = 1 + 0.0009 * t
+    seasonality = 1 + 0.10 * np.sin(2 * np.pi * (dates.dayofyear.to_numpy() / 365.25))
+    launch_bump = np.where((dates >= "2025-10-01") & (dates <= "2025-12-15"), 1.16, 1.0)
+    weights = trend * seasonality * launch_bump
+    weights = weights / weights.sum()
+    return pd.DatetimeIndex(rng.choice(dates, size=N_ROWS, replace=True, p=weights)).sort_values()
 
 
 def generate_dataset() -> pd.DataFrame:
@@ -164,271 +125,185 @@ def generate_dataset() -> pd.DataFrame:
     dates = generate_dates(rng)
     rows = []
 
-    # Los ciclos consumidos se acumulan a lo largo del horizonte: es lo que
-    # convierte el desgaste en un coste creciente y no en una constante.
-    ciclos_acumulados = 0.0
-
     for idx, date in enumerate(dates, start=1):
         month_index = (date.year - 2024) * 12 + date.month - 1
         quarter = f"{date.year}Q{((date.month - 1) // 3) + 1}"
-        hora = int(date.hour)
-        bloque = bloque_horario(hora)
 
-        if date.dayofweek == 5:
-            tipo_dia = "sabado"
-        elif date.dayofweek == 6:
-            tipo_dia = "domingo_festivo"
+        if date < pd.Timestamp("2024-09-01"):
+            channel_probs = [0.21, 0.15, 0.13, 0.17, 0.18, 0.10, 0.06]
+        elif date < pd.Timestamp("2025-04-01"):
+            channel_probs = [0.24, 0.16, 0.12, 0.15, 0.16, 0.09, 0.08]
+        elif date < pd.Timestamp("2025-07-01"):
+            channel_probs = [0.31, 0.19, 0.09, 0.12, 0.13, 0.08, 0.08]
         else:
-            tipo_dia = "laborable"
+            channel_probs = [0.23, 0.16, 0.12, 0.15, 0.17, 0.08, 0.09]
+        channel = choose(rng, CHANNELS, channel_probs)
 
-        estado_red = presion_del_sistema(date)
-        zona = choose(rng, ZONAS, [0.30, 0.24, 0.18, 0.16, 0.12])
+        segment = choose(rng, SEGMENTS, [0.20, 0.24, 0.24, 0.22, 0.10])
+        device = choose(rng, DEVICES, [0.58, 0.35, 0.07])
+        geo_region = choose(rng, REGIONS, [0.46, 0.18, 0.10, 0.08, 0.10, 0.08])
+        lifecycle_stage = choose(rng, ["new_visitor", "known_lead", "returning_customer"], [0.54, 0.34, 0.12])
 
-        # --- precio spot -------------------------------------------------
-        # Base por bloque horario: el valle solar hunde el precio y la punta
-        # de la tarde lo dispara. Es la curva que hace posible el arbitraje.
-        base_precio = {
-            "madrugada": 34.0,
-            "manana": 52.0,
-            "valle_solar": 26.0,
-            "punta_tarde": 88.0,
-            "punta_noche": 96.0,
-            "noche": 48.0,
-        }[bloque]
+        if channel in {"Facebook Ads", "Google Ads"}:
+            campaign_objective = choose(rng, OBJECTIVES, [0.48, 0.26, 0.08, 0.12, 0.06])
+        elif channel in {"Email", "Webinar"}:
+            campaign_objective = choose(rng, OBJECTIVES, [0.03, 0.18, 0.50, 0.12, 0.17])
+        else:
+            campaign_objective = choose(rng, OBJECTIVES, [0.22, 0.12, 0.18, 0.08, 0.40])
 
-        factor_estado = {"holgado": 0.82, "normal": 1.0, "ajustado": 1.24, "critico": 1.62}[estado_red]
-        factor_dia = {"laborable": 1.0, "sabado": 0.88, "domingo_festivo": 0.79}[tipo_dia]
-        factor_zona = {
-            "Nodo Sur": 1.00,
-            "Nodo Centro": 1.06,
-            "Nodo Norte": 0.94,
-            "Nodo Costa": 1.09,
-            "Nodo Sierra": 0.91,
-        }[zona]
+        budget_level = ad_budget_level(date, channel)
+        budget_multiplier = {
+            "organic_or_owned": 0,
+            "low": 0.70,
+            "medium": 1.00,
+            "high": 1.65,
+            "saturated": 2.55,
+        }[budget_level]
 
-        # Lognormal: los precios de electricidad tienen cola derecha gruesa.
-        # La mayoria de las horas son planas y unas pocas se disparan.
-        mu = np.log(base_precio * factor_estado * factor_dia * factor_zona)
-        precio_spot = float(np.clip(rng.lognormal(mu, 0.34), 4.0, 620.0))
+        base_daily_spend = {"Facebook Ads": 420, "Google Ads": 310, "TikTok Ads": 265}.get(channel, 0)
+        campaign_daily_spend = max(0, rng.normal(base_daily_spend * budget_multiplier, 35 + base_daily_spend * 0.08))
 
-        # El diferencial es lo que separa esta hora del valle del mismo dia.
-        precio_valle = float(np.clip(rng.lognormal(np.log(24.0 * factor_estado), 0.28), 2.0, 120.0))
-        diferencial = round(max(0.0, precio_spot - precio_valle), 2)
+        base_cost = {
+            "Facebook Ads": 12.5,
+            "Google Ads": 10.5,
+            "Afiliados": 7.0,
+            "Webinar": 5.5,
+            "SEO / Blog": 1.8,
+            "TikTok Ads": 8.4,
+            "Email": 0.7,
+        }[channel]
+        saturation_cost = {"low": 0.88, "medium": 1.00, "high": 1.28, "saturated": 1.82, "organic_or_owned": 1.0}[budget_level]
+        cost_attributed = max(0.15, rng.lognormal(np.log(base_cost * saturation_cost), 0.22))
 
-        # --- estado del activo -------------------------------------------
-        soc_inicial = float(np.clip(rng.normal(62, 19), 8, 100))
-
-        # --- palancas de operacion ---------------------------------------
-        # Cada una entra en produccion en una fecha distinta, igual que en una
-        # instalacion real: primero se opera a mano y luego se automatiza.
         if date < pd.Timestamp("2024-09-15"):
-            profundidad_descarga = "conservadora"
+            landing_variant = "baseline"
         elif date < pd.Timestamp("2025-01-01"):
-            profundidad_descarga = choose(rng, ["conservadora", "profunda"], [0.58, 0.42])
+            landing_variant = choose(rng, ["baseline", "landing_v2"], [0.58, 0.42])
         else:
-            profundidad_descarga = choose(rng, ["conservadora", "profunda"], [0.30, 0.70])
+            landing_variant = choose(rng, ["baseline", "landing_v2"], [0.30, 0.70])
 
         if date < pd.Timestamp("2025-03-15"):
-            ventana_carga = "estandar"
+            cta_variant = "standard"
         elif date < pd.Timestamp("2025-07-01"):
-            ventana_carga = choose(rng, ["estandar", "optimizada"], [0.52, 0.48])
+            cta_variant = choose(rng, ["standard", "benefit_cta"], [0.52, 0.48])
         else:
-            ventana_carga = choose(rng, ["estandar", "optimizada"], [0.28, 0.72])
+            cta_variant = choose(rng, ["standard", "benefit_cta"], [0.28, 0.72])
 
-        # Reserva de capacidad comprometida con el operador.
         if date < pd.Timestamp("2025-03-15"):
-            reserva_comprometida = 0
+            lead_magnet = 0
         elif date < pd.Timestamp("2025-07-01"):
-            reserva_comprometida = int(rng.random() < 0.42)
+            lead_magnet = int(rng.random() < 0.42)
         else:
-            reserva_comprometida = int(rng.random() < 0.76)
+            lead_magnet = int(rng.random() < 0.76)
 
-        # Control de rampa: suaviza la transicion y reduce el desgaste.
         if date < pd.Timestamp("2025-08-01"):
-            rampa_optimizada = 0
+            checkout_simplified = 0
         else:
-            rampa_optimizada = int(rng.random() < 0.64)
+            checkout_simplified = int(rng.random() < 0.64)
 
-        # Regulacion de frecuencia: se oferta y no siempre se convoca. Ese
-        # hueco entre ofertar y ser llamado es el riesgo de ejecucion real.
-        hora_apta = bloque in {"punta_tarde", "punta_noche", "manana"}
-        regulacion_ofertada = int(
-            date >= pd.Timestamp("2025-01-10") and hora_apta and rng.random() < 0.27
-        )
-        prob_convocatoria = 0.17
-        prob_convocatoria += 0.14 if estado_red in {"ajustado", "critico"} else 0
-        prob_convocatoria += 0.07 if tipo_dia == "laborable" else 0
-        prob_convocatoria += 0.05 if zona in {"Nodo Centro", "Nodo Costa"} else 0
-        regulacion_convocada = int(
-            regulacion_ofertada and rng.random() < min(prob_convocatoria, 0.55)
-        )
+        warm_enough = lifecycle_stage != "new_visitor" or channel in {"Email", "Webinar", "SEO / Blog"}
+        webinar_invited = int(date >= pd.Timestamp("2025-01-10") and warm_enough and rng.random() < 0.27)
+        attendance_prob = 0.17
+        attendance_prob += 0.14 if channel in {"Email", "Webinar"} else 0
+        attendance_prob += 0.07 if lifecycle_stage == "returning_customer" else 0
+        attendance_prob += 0.05 if segment in {"B2B Services", "Enterprise"} else 0
+        webinar_attended = int(webinar_invited and rng.random() < min(attendance_prob, 0.55))
 
-        # Mercado nuevo: solo en nodos con habilitacion tramitada.
-        zona_habilitada = zona in {"Nodo Centro", "Nodo Costa", "Nodo Sur"}
+        eligible_new_product = segment in {"Enterprise", "B2B Services", "Ecommerce"}
         if date < pd.Timestamp("2025-10-01"):
-            mercado_nuevo = 0
+            new_product_offer = 0
         elif date < pd.Timestamp("2026-01-15"):
-            mercado_nuevo = int(zona_habilitada and rng.random() < 0.18)
+            new_product_offer = int(eligible_new_product and rng.random() < 0.18)
         else:
-            mercado_nuevo = int(zona_habilitada and rng.random() < 0.12)
+            new_product_offer = int(eligible_new_product and rng.random() < 0.12)
 
-        producto = "regulacion" if regulacion_convocada else (
-            "reserva" if reserva_comprometida and diferencial < 18 else (
-                "arbitraje" if diferencial >= 12 else "ocioso"
-            )
-        )
+        channel_quality = {
+            "Email": 14,
+            "Webinar": 12,
+            "SEO / Blog": 8,
+            "TikTok Ads": -3,
+            "Google Ads": 1,
+            "Afiliados": -1,
+            "Facebook Ads": -4,
+        }[channel]
+        segment_quality = {"Enterprise": 8, "B2B Services": 6, "Ecommerce": 3, "Creator": 0, "SMB": -2}[segment]
+        lifecycle_quality = {"new_visitor": -6, "known_lead": 5, "returning_customer": 12}[lifecycle_stage]
+        saturation_quality = {"organic_or_owned": 0, "low": 3, "medium": 0, "high": -6, "saturated": -15}[budget_level]
+        quality = 52 + channel_quality + segment_quality + lifecycle_quality + saturation_quality + rng.normal(0, 11)
+        lead_score = int(np.clip(round(quality), 1, 99))
 
-        # --- atractivo de la ventana -------------------------------------
-        # Puntuacion 1-99 que resume si merecia la pena despachar aqui.
-        calidad_bloque = {
-            "punta_noche": 14,
-            "punta_tarde": 12,
-            "manana": 8,
-            "noche": 5,
-            "madrugada": 1,
-            "valle_solar": -4,
-        }[bloque]
-        calidad_estado = {"critico": 8, "ajustado": 6, "normal": 0, "holgado": -3}[estado_red]
-        calidad_soc = 12 if soc_inicial > 70 else (5 if soc_inicial > 40 else -6)
-        calidad_desgaste = -15 if ciclos_acumulados > 900 else (-6 if ciclos_acumulados > 500 else 3)
-        puntuacion = (
-            52
-            + calidad_bloque
-            + calidad_estado
-            + calidad_soc
-            + calidad_desgaste
-            + rng.normal(0, 11)
-        )
-        indice_despacho = int(np.clip(round(puntuacion), 1, 99))
-
-        # --- energia movida y coste de degradacion -----------------------
-        energia_base = {
-            "conservadora": 3.2,
-            "profunda": 7.0,
-        }[profundidad_descarga]
-        energia_mwh = float(
-            np.clip(rng.lognormal(np.log(energia_base), 0.21), 0.8, 40.0)
-        )
-        energia_mwh = round(min(energia_mwh, soc_inicial / 100 * 80.0), 2)
-
-        # El desgaste crece MAS que proporcionalmente con la profundidad de
-        # descarga: ese exponente es el corazon del caso. Duplicar la energia
-        # movida no duplica el coste, lo multiplica por mas de dos.
-        exponente_desgaste = 2.00 if profundidad_descarga == "profunda" else 1.05
-        coste_unitario = 13.5 * (1 + ciclos_acumulados / 2600.0)
-        coste_unitario *= 0.88 if rampa_optimizada else 1.0
-        coste_degradacion = float(
-            rng.lognormal(
-                np.log(coste_unitario * (energia_mwh / 4.0) ** exponente_desgaste), 0.19
-            )
-        )
-        coste_degradacion = round(max(0.4, coste_degradacion), 2)
-
-        # Solo las ventanas que realmente despachan consumen vida util.
-        # Contar tambien las horas ociosas inflaba el desgaste cinco veces.
-        ciclos_equivalentes = round(energia_mwh / 80.0, 4) if producto != "ocioso" else 0.0
-        ciclos_acumulados += ciclos_equivalentes
-
-        # --- objetivo: el ciclo cubrio su propio coste de degradacion ----
-        logit = -3.00
-        logit += (indice_despacho - 50) * 0.032
+        logit = -3.15
+        logit += (lead_score - 50) * 0.032
         logit += {
-            "punta_noche": 0.46,
-            "punta_tarde": 0.34,
-            "manana": 0.16,
-            "noche": 0.08,
-            "madrugada": -0.08,
-            "valle_solar": -0.16,
-        }[bloque]
-        logit += {"critico": 0.12, "ajustado": 0.08, "normal": 0.0, "holgado": -0.10}[estado_red]
-        logit += {"laborable": 0.22, "sabado": -0.04, "domingo_festivo": -0.16}[tipo_dia]
-        logit += {
-            "Nodo Costa": 0.16,
-            "Nodo Centro": 0.22,
-            "Nodo Sur": 0.03,
-            "Nodo Norte": -0.04,
-            "Nodo Sierra": -0.18,
-        }[zona]
-        logit += 0.19 if ventana_carga == "optimizada" else 0
-        logit += 0.18 if rampa_optimizada else 0
-        logit += 0.21 if reserva_comprometida else 0
-        logit += 0.48 if regulacion_convocada else (0.04 if regulacion_ofertada else 0)
-        # Descargar profundo mueve mas energia pero encarece el ciclo: en
-        # muchas ventanas el margen no llega a cubrir el desgaste extra.
-        logit += -0.28 if profundidad_descarga == "profunda" else 0.06
-        logit += 0.0032 * diferencial
-        logit += -0.22 if mercado_nuevo else 0
-        logit += -0.00045 * ciclos_acumulados
+            "Email": 0.34,
+            "Webinar": 0.46,
+            "SEO / Blog": 0.16,
+            "TikTok Ads": -0.10,
+            "Google Ads": -0.03,
+            "Afiliados": -0.08,
+            "Facebook Ads": -0.16,
+        }[channel]
+        logit += {"Creator": -0.04, "Ecommerce": 0.08, "B2B Services": 0.12, "SMB": -0.10, "Enterprise": 0.04}[segment]
+        logit += {"new_visitor": -0.16, "known_lead": 0.22, "returning_customer": 0.38}[lifecycle_stage]
+        logit += {"cold_acquisition": -0.18, "retargeting": 0.16, "nurture": 0.22, "launch": -0.04, "evergreen": 0.03}[campaign_objective]
+        logit += 0.19 if landing_variant == "landing_v2" else 0
+        logit += 0.18 if cta_variant == "benefit_cta" else 0
+        logit += 0.21 if lead_magnet else 0
+        logit += 0.16 if checkout_simplified else 0
+        logit += 0.48 if webinar_attended else (0.04 if webinar_invited else 0)
+        logit += {"organic_or_owned": 0, "low": 0.06, "medium": 0, "high": -0.15, "saturated": -0.48}[budget_level]
+        logit += -0.22 if new_product_offer else 0
         logit += 0.004 * month_index
-        prob_cobertura = float(np.clip(sigmoid(logit), 0.005, 0.58))
-        cubrio_degradacion = int(rng.random() < prob_cobertura)
+        conversion_prob = float(np.clip(sigmoid(logit), 0.005, 0.58))
+        converted = int(rng.random() < conversion_prob)
 
-        # --- ingreso del ciclo -------------------------------------------
-        precio_captado = diferencial
-        if ventana_carga == "optimizada":
-            precio_captado *= 1.09
-        if regulacion_convocada:
-            precio_captado *= 1.12
-        if mercado_nuevo:
-            precio_captado *= 2.35
-        precio_captado = round(float(np.clip(precio_captado, 0.5, 480.0)), 2)
+        base_aov = {"Creator": 760, "Ecommerce": 920, "B2B Services": 1120, "SMB": 640, "Enterprise": 1850}[segment]
+        channel_aov = {"Email": 1.03, "Webinar": 1.12, "SEO / Blog": 1.00, "TikTok Ads": 0.88, "Google Ads": 0.96, "Afiliados": 0.92, "Facebook Ads": 0.93}[channel]
+        product_multiplier = 2.35 if new_product_offer else 1.0
+        webinar_multiplier = 1.08 if webinar_attended else 1.0
+        aov = float(rng.lognormal(np.log(base_aov * channel_aov * product_multiplier * webinar_multiplier), 0.23))
+        aov = round(np.clip(aov, 120, 5200), 2)
+        revenue = round(converted * aov, 2)
 
-        ingreso = round(cubrio_degradacion * energia_mwh * precio_captado, 2)
-
-        margen_base = 0.73
-        margen_base += {
-            "punta_noche": 0.04,
-            "punta_tarde": 0.03,
-            "manana": 0.02,
-            "noche": 0.03,
-            "madrugada": -0.01,
-            "valle_solar": -0.04,
-        }[bloque]
-        margen_base += -0.030 if mercado_nuevo else 0
-        margen_operativo = round(float(np.clip(rng.normal(margen_base, 0.035), 0.52, 0.86)), 3)
-
-        coste_operativo = 22 if cubrio_degradacion else 0
-        margen_bruto = round(ingreso * margen_operativo, 2)
-        margen_neto = round(margen_bruto - coste_degradacion - coste_operativo, 2)
-
-        latencia_respuesta = (
-            int(max(0, rng.gamma(2.0, 3.0) - (2 if rampa_optimizada else 0)))
-            if cubrio_degradacion
-            else ""
-        )
+        margin_base = 0.73
+        margin_base += {"Email": 0.04, "Webinar": 0.03, "SEO / Blog": 0.02, "TikTok Ads": -0.015, "Google Ads": -0.01, "Afiliados": -0.04, "Facebook Ads": -0.02}[channel]
+        margin_base += -0.030 if new_product_offer else 0
+        gross_margin = round(float(np.clip(rng.normal(margin_base, 0.035), 0.52, 0.86)), 3)
+        support_cost = 22 if converted else 0
+        gross_profit = round(revenue * gross_margin, 2)
+        contribution_profit = round(gross_profit - cost_attributed - support_cost, 2)
+        days_to_close = int(max(0, rng.gamma(2.0, 3.0) - (2 if webinar_attended else 0))) if converted else ""
 
         rows.append(
             {
-                "ventana_id": f"VD-{idx:06d}",
+                "transaction_id": f"TX-{idx:06d}",
                 "date": date.date().isoformat(),
-                "hora": hora,
                 "month": date.strftime("%Y-%m"),
                 "quarter": quarter,
-                "bloque_horario": bloque,
-                "producto_despacho": producto,
-                "tipo_dia": tipo_dia,
-                "estado_red": estado_red,
-                "zona_red": zona,
-                "profundidad_descarga": profundidad_descarga,
-                "ventana_carga": ventana_carga,
-                "precio_spot_usd_mwh": round(precio_spot, 2),
-                "diferencial_usd_mwh": diferencial,
-                "soc_inicial_pct": round(soc_inicial, 1),
-                "reserva_comprometida": reserva_comprometida,
-                "rampa_optimizada": rampa_optimizada,
-                "regulacion_ofertada": regulacion_ofertada,
-                "regulacion_convocada": regulacion_convocada,
-                "mercado_nuevo": mercado_nuevo,
-                "indice_despacho": indice_despacho,
-                "ciclos_acumulados": round(ciclos_acumulados, 3),
-                "coste_degradacion_usd": coste_degradacion,
-                "cubrio_degradacion": cubrio_degradacion,
-                "latencia_respuesta_min": latencia_respuesta,
-                "energia_mwh": energia_mwh if cubrio_degradacion else 0.0,
-                "ingreso_usd": ingreso,
-                "margen_operativo_pct": margen_operativo,
-                "margen_bruto_usd": margen_bruto,
-                "margen_neto_usd": margen_neto,
+                "channel": channel,
+                "campaign_objective": campaign_objective,
+                "customer_segment": segment,
+                "lifecycle_stage": lifecycle_stage,
+                "device": device,
+                "geo_region": geo_region,
+                "ad_budget_level": budget_level,
+                "campaign_daily_spend_usd": round(campaign_daily_spend, 2),
+                "cost_attributed_usd": round(cost_attributed, 2),
+                "landing_variant": landing_variant,
+                "cta_variant": cta_variant,
+                "lead_magnet": lead_magnet,
+                "checkout_simplified": checkout_simplified,
+                "webinar_invited": webinar_invited,
+                "webinar_attended": webinar_attended,
+                "new_product_offer": new_product_offer,
+                "lead_score": lead_score,
+                "converted_to_sale": converted,
+                "days_to_close": days_to_close,
+                "aov_usd": aov if converted else 0.0,
+                "revenue_usd": revenue,
+                "gross_margin_pct": gross_margin,
+                "gross_profit_usd": gross_profit,
+                "contribution_profit_usd": contribution_profit,
             }
         )
 
@@ -436,27 +311,26 @@ def generate_dataset() -> pd.DataFrame:
 
 
 CATEGORICAL = [
-    "bloque_horario",
-    "producto_despacho",
-    "tipo_dia",
-    "estado_red",
-    "zona_red",
-    "profundidad_descarga",
-    "ventana_carga",
+    "channel",
+    "campaign_objective",
+    "customer_segment",
+    "lifecycle_stage",
+    "device",
+    "geo_region",
+    "ad_budget_level",
+    "landing_variant",
+    "cta_variant",
 ]
 
 NUMERIC = [
-    "precio_spot_usd_mwh",
-    "diferencial_usd_mwh",
-    "soc_inicial_pct",
-    "coste_degradacion_usd",
-    "reserva_comprometida",
-    "rampa_optimizada",
-    "regulacion_ofertada",
-    "regulacion_convocada",
-    "mercado_nuevo",
-    "indice_despacho",
-    "ciclos_acumulados",
+    "campaign_daily_spend_usd",
+    "cost_attributed_usd",
+    "lead_magnet",
+    "checkout_simplified",
+    "webinar_invited",
+    "webinar_attended",
+    "new_product_offer",
+    "lead_score",
 ]
 
 FEATURES = CATEGORICAL + NUMERIC
@@ -511,14 +385,14 @@ def build_conversion_model(df: pd.DataFrame) -> tuple[Pipeline, float]:
         ]
     )
     train, test = temporal_split(df)
-    model.fit(train[FEATURES], train["cubrio_degradacion"])
+    model.fit(train[FEATURES], train["converted_to_sale"])
     predicted = model.predict_proba(test[FEATURES])[:, 1]
-    auc = roc_auc_score(test["cubrio_degradacion"], predicted)
+    auc = roc_auc_score(test["converted_to_sale"], predicted)
     return model, float(auc)
 
 
 def build_aov_model(df: pd.DataFrame) -> Pipeline:
-    sold = df[df["cubrio_degradacion"] == 1].copy()
+    sold = df[df["converted_to_sale"] == 1].copy()
     preprocessor = ColumnTransformer(
         [
             ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL),
@@ -531,33 +405,8 @@ def build_aov_model(df: pd.DataFrame) -> Pipeline:
             ("regressor", HistGradientBoostingRegressor(max_iter=220, learning_rate=0.045, random_state=SEED)),
         ]
     )
-    model.fit(sold[FEATURES], np.log1p(sold["ingreso_usd"]))
+    model.fit(sold[FEATURES], np.log1p(sold["aov_usd"]))
     return model
-
-
-# Factor de desgaste que arrastra la palanca de profundidad. Sale de los
-# exponentes del generador: la descarga profunda mueve ~2,2x mas energia y su
-# desgaste escala con el cuadrado, no linealmente.
-FACTOR_DESGASTE_PROFUNDA = 2.1
-
-
-def aplicar_profundidad(frame: pd.DataFrame, nivel: str) -> pd.DataFrame:
-    """Cambia la profundidad de descarga arrastrando su coste de degradacion.
-
-    Sin esto el contrafactual solo veia el cambio categorico y el coste seguia
-    siendo el del historico, con lo que la palanca central del caso salia con
-    uplift cero.
-    """
-    salida = frame.copy()
-    actual = salida["profundidad_descarga"]
-    factor = np.where(
-        (actual == "conservadora") & (nivel == "profunda"),
-        FACTOR_DESGASTE_PROFUNDA,
-        np.where((actual == "profunda") & (nivel == "conservadora"), 1 / FACTOR_DESGASTE_PROFUNDA, 1.0),
-    )
-    salida["coste_degradacion_usd"] = salida["coste_degradacion_usd"] * factor
-    salida["profundidad_descarga"] = nivel
-    return salida
 
 
 def predict_components(
@@ -567,8 +416,8 @@ def predict_components(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     p_sale = conversion_model.predict_proba(rows[FEATURES])[:, 1]
     aov = np.expm1(aov_model.predict(rows[FEATURES]))
-    margin = rows["margen_operativo_pct"].to_numpy()
-    cost = rows["coste_degradacion_usd"].to_numpy()
+    margin = rows["gross_margin_pct"].to_numpy()
+    cost = rows["cost_attributed_usd"].to_numpy()
     return p_sale, aov, margin, cost
 
 
@@ -595,10 +444,10 @@ def estimate_historical_parameters(df: pd.DataFrame, conversion_model: Pipeline,
             {
                 "parameter": name,
                 "sample_size": len(base),
-                "baseline_cobertura": round(float(p0.mean()), 4),
+                "baseline_conversion": round(float(p0.mean()), 4),
                 "scenario_conversion": round(float(p1.mean()), 4),
                 "conversion_lift_pct": round(float((p1.mean() / p0.mean()) - 1), 4),
-                "profit_lift_per_window_usd": round(float(delta.mean()), 2),
+                "profit_lift_per_opportunity_usd": round(float(delta.mean()), 2),
                 # None y no NaN: json.dumps escribe NaN, que no es JSON valido y
                 # revienta el JSON.parse del navegador
                 "profit_lift_ci_low_usd": round(float(ic["inferior"]), 2) if ic.get("inferior") is not None else None,
@@ -609,137 +458,99 @@ def estimate_historical_parameters(df: pd.DataFrame, conversion_model: Pipeline,
         )
 
     base = df.copy()
+    funnel = base.copy()
+    funnel["landing_variant"] = "landing_v2"
+    funnel["cta_variant"] = "benefit_cta"
+    funnel["lead_magnet"] = 1
+    funnel["checkout_simplified"] = 1
+    effect("funnel_full_optimized", base, funnel)
 
-    # Palancas de control fino: ventana de carga optimizada, rampa suave y
-    # reserva comprometida. Es el paquete barato, casi todo software.
-    control = aplicar_profundidad(base, "conservadora")
-    control["ventana_carga"] = "optimizada"
-    control["rampa_optimizada"] = 1
-    control["reserva_comprometida"] = 1
-    effect("control_fino_completo", base, control)
-
-    # La palanca central del caso: descargar profundo mueve mas energia pero
-    # el desgaste crece con el cuadrado. Se mide por bloque horario porque el
-    # diferencial de precio no es igual en la punta que en el valle solar.
-    for bloque in ["punta_noche", "punta_tarde", "manana", "valle_solar"]:
-        bloque_df = df[df["bloque_horario"] == bloque]
-        if len(bloque_df) == 0:
+    paid = df[df["channel"].isin(["Facebook Ads", "Google Ads"])].copy()
+    for level in ["low", "medium", "high", "saturated"]:
+        level_df = paid[paid["ad_budget_level"] == level]
+        if len(level_df) == 0:
             continue
-        p, a, m, c = predict_components(bloque_df, conversion_model, aov_model)
+        p, a, m, c = predict_components(level_df, conversion_model, aov_model)
         rows.append(
             {
-                "parameter": f"bloque_{bloque}",
-                "sample_size": len(bloque_df),
-                "baseline_cobertura": round(float(bloque_df["cubrio_degradacion"].mean()), 4),
+                "parameter": f"paid_budget_{level}",
+                "sample_size": len(level_df),
+                "baseline_conversion": round(float(level_df["converted_to_sale"].mean()), 4),
                 "scenario_conversion": round(float(p.mean()), 4),
                 "conversion_lift_pct": "",
-                "profit_lift_per_window_usd": round(float((p * a * m - c).mean()), 2),
-                "source": "Historico por bloque horario de despacho",
+                "profit_lift_per_opportunity_usd": round(float((p * a * m - c).mean()), 2),
+                "source": "Historico por nivel de inversion en ads",
             }
         )
 
-    effect("descarga_profunda", base, aplicar_profundidad(base, "profunda"))
+    warm = df[(df["lifecycle_stage"] != "new_visitor") | (df["channel"].isin(["Email", "SEO / Blog", "Webinar"]))].copy()
+    webinar = warm.copy()
+    webinar["webinar_invited"] = 1
+    webinar["webinar_attended"] = 1
+    effect("webinar_attendance", warm, webinar)
 
-    # Regulacion de frecuencia sobre las ventanas que pueden ofertarla.
-    aptas = df[
-        df["bloque_horario"].isin(["punta_tarde", "punta_noche", "manana"])
-        | df["estado_red"].isin(["ajustado", "critico"])
-    ].copy()
-    regulada = aptas.copy()
-    regulada["regulacion_ofertada"] = 1
-    regulada["regulacion_convocada"] = 1
-    effect("regulacion_convocada", aptas, regulada)
-
-    # Mercado nuevo, solo en los nodos con habilitacion tramitable.
-    habilitables = df[df["zona_red"].isin(["Nodo Centro", "Nodo Costa", "Nodo Sur"])].copy()
-    nuevo = habilitables.copy()
-    nuevo["mercado_nuevo"] = 1
-    effect("mercado_nuevo", habilitables, nuevo)
+    eligible = df[df["customer_segment"].isin(["Enterprise", "B2B Services", "Ecommerce"])].copy()
+    product = eligible.copy()
+    product["new_product_offer"] = 1
+    effect("new_product_offer", eligible, product)
 
     return pd.DataFrame(rows)
 
 
 def scenario_frames(base: pd.DataFrame, rng: np.random.Generator) -> dict[str, tuple[pd.DataFrame, float]]:
-    """Las cuatro estrategias de operacion, con su inversion inicial en USD.
-
-    Cada una es la misma base historica con las palancas movidas, que es lo que
-    permite compararlas contra si mismas y no contra periodos distintos.
-    """
     scenarios: dict[str, tuple[pd.DataFrame, float]] = {}
 
-    # 1. La aburrida: ciclado suave y control fino. Inversion baja, casi todo
-    #    software y ajuste de consignas.
-    conservadora = aplicar_profundidad(base, "conservadora")
-    conservadora["ventana_carga"] = "optimizada"
-    conservadora["rampa_optimizada"] = 1
-    conservadora["reserva_comprometida"] = 1
-    scenarios["Ventana conservadora"] = (conservadora, 18_000.0)
+    funnel = base.copy()
+    funnel["landing_variant"] = "landing_v2"
+    funnel["cta_variant"] = "benefit_cta"
+    funnel["lead_magnet"] = 1
+    funnel["checkout_simplified"] = 1
+    scenarios["Optimizar la conversion del sitio"] = (funnel, 1200.0)
 
-    # 2. La intuitiva: perseguir cada diferencial. Se anaden ventanas de punta
-    #    con descarga profunda, que es exactamente lo que hace un operador que
-    #    solo mira la facturacion del mes.
-    punta = base[base["bloque_horario"].isin(["punta_tarde", "punta_noche"])].copy()
-    extra_count = max(620, int(len(punta) * 2.00))
-    extra = punta.sample(extra_count, replace=True, random_state=SEED).copy()
-    extra["profundidad_descarga"] = "profunda"
-    extra["estado_red"] = rng.choice(["ajustado", "critico"], size=extra_count, p=[0.80, 0.20])
-    extra["soc_inicial_pct"] = np.clip(
-        extra["soc_inicial_pct"] * rng.normal(1.05, 0.12, extra_count), 5, 100
-    )
-    # mas ciclos consumidos encarecen cada operacion siguiente
-    extra["coste_degradacion_usd"] = extra["coste_degradacion_usd"] * rng.normal(1.55, 0.12, extra_count)
-    extra["indice_despacho"] = np.clip(
-        extra["indice_despacho"] - rng.normal(4, 4, extra_count), 1, 99
-    ).round().astype(int)
-    agresivo = aplicar_profundidad(pd.concat([base, extra], ignore_index=True), "profunda")
-    scenarios["Arbitraje agresivo"] = (agresivo, 95_000.0)
+    paid_pool = base[base["channel"].isin(["Facebook Ads", "Google Ads"])].copy()
+    extra_count = max(620, int(len(paid_pool) * 2.00))
+    extra = paid_pool.sample(extra_count, replace=True, random_state=SEED).copy()
+    extra["ad_budget_level"] = rng.choice(["high", "saturated"], size=extra_count, p=[0.80, 0.20])
+    extra["campaign_daily_spend_usd"] = extra["campaign_daily_spend_usd"] * rng.normal(1.55, 0.12, extra_count)
+    extra["cost_attributed_usd"] = extra["cost_attributed_usd"] * rng.normal(1.05, 0.12, extra_count)
+    extra["lead_score"] = np.clip(extra["lead_score"] - rng.normal(4, 4, extra_count), 1, 99).round().astype(int)
+    more_ads = pd.concat([base, extra], ignore_index=True)
+    scenarios["Escalar paid social"] = (more_ads, 9000.0)
 
-    # 3. La estable: comprometer capacidad y cobrar por disponibilidad.
-    regulacion = base.copy()
-    apta = regulacion["bloque_horario"].isin(["punta_tarde", "punta_noche", "manana"]) | (
-        regulacion["estado_red"].isin(["ajustado", "critico"])
-    )
-    ofertada = apta & (rng.random(len(regulacion)) < 0.62)
-    convocada = ofertada & (rng.random(len(regulacion)) < 0.34)
-    regulacion.loc[ofertada, "regulacion_ofertada"] = 1
-    regulacion.loc[convocada, "regulacion_convocada"] = 1
-    regulacion.loc[ofertada, "reserva_comprometida"] = 1
-    scenarios["Servicios de regulacion"] = (regulacion, 28_000.0)
+    warm = base.copy()
+    candidate = (warm["lifecycle_stage"] != "new_visitor") | (warm["channel"].isin(["Email", "SEO / Blog", "Webinar"]))
+    invited = candidate & (rng.random(len(warm)) < 0.62)
+    attended = invited & (rng.random(len(warm)) < 0.34)
+    warm.loc[invited, "webinar_invited"] = 1
+    warm.loc[attended, "webinar_attended"] = 1
+    scenarios["Reactivacion y remarketing"] = (warm, 2500.0)
 
-    # 4. La espectacular: habilitar un mercado nuevo. Techo alto, coste hundido
-    #    y la unica con incertidumbre sobre si la certificacion llega a tiempo.
-    hibrido = base.copy()
-    habilitable = hibrido["zona_red"].isin(["Nodo Centro", "Nodo Costa", "Nodo Sur"])
-    activado = habilitable & (rng.random(len(hibrido)) < 0.32)
-    hibrido.loc[activado, "mercado_nuevo"] = 1
-    hibrido.loc[activado, "coste_degradacion_usd"] = hibrido.loc[
-        activado, "coste_degradacion_usd"
-    ] + rng.lognormal(np.log(5.0), 0.35, int(activado.sum()))
-    scenarios["Hibrido certificado"] = (hibrido, 140_000.0)
+    product = base.copy()
+    eligible = product["customer_segment"].isin(["Enterprise", "B2B Services", "Ecommerce"])
+    offered = eligible & (rng.random(len(product)) < 0.32)
+    product.loc[offered, "new_product_offer"] = 1
+    product.loc[offered, "cost_attributed_usd"] = product.loc[offered, "cost_attributed_usd"] + rng.lognormal(np.log(5.0), 0.35, offered.sum())
+    scenarios["Abrir categoria nueva"] = (product, 12000.0)
 
     return scenarios
 
 
-# Calibracion de los tres ruidos por estrategia, extraida del cuerpo del bucle
+# Calibracion de los tres ruidos por decision, extraida del cuerpo del bucle
 # para poder escalarla desde fuera y auditar de que depende la conclusion.
-# (mu, sigma) de la lognormal del precio; valores y pesos del riesgo de
-# despacho; suelo y proporcion del ruido residual.
+# (mu, sigma) de la lognormal de incertidumbre; valores y pesos del retraso de
+# ejecucion; suelo y proporcion del ruido residual.
 NOISE_PROFILES: dict[str, dict[str, object]] = {
-    # Mercado nuevo: nadie sabe cuanto paga ni cuando llega la habilitacion.
-    "Hibrido certificado": {
+    "Abrir categoria nueva": {
         "uncertainty": (-0.90, 1.38),
         "execution": ([0.10, 0.30, 0.76, 1.65, 3.40], [0.23, 0.25, 0.24, 0.18, 0.10]),
         "residual": (18_000, 0.34),
     },
-    # Arbitraje: expuesto de lleno a la cola gruesa del precio spot.
-    "Arbitraje agresivo": {
+    "Escalar paid social": {
         "uncertainty": (-0.08, 0.24),
         "execution": ([0.58, 0.82, 1.00, 1.16], [0.18, 0.30, 0.34, 0.18]),
         "residual": (16_000, 0.26),
     },
-    # Regulacion: se cobra por disponibilidad, asi que el precio importa menos.
-    # El riesgo real es no ser convocado.
-    "Servicios de regulacion": {
+    "Reactivacion y remarketing": {
         "uncertainty": (0.0, 0.16),
         "execution": ([0.72, 0.94, 1.10, 1.22], [0.18, 0.36, 0.32, 0.14]),
         "residual": (4_000, 0.12),
@@ -891,10 +702,10 @@ def write_live_dashboard(
         )
 
     colors = {
-        "Ventana conservadora": "#1fa971",
-        "Servicios de regulacion": "#2f80ed",
-        "Arbitraje agresivo": "#d9531e",
-        "Hibrido certificado": "#7c3aed",
+        "Optimizar la conversion del sitio": "#1fa971",
+        "Reactivacion y remarketing": "#2f80ed",
+        "Escalar paid social": "#d9531e",
+        "Abrir categoria nueva": "#7c3aed",
     }
     initial_status = json.dumps(status, ensure_ascii=False)
     colors_json = json.dumps(colors, ensure_ascii=False)
@@ -977,7 +788,7 @@ body {{ margin:0; font-family:Inter,-apple-system,Segoe UI,Arial,sans-serif; col
                 <div class=\"metric-chip\"><div class=\"label\">Lider</div><div class=\"value\" id=\"hero-leader\">-</div></div>
                 <div class=\"metric-chip\"><div class=\"label\">ROI lider</div><div class=\"value\" id=\"hero-roi\">-</div></div>
             </div>
-            <div class=\"footer-note\" id=\"hero-meta\">Esperando telemetria...</div>
+            <div class=\"footer-note\" id=\"hero-meta\">Esperando telemetria…</div>
         </div>
         <div class=\"hero-side\">
             <div class=\"ring\" id=\"progress-ring\">
@@ -1148,7 +959,7 @@ function renderCards(leaderboard) {{
             <div class="kicker">Posicion ${{row.ranking}}</div>
             <div class="metric">${{shortMoney(row.expected_profit_usd)}}</div>
             <div class="sub">${{row.decision}}</div>
-            <div class="sub">Perdida: ${{pct(row.probability_loss)}} | ROI: ${{Number(row.expected_roi).toFixed(2)}}x</div>
+            <div class="sub">Perdida: ${{pct(row.probability_loss)}} · ROI: ${{Number(row.expected_roi).toFixed(2)}}x</div>
         </section>
     `).join('');
 }}
@@ -1289,7 +1100,7 @@ function render(status) {{
     document.getElementById('hero-state').textContent = status.is_running ? 'En marcha' : 'Completada';
     document.getElementById('hero-leader').textContent = best ? best.decision : '-';
     document.getElementById('hero-roi').textContent = best ? Number(best.expected_roi).toFixed(2) + 'x' : '-';
-    document.getElementById('hero-meta').textContent = `Actualizado en iteracion ${{Number(status.current_simulation || 0).toLocaleString('es-ES')}} | archivo de estado: {status_path.name}`;
+    document.getElementById('hero-meta').textContent = `Actualizado en iteracion ${{Number(status.current_simulation || 0).toLocaleString('es-ES')}} · archivo de estado: {status_path.name}`;
     renderCards(leaderboard);
     renderLeaderboardBars(leaderboard);
     renderRadar(leaderboard);
@@ -1346,9 +1157,9 @@ def summarize(simulations: pd.DataFrame) -> pd.DataFrame:
 
 def markdown_table(frame: pd.DataFrame) -> str:
     columns = list(frame.columns)
-    rows = ["| " + " · ".join(columns) + " |", "| " + " · ".join("---" for _ in columns) + " |"]
+    rows = ["| " + " | ".join(columns) + " |", "| " + " | ".join("---" for _ in columns) + " |"]
     for _, row in frame.iterrows():
-        rows.append("| " + " · ".join(str(row[col]) for col in columns) + " |")
+        rows.append("| " + " | ".join(str(row[col]) for col in columns) + " |")
     return "\n".join(rows)
 
 
@@ -1359,65 +1170,56 @@ def evaluate(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, auc:
         (
             "dataset_transaccional_20k",
             len(df) == N_ROWS
-            and df["ventana_id"].is_unique
-            and df["cubrio_degradacion"].between(0, 1).all()
+            and df["transaction_id"].is_unique
+            and df["converted_to_sale"].between(0, 1).all()
             and df["date"].min() == "2024-01-01"
             and df["date"].max() <= "2026-04-30",
         ),
         (
             "parametros_emergen_del_historico",
             auc >= 0.70
-            and param_idx.loc["control_fino_completo", "profit_lift_per_window_usd"] > 0
-            # umbral propio del dominio: ser convocado a regulacion sube la
-            # cobertura un digito medio, no el 30 % del caso comercial de
-            # partida. Se exige efecto positivo y significativo.
-            and param_idx.loc["regulacion_convocada", "conversion_lift_pct"] > 0.10
-            and bool(param_idx.loc["regulacion_convocada", "profit_lift_significativo"])
-            # el mecanismo central del caso: descargar profundo destruye margen
-            and param_idx.loc["descarga_profunda", "profit_lift_per_window_usd"] < 0
-            and param_idx.loc["bloque_valle_solar", "baseline_cobertura"]
-            < param_idx.loc["bloque_punta_noche", "baseline_cobertura"],
+            and param_idx.loc["funnel_full_optimized", "profit_lift_per_opportunity_usd"] > 8
+            and param_idx.loc["webinar_attendance", "conversion_lift_pct"] > 0.20
+            and param_idx.loc["paid_budget_saturated", "baseline_conversion"]
+            < param_idx.loc["paid_budget_medium", "baseline_conversion"],
         ),
         (
             "conclusion_y_narrativa",
-            # el hallazgo del caso: gana la estrategia aburrida, y gana porque
-            # es la unica con suelo positivo, no porque tenga la media mas alta
-            summary.iloc[0]["decision"] == "Ventana conservadora"
-            and by_decision.loc["Ventana conservadora", "p10_usd"] > 0
-            and by_decision.loc["Ventana conservadora", "probability_loss"] < 0.01
-            # la intuitiva es la mas dispersa: mayor recorrido entre P10 y P90
+            # gana por el suelo, no por el techo: es lo que hace el caso
+            summary.iloc[0]["decision"] == "Optimizar la conversion del sitio"
+            and by_decision.loc[summary.iloc[0]["decision"], "p10_usd"] > 0
+            and by_decision.loc[summary.iloc[0]["decision"], "probability_loss"] < 0.01
+            # la apuesta de producto es la mas dispersa y la que mas pierde
+            and by_decision.loc["Abrir categoria nueva", "probability_loss"] > 0.18
             and (
-                by_decision.loc["Arbitraje agresivo", "p90_usd"]
-                - by_decision.loc["Arbitraje agresivo", "p10_usd"]
+                by_decision.loc["Abrir categoria nueva", "p90_usd"]
+                - by_decision.loc["Abrir categoria nueva", "p10_usd"]
             )
-            > (
-                by_decision.loc["Ventana conservadora", "p90_usd"]
-                - by_decision.loc["Ventana conservadora", "p10_usd"]
-            )
-            and by_decision.loc["Arbitraje agresivo", "probability_loss"] > 0.05,
+            == (by_decision["p90_usd"] - by_decision["p10_usd"]).max()
+            and by_decision.loc["Escalar paid social", "probability_loss"] > 0.05,
         ),
     ]
     return all(result for _, result in checks), [f"{name}: {'PASS' if result else 'FAIL'}" for name, result in checks]
 
 
 def write_report(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, auc: float, checks: list[str]) -> None:
-    conversion = df["cubrio_degradacion"].mean()
-    revenue = df["ingreso_usd"].sum()
-    profit = df["margen_neto_usd"].sum()
+    conversion = df["converted_to_sale"].mean()
+    revenue = df["revenue_usd"].sum()
+    profit = df["contribution_profit_usd"].sum()
     channel = (
-        df.groupby("bloque_horario")
+        df.groupby("channel")
         .agg(
-            registros=("ventana_id", "count"),
-            conversion=("cubrio_degradacion", "mean"),
-            ingreso_usd=("ingreso_usd", "sum"),
-            margen_neto_usd=("margen_neto_usd", "sum"),
-            coste_medio=("coste_degradacion_usd", "mean"),
+            registros=("transaction_id", "count"),
+            conversion=("converted_to_sale", "mean"),
+            revenue_usd=("revenue_usd", "sum"),
+            contribution_profit_usd=("contribution_profit_usd", "sum"),
+            coste_medio=("cost_attributed_usd", "mean"),
         )
         .reset_index()
     )
     channel["conversion"] = (channel["conversion"] * 100).round(1).astype(str) + "%"
-    channel["ingreso_usd"] = channel["ingreso_usd"].round(0).astype(int)
-    channel["margen_neto_usd"] = channel["margen_neto_usd"].round(0).astype(int)
+    channel["revenue_usd"] = channel["revenue_usd"].round(0).astype(int)
+    channel["contribution_profit_usd"] = channel["contribution_profit_usd"].round(0).astype(int)
     channel["coste_medio"] = channel["coste_medio"].round(2)
 
     pretty_summary = summary.copy()
@@ -1436,18 +1238,18 @@ def write_report(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, 
         f"- Registros: {len(df):,}",
         f"- Periodo: {df['date'].min()} a {df['date'].max()}",
         f"- Conversion media: {conversion:.1%}",
-        f"- Ingreso historico: {revenue:,.0f} USD",
-        f"- Margen neto historico: {profit:,.0f} USD",
-        f"- AUC modelo de cobertura de degradacion: {auc:.3f}",
+        f"- Revenue historico: {revenue:,.0f} USD",
+        f"- Contribution profit historico: {profit:,.0f} USD",
+        f"- AUC modelo de conversion: {auc:.3f}",
         "",
         "## Variables clave para estimar hipotesis",
-        "- Control de operacion: profundidad_descarga, ventana_carga, rampa_optimizada, reserva_comprometida.",
-        "- Condiciones de mercado: precio_spot_usd_mwh, diferencial_usd_mwh, estado_red, bloque_horario.",
-        "- Estado del activo: soc_inicial_pct, ciclos_acumulados, coste_degradacion_usd, indice_despacho.",
-        "- Productos de mercado: regulacion_ofertada, regulacion_convocada, mercado_nuevo, zona_red.",
-        "- Resultado economico: cubrio_degradacion, ingreso_usd, margen_bruto_usd, margen_neto_usd.",
+        "- Cambios de funnel: landing_variant, cta_variant, lead_magnet, checkout_simplified.",
+        "- Presion de ads: ad_budget_level, campaign_daily_spend_usd, cost_attributed_usd, lead_score.",
+        "- Webinar: webinar_invited, webinar_attended.",
+        "- Abrir categoria nueva: new_product_offer, customer_segment, aov_usd, gross_margin_pct.",
+        "- Resultado de negocio: converted_to_sale, revenue_usd, gross_profit_usd, contribution_profit_usd.",
         "",
-        "## Resumen por bloque horario",
+        "## Resumen por canal",
         markdown_table(channel),
         "",
         "## Parametros estimados desde historico",
@@ -1458,10 +1260,10 @@ def write_report(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, 
         "",
         "## Lectura ejecutiva",
         "- Las hipotesis no se fijan como tabla externa: se estiman con contrafactuales del modelo entrenado sobre el historico.",
-        "- La ventana conservadora gana porque el historico contiene ventanas con ciclado suave y control fino de carga, y el modelo aprende que ahi el diferencial capturado si cubre el desgaste.",
-        "- El arbitraje agresivo usa el patron historico de saturacion del activo: al aumentar la profundidad de descarga crece la energia movida, pero el coste de degradacion escala con el cuadrado y se come el ingreso extra.",
-        "- Los servicios de regulacion emergen como segunda opcion porque el historico contiene ventanas ofertadas y convocadas, y el modelo aprende que remuneran con poco desgaste.",
-        "- El hibrido certificado mantiene el P90 mas alto por acceso a un producto mejor pagado, pero tambien mayor probabilidad de perdida por coste hundido de certificacion y variabilidad de ejecucion.",
+        "- Mejorar el funnel gana porque el historico contiene tests de landing, CTA, lead magnet y checkout que el modelo aprende como mejora de conversion.",
+        "- Duplicar ads usa el patron historico de saturacion: cuando sube el nivel de inversion, crece el volumen pero baja la calidad media y sube el coste por oportunidad.",
+        "- Webinar emerge como buena segunda opcion porque el historico contiene invitados/asistentes y el modelo aprende uplift en leads templados.",
+        "- Abrir categoria nueva mantiene el P90 mas alto por ticket mayor, pero tambien mayor probabilidad de perdida por menor conversion, coste fijo y variabilidad de ejecucion.",
     ]
     REPORT_PATH.write_text("\n".join(lines), encoding="utf-8")
 

@@ -353,8 +353,8 @@ def valor_informacion(matriz_escenarios: dict[str, np.ndarray]) -> dict[str, Any
 def _autocomprobacion() -> None:
     """Comprobaciones minimas: cada bloque falla si la logica se rompe."""
     ranking_malo = [
-        {"decision": "Arbitraje agresivo", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
-        {"decision": "Ventana conservadora", "expected_profit_usd": 53882, "p10_usd": 45485, "probability_loss": 0.0},
+        {"decision": "Escalar paid social", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
+        {"decision": "Optimizar la conversion del sitio", "expected_profit_usd": 53882, "p10_usd": 45485, "probability_loss": 0.0},
     ]
     informe = {"headline": "Es la opcion mas robusta por suelo positivo y perdida esperada practicamente nula.",
                "razones": ["El downside esta contenido.", "Beneficio de 63.446."]}
@@ -367,8 +367,8 @@ def _autocomprobacion() -> None:
     assert res["informe"]["razones"] == ["Beneficio de 63.446."]
 
     ranking_bueno = [
-        {"decision": "Ventana conservadora", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
-        {"decision": "Servicios de regulacion", "expected_profit_usd": 31154, "p10_usd": 20076, "probability_loss": 0.0},
+        {"decision": "Optimizar la conversion del sitio", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
+        {"decision": "Reactivacion y remarketing", "expected_profit_usd": 31154, "p10_usd": 20076, "probability_loss": 0.0},
     ]
     ok = coherencia_informe(informe, ranking_bueno)
     assert ok["frases_retiradas"] == 0, ok

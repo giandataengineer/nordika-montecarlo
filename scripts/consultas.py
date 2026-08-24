@@ -1,13 +1,10 @@
-"""Capa SQL sobre el historico de despacho.
+"""Capa SQL sobre el historico de captacion.
 
-Las agregaciones del informe estaban en pandas. Pasarlas a SQL tiene dos
-razones: la primera es que un GROUP BY con ventanas se lee mejor en SQL que
-encadenando .groupby().agg().reset_index(); la segunda es que el dia que el
-historico no quepa en memoria, estas mismas consultas corren contra Postgres
-cambiando la conexion y nada mas.
+Las agregaciones del informe estaban en pandas. En SQL se leen mejor, sobre
+todo las de ventana, y el dia que el historico no quepa en memoria estas
+mismas consultas corren contra Postgres cambiando la conexion.
 
-DuckDB lee el CSV directamente, sin cargar ni copiar, asi que no hay paso de
-ingesta que mantener.
+DuckDB lee el CSV directamente, sin paso de ingesta que mantener.
 """
 
 from __future__ import annotations
@@ -23,85 +20,83 @@ DATASET = PROJECT_ROOT / "datos" / "dataset_ventas_transaccional_sintetico_es.cs
 
 def _con() -> duckdb.DuckDBPyConnection:
     con = duckdb.connect()
-    con.execute(f"CREATE OR REPLACE VIEW despacho AS SELECT * FROM read_csv_auto('{DATASET}')")
+    con.execute(f"CREATE OR REPLACE VIEW oportunidades AS SELECT * FROM read_csv_auto('{DATASET}')")
     return con
 
 
-# Margen por bloque horario. Es la consulta que responde donde esta el dinero:
-# la punta de noche concentra el diferencial, el valle solar lo destruye.
-MARGEN_POR_BLOQUE = """
+# Rentabilidad por canal. Es la consulta que responde de donde sale el margen
+# y cual de los canales pagados esta comprando volumen caro.
+RENTABILIDAD_POR_CANAL = """
 SELECT
-    bloque_horario,
-    count(*)                                    AS ventanas,
-    round(avg(cubrio_degradacion), 4)           AS tasa_cobertura,
-    round(sum(energia_mwh), 1)                  AS energia_mwh,
-    round(avg(diferencial_usd_mwh), 2)          AS diferencial_medio,
-    round(avg(coste_degradacion_usd), 2)        AS degradacion_media,
-    round(sum(margen_neto_usd), 2)              AS margen_neto
-FROM despacho
-GROUP BY bloque_horario
-ORDER BY margen_neto DESC
+    channel                                             AS canal,
+    count(*)                                            AS oportunidades,
+    round(avg(converted_to_sale), 4)                    AS tasa_conversion,
+    round(avg(cost_attributed_usd), 2)                  AS coste_medio,
+    round(sum(cost_attributed_usd), 2)                  AS inversion,
+    round(sum(revenue_usd), 2)                          AS ingreso,
+    round(sum(contribution_profit_usd), 2)              AS margen,
+    round(sum(revenue_usd) / nullif(sum(cost_attributed_usd), 0), 2) AS roas
+FROM oportunidades
+GROUP BY channel
+ORDER BY margen DESC
 """
 
-# El mecanismo del caso en una sola consulta: la descarga profunda mueve mas
-# energia, factura mas y deja menos.
-COMPARATIVA_PROFUNDIDAD = """
+# La curva de saturacion: el hallazgo central del caso. Al subir de nivel de
+# inversion crece el volumen y cae la calidad, hasta que el margen se da vuelta.
+CURVA_DE_SATURACION = """
 SELECT
-    profundidad_descarga,
-    count(*)                                AS ventanas,
-    round(sum(energia_mwh), 1)              AS energia_mwh,
-    round(avg(margen_bruto_usd), 2)         AS bruto_medio,
-    round(avg(coste_degradacion_usd), 2)    AS desgaste_medio,
-    round(avg(margen_neto_usd), 2)          AS neto_medio,
-    round(sum(margen_neto_usd), 2)          AS neto_total
-FROM despacho
-GROUP BY profundidad_descarga
-ORDER BY neto_total DESC
+    ad_budget_level                                     AS nivel_inversion,
+    count(*)                                            AS oportunidades,
+    round(avg(converted_to_sale), 4)                    AS tasa_conversion,
+    round(avg(lead_score), 1)                           AS calidad_media,
+    round(avg(cost_attributed_usd), 2)                  AS coste_por_oportunidad,
+    round(avg(contribution_profit_usd), 2)              AS margen_por_oportunidad
+FROM oportunidades
+WHERE ad_budget_level <> 'organic_or_owned'
+GROUP BY ad_budget_level
+ORDER BY coste_por_oportunidad
 """
 
-# Evolucion mensual con media movil de tres meses. La funcion de ventana es
-# la razon principal por la que esto vive en SQL y no en pandas.
+# Evolucion mensual con media movil de tres meses. La funcion de ventana es la
+# razon principal por la que esto vive en SQL y no en pandas.
 EVOLUCION_MENSUAL = """
 WITH por_mes AS (
     SELECT
-        month                                       AS mes,
-        sum(margen_neto_usd)                        AS margen,
-        sum(energia_mwh)                            AS energia,
-        avg(precio_spot_usd_mwh)                    AS precio_medio,
-        max(ciclos_acumulados)                      AS ciclos
-    FROM despacho
+        month                       AS mes,
+        sum(contribution_profit_usd) AS margen,
+        sum(cost_attributed_usd)     AS inversion,
+        sum(revenue_usd)             AS ingreso,
+        avg(converted_to_sale)       AS conversion
+    FROM oportunidades
     GROUP BY month
 )
 SELECT
     mes,
-    round(margen, 2)        AS margen_neto,
-    round(energia, 1)       AS energia_mwh,
-    round(precio_medio, 2)  AS precio_medio,
-    round(ciclos, 1)        AS ciclos_acumulados,
+    round(margen, 2)        AS margen,
+    round(inversion, 2)     AS inversion,
+    round(conversion, 4)    AS tasa_conversion,
+    round(ingreso / nullif(inversion, 0), 2) AS roas,
     round(avg(margen) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 2) AS margen_media_movil_3m
 FROM por_mes
 ORDER BY mes
 """
 
-# Las horas que de verdad pagan el ano. Sirve para enseñar que el ingreso no
-# esta repartido: se concentra en muy pocas ventanas.
+# Concentracion del margen: cuantas oportunidades pagan de verdad el ano.
 CONCENTRACION_DEL_MARGEN = """
 WITH rentables AS (
-    SELECT margen_neto_usd
-    FROM despacho
-    WHERE cubrio_degradacion = 1 AND margen_neto_usd > 0
+    SELECT contribution_profit_usd
+    FROM oportunidades
+    WHERE converted_to_sale = 1 AND contribution_profit_usd > 0
 ),
 acumulado AS (
     SELECT
-        row_number() OVER (ORDER BY margen_neto_usd DESC)               AS puesto,
-        count(*)     OVER ()                                            AS total,
-        sum(margen_neto_usd) OVER (ORDER BY margen_neto_usd DESC)       AS margen_acum,
-        sum(margen_neto_usd) OVER ()                                    AS margen_total
+        row_number() OVER (ORDER BY contribution_profit_usd DESC)         AS puesto,
+        count(*)     OVER ()                                              AS total,
+        sum(contribution_profit_usd) OVER (ORDER BY contribution_profit_usd DESC) AS acum,
+        sum(contribution_profit_usd) OVER ()                              AS margen_total
     FROM rentables
 )
-SELECT
-    tramo,
-    max(pct_margen) AS pct_del_margen
+SELECT tramo, max(pct_margen) AS pct_del_margen
 FROM (
     SELECT
         CASE
@@ -111,7 +106,7 @@ FROM (
             WHEN puesto <= total * 0.25 THEN 'top 25%'
             ELSE 'resto'
         END AS tramo,
-        round(100.0 * margen_acum / margen_total, 1) AS pct_margen
+        round(100.0 * acum / margen_total, 1) AS pct_margen
     FROM acumulado
 )
 GROUP BY tramo
@@ -119,14 +114,14 @@ ORDER BY pct_del_margen
 """
 
 
-def margen_por_bloque() -> pd.DataFrame:
+def rentabilidad_por_canal() -> pd.DataFrame:
     with _con() as con:
-        return con.execute(MARGEN_POR_BLOQUE).df()
+        return con.execute(RENTABILIDAD_POR_CANAL).df()
 
 
-def comparativa_profundidad() -> pd.DataFrame:
+def curva_de_saturacion() -> pd.DataFrame:
     with _con() as con:
-        return con.execute(COMPARATIVA_PROFUNDIDAD).df()
+        return con.execute(CURVA_DE_SATURACION).df()
 
 
 def evolucion_mensual() -> pd.DataFrame:
@@ -140,29 +135,28 @@ def concentracion_del_margen() -> pd.DataFrame:
 
 
 def _autocomprobacion() -> None:
-    bloques = margen_por_bloque()
-    assert len(bloques) == 6, "faltan bloques horarios"
-    assert bloques.iloc[0]["margen_neto"] > bloques.iloc[-1]["margen_neto"]
+    canales = rentabilidad_por_canal()
+    assert len(canales) == 7, "faltan canales"
+    assert canales.iloc[0]["margen"] > canales.iloc[-1]["margen"]
 
-    prof = comparativa_profundidad()
-    assert set(prof["profundidad_descarga"]) == {"conservadora", "profunda"}
-    # el caso entero depende de esto
-    fila_prof = prof[prof.profundidad_descarga == "profunda"].iloc[0]
-    fila_cons = prof[prof.profundidad_descarga == "conservadora"].iloc[0]
-    assert fila_prof["energia_mwh"] > fila_cons["energia_mwh"]
-    assert fila_prof["neto_medio"] < fila_cons["neto_medio"]
+    saturacion = curva_de_saturacion()
+    assert len(saturacion) == 4
+    # el caso entero depende de esto: al saturar, la conversion cae
+    barato = saturacion.iloc[0]
+    caro = saturacion.iloc[-1]
+    assert caro["coste_por_oportunidad"] > barato["coste_por_oportunidad"]
+    assert caro["tasa_conversion"] < barato["tasa_conversion"]
 
     meses = evolucion_mensual()
     assert len(meses) >= 24
-    assert meses["ciclos_acumulados"].is_monotonic_increasing
 
     print("consultas: todas las comprobaciones pasan")
 
 
 if __name__ == "__main__":
     for titulo, fn in [
-        ("Margen por bloque horario", margen_por_bloque),
-        ("Conservadora contra profunda", comparativa_profundidad),
+        ("Rentabilidad por canal", rentabilidad_por_canal),
+        ("Curva de saturacion publicitaria", curva_de_saturacion),
         ("Concentracion del margen", concentracion_del_margen),
     ]:
         print(f"\n{titulo}")

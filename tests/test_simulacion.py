@@ -1,8 +1,8 @@
 """Pruebas del motor.
 
-No cubren todo. Cubren las cosas que si se rompen invalidan el caso entero:
-que el corte sea temporal, que la descarga profunda destruya margen y que el
-guardarrail retire las frases que contradicen las cifras.
+No cubren todo. Cubren lo que si se rompe invalida el caso entero: que el
+corte sea temporal, que la saturacion publicitaria aparezca en los datos, y
+que el guardarrail retire las frases que contradicen las cifras.
 """
 
 import sys
@@ -19,7 +19,6 @@ from simulacion_montecarlo import (
     FEATURES,
     SEED,
     TEST_FRACTION,
-    aplicar_profundidad,
     generate_dataset,
     scenario_frames,
     temporal_split,
@@ -33,8 +32,8 @@ def df():
 
 def test_dataset_tiene_forma_esperada(df):
     assert len(df) == 20000
-    assert df["ventana_id"].is_unique
-    assert df["cubrio_degradacion"].isin([0, 1]).all()
+    assert df["transaction_id"].is_unique
+    assert df["converted_to_sale"].isin([0, 1]).all()
 
 
 def test_sin_nulos_en_las_features(df):
@@ -43,13 +42,13 @@ def test_sin_nulos_en_las_features(df):
 
 
 def test_no_hay_fuga_del_objetivo(df):
-    # estas columnas se calculan DESPUES de saber el resultado
+    # estas columnas se calculan DESPUES de saber si convirtio
     posteriores = {
-        "energia_mwh",
-        "ingreso_usd",
-        "margen_bruto_usd",
-        "margen_neto_usd",
-        "latencia_respuesta_min",
+        "aov_usd",
+        "revenue_usd",
+        "gross_profit_usd",
+        "contribution_profit_usd",
+        "days_to_close",
     }
     assert posteriores & set(FEATURES) == set()
 
@@ -61,39 +60,42 @@ def test_el_corte_es_temporal_no_aleatorio(df):
     assert abs(len(test) - esperado) < len(df) * 0.02
 
 
-def test_los_ciclos_solo_crecen(df):
-    assert df["ciclos_acumulados"].is_monotonic_increasing
-    # una bateria de red hace del orden de 1 ciclo al dia; en 2,3 anios no
-    # deberia pasar de unos 1200
-    assert 400 < df["ciclos_acumulados"].max() < 1500
+def test_tiktok_es_canal_pagado(df):
+    # el caso trata sobre reparto de inversion: TikTok tiene que tener presupuesto
+    tiktok = df[df["channel"] == "TikTok Ads"]
+    assert len(tiktok) > 1000
+    assert (tiktok["ad_budget_level"] != "organic_or_owned").all()
+    assert tiktok["campaign_daily_spend_usd"].sum() > 0
 
 
-def test_la_descarga_profunda_destruye_margen(df):
-    por_profundidad = df.groupby("profundidad_descarga")["margen_neto_usd"].mean()
-    assert por_profundidad["profunda"] < por_profundidad["conservadora"]
+def test_la_saturacion_degrada_la_calidad(df):
+    pagados = df[df["ad_budget_level"] != "organic_or_owned"]
+    calidad = pagados.groupby("ad_budget_level")["lead_score"].mean()
+    conversion = pagados.groupby("ad_budget_level")["converted_to_sale"].mean()
+    # el hallazgo central: al saturar, la calidad y la conversion caen
+    assert calidad["saturated"] < calidad["medium"]
+    assert conversion["saturated"] < conversion["medium"]
 
 
-def test_la_profunda_mueve_mas_energia_pero_deja_menos(df):
-    g = df.groupby("profundidad_descarga").agg(
-        energia=("energia_mwh", "sum"), neto=("margen_neto_usd", "sum")
-    )
-    assert g.loc["profunda", "energia"] > g.loc["conservadora", "energia"]
-    assert g.loc["profunda", "neto"] < g.loc["conservadora", "neto"]
-
-
-def test_aplicar_profundidad_arrastra_el_coste(df):
-    base = df.head(500)
-    profunda = aplicar_profundidad(base, "profunda")
-    solo_conservadoras = base["profundidad_descarga"] == "conservadora"
-    assert (
-        profunda.loc[solo_conservadoras, "coste_degradacion_usd"].sum()
-        > base.loc[solo_conservadoras, "coste_degradacion_usd"].sum()
-    )
+def test_saturar_destruye_margen(df):
+    pagados = df[df["ad_budget_level"] != "organic_or_owned"]
+    margen = pagados.groupby("ad_budget_level")["contribution_profit_usd"].mean()
+    coste = pagados.groupby("ad_budget_level")["cost_attributed_usd"].mean()
+    assert coste["saturated"] > coste["low"]
+    assert margen["saturated"] < margen["medium"] * 0.5
 
 
 def test_los_escenarios_no_meten_nulos(df):
     rng = np.random.default_rng(SEED)
-    for nombre, (frame, coste) in scenario_frames(df, rng).items():
+    esperados = {
+        "Optimizar la conversion del sitio",
+        "Escalar paid social",
+        "Reactivacion y remarketing",
+        "Abrir categoria nueva",
+    }
+    escenarios = scenario_frames(df, rng)
+    assert set(escenarios) == esperados
+    for nombre, (frame, coste) in escenarios.items():
         assert frame[FEATURES].isna().sum().sum() == 0, nombre
         assert coste > 0, nombre
 
@@ -108,14 +110,14 @@ class TestGuardarrail:
     def test_retira_la_frase_que_contradice_el_p10(self):
         ranking = [
             {
-                "decision": "Arbitraje agresivo",
-                "expected_profit_usd": 40000,
-                "p10_usd": -33868,
-                "probability_loss": 0.356,
+                "decision": "Abrir categoria nueva",
+                "expected_profit_usd": 4582,
+                "p10_usd": -29826,
+                "probability_loss": 0.568,
             }
         ]
         informe = {
-            "headline": "Arbitraje agresivo tiene suelo positivo en P10",
+            "headline": "Abrir categoria nueva tiene suelo positivo en P10",
             "reasons": ["El suelo es positivo y la perdida es practicamente nula"],
         }
         limpio = coherencia_informe(informe, ranking)
@@ -124,15 +126,15 @@ class TestGuardarrail:
     def test_deja_pasar_lo_que_si_cuadra(self):
         ranking = [
             {
-                "decision": "Ventana conservadora",
-                "expected_profit_usd": 56271,
-                "p10_usd": 45156,
+                "decision": "Optimizar la conversion del sitio",
+                "expected_profit_usd": 54119,
+                "p10_usd": 46022,
                 "probability_loss": 0.0,
             }
         ]
         informe = {
-            "headline": "Ventana conservadora mantiene un suelo positivo en P10",
-            "reasons": ["El P10 se queda en 45.156 USD"],
+            "headline": "Optimizar la conversion del sitio mantiene un suelo positivo en P10",
+            "reasons": ["El P10 se queda en 46.022 USD"],
         }
         limpio = coherencia_informe(informe, ranking)
         assert not limpio["incidencias"]

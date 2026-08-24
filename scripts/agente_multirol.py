@@ -67,9 +67,9 @@ def _escribir_cache(huella: str, resultado: dict[str, Any]) -> None:
 # corrieran sobre el mismo modelo compartirian sesgos y coincidirian siempre,
 # que es justo lo que hacia decorativa la pantalla de "tres angulos".
 # Reparto comprobado contra las APIs reales en agosto de 2026:
-#   Finanzas  -> Groq / Qwen 3.6         (Alibaba)
-#   Operacion -> OpenRouter / Nemotron 3   (NVIDIA)
-#   Riesgo    -> Gemini / 3.6 Flash        (Google)
+#   CEO    -> Groq / Qwen 3.6          (Alibaba)
+#   Growth -> OpenRouter / Nemotron 3    (NVIDIA)
+#   Riesgo -> Gemini / 3.6 Flash         (Google)
 # Un proveedor distinto por rol: con dos roles en el mismo se agotaba su limite
 # por minuto y los dos caian a la vez. Cerebras queda configurado pero su free
 # tier devuelve 402 sin facturacion activada.
@@ -309,48 +309,48 @@ def candidatos(rol: str, ya_usados: set[str]) -> list[tuple[str, str]]:
 
 
 ROLES: dict[str, dict[str, Any]] = {
-    "finanzas": {
-        "etiqueta": "Finanzas",
+    "ceo": {
+        "etiqueta": "CEO",
         "proveedor": "groq",
         "modelo": "qwen/qwen3.6-27b",
-        "prioriza": "retorno sobre el capital del activo, payback y defensa ante el comite",
+        "prioriza": "asignacion de capital, payback y claridad de decision ejecutiva",
         "sistema": (
-            "Eres el director financiero del operador. La bateria es un activo de varios "
-            "millones y tu respondes por su retorno. Te importa el margen neto sobre el capital "
-            "comprometido, el plazo de recuperacion y poder defender la estrategia ante el comite "
-            "de inversiones. Te molesta la dispersion sin justificacion y las apuestas que no "
-            "puedes explicar con numeros. No eres el mas prudente ni el mas agresivo: eres el que "
-            "tiene que responder por el resultado del anio."
+            "Eres el CEO. Decides donde va el presupuesto de la compania. Te importa el "
+            "retorno sobre el capital comprometido, el plazo de recuperacion y poder "
+            "defender la decision ante un consejo. Te molesta la dispersion sin "
+            "justificacion y las apuestas que no puedes explicar con numeros. No eres el "
+            "mas prudente ni el mas agresivo: eres el que tiene que responder por el "
+            "resultado del trimestre."
         ),
     },
-    "operacion": {
-        "etiqueta": "Operacion",
+    "growth": {
+        "etiqueta": "Growth",
         "proveedor": "openrouter",
         "modelo": "nvidia/nemotron-3-super-120b-a12b:free",
-        "prioriza": "vida util del banco, ciclos consumidos y disponibilidad del activo",
+        "prioriza": "velocidad de aprendizaje, iteracion y escalado de canales",
         "sistema": (
-            "Eres el responsable de operacion del activo. Tu unidad de medida no son los dolares "
-            "del mes, son los ciclos equivalentes consumidos y la capacidad que le quedara al banco "
-            "dentro de cinco anios. Sabes que el desgaste crece mas que proporcionalmente con la "
-            "profundidad de descarga, asi que desconfias de cualquier estrategia que compre ingreso "
-            "hoy pagandolo con vida util. Tambien sabes que un activo infrautilizado no amortiza. "
-            "Estas dispuesto a discrepar de Finanzas si la opcion mas rentable sobre el papel "
-            "compromete la salud del banco."
+            "Eres el director de crecimiento. Te importa la velocidad a la que la "
+            "compania aprende que funciona, y prefieres una palanca que puedas iterar "
+            "rapido antes que una apuesta grande y lenta. Sabes que la atribucion de las "
+            "plataformas esta rota y que cada panel se cuelga las mismas ventas, asi que "
+            "desconfias del dato que te da el propio canal. Toleras mas riesgo si a cambio "
+            "obtienes senal limpia y rapida. Estas dispuesto a discrepar del CEO si crees "
+            "que la opcion segura frena el aprendizaje."
         ),
     },
     "riesgo": {
         "etiqueta": "Riesgo",
         "proveedor": "gemini",
         "modelo": "gemini-3.6-flash",
-        "prioriza": "control del downside, suelo de la distribucion y compromiso con el operador de red",
+        "prioriza": "control del downside, robustez del suelo y criterios de contencion",
         "sistema": (
-            "Eres el director de riesgos. Tu trabajo no es maximizar el retorno esperado, es evitar "
-            "que la compania se lleve un golpe del que no se recupere. Miras el percentil 10 antes "
-            "que la media, y la probabilidad de perdida antes que el ROI. Una estrategia con mejor "
-            "media pero cola izquierda peligrosa es peor para ti. Vigilas ademas los compromisos "
-            "adquiridos con el operador de red: incumplir una reserva comprometida tiene "
-            "consecuencias que no aparecen en la cuenta de resultados. Discrepa abiertamente si la "
-            "opcion mejor situada en media no es la mas defendible."
+            "Eres el director de riesgos. Tu trabajo no es maximizar el retorno esperado, "
+            "es evitar que la compania se lleve un golpe del que no se recupere. Miras el "
+            "percentil 10 antes que la media, y la probabilidad de perdida antes que el "
+            "ROI. Una opcion con mejor media pero cola izquierda peligrosa es peor para "
+            "ti. Vigilas ademas la saturacion de canal: comprar volumen que no convierte "
+            "destruye margen y ese efecto ya esta en el historico. Discrepa abiertamente "
+            "si la opcion mejor situada en media no es la mas defendible."
         ),
     },
 }
@@ -642,8 +642,8 @@ def lecturas_multirol(
 
 def _autocomprobacion() -> None:
     ranking = [
-        {"decision": "Ventana conservadora", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
-        {"decision": "Arbitraje agresivo", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
+        {"decision": "Optimizar la conversion del sitio", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
+        {"decision": "Escalar paid social", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
     ]
 
     # sin claves: los tres roles caen al camino determinista y el agregador lo dice
@@ -663,8 +663,8 @@ def _autocomprobacion() -> None:
     # consenso con proveedores distintos vale mas que con el mismo
     # mismo modelo en los dos roles: la coincidencia no informa
     iguales = [
-        {"rol": "finanzas", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Ventana conservadora"},
-        {"rol": "operacion", "fuente": "llm", "proveedor": "openrouter", "modelo": "qwen", "decision_elegida": "Ventana conservadora"},
+        {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Optimizar la conversion del sitio"},
+        {"rol": "growth", "fuente": "llm", "proveedor": "openrouter", "modelo": "qwen", "decision_elegida": "Optimizar la conversion del sitio"},
     ]
     a = agregar_lecturas(iguales, ranking)
     assert a["consenso"] is True and a["modelos_independientes"] is False
@@ -672,8 +672,8 @@ def _autocomprobacion() -> None:
 
     # modelos distintos aunque compartan proveedor: la coincidencia si informa
     distintos = [
-        {"rol": "finanzas", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Ventana conservadora"},
-        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Ventana conservadora"},
+        {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Optimizar la conversion del sitio"},
+        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Optimizar la conversion del sitio"},
     ]
     b = agregar_lecturas(distintos, ranking)
     assert b["consenso"] is True and b["modelos_independientes"] is True
@@ -681,13 +681,13 @@ def _autocomprobacion() -> None:
 
     # desacuerdo: es hallazgo, no fallo
     discrepan = [
-        {"rol": "finanzas", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Arbitraje agresivo"},
-        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Ventana conservadora"},
+        {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Escalar paid social"},
+        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Optimizar la conversion del sitio"},
     ]
     c = agregar_lecturas(discrepan, ranking)
     assert c["consenso"] is False
-    assert "Finanzas elige Arbitraje agresivo" in c["veredicto"]
-    assert "Riesgo elige Ventana conservadora" in c["veredicto"]
+    assert "CEO elige Escalar paid social" in c["veredicto"]
+    assert "Riesgo elige Optimizar la conversion del sitio" in c["veredicto"]
 
     print("agente_multirol: todas las comprobaciones pasan")
 

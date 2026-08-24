@@ -63,21 +63,20 @@ LIVE_DASHBOARD_RELATIVE_PATH = f"dashboards/{LIVE_DASHBOARD_PATH.name}"
 LIVE_STATUS_RELATIVE_PATH = f"dashboards/{LIVE_STATUS_PATH.name}"
 
 DECISION_ALIAS = {
-    "conservadora": "Ventana conservadora",
-    "regulacion": "Servicios de regulacion",
-    "agresivo": "Arbitraje agresivo",
-    "hibrido": "Hibrido certificado",
+    "sitio": "Optimizar la conversion del sitio",
+    "remarketing": "Reactivacion y remarketing",
+    "paid_social": "Escalar paid social",
+    "categoria": "Abrir categoria nueva",
 }
 
 UPLIFT_ALIAS = {
-    "control_fino": "control_fino_completo",
-    "descarga_profunda": "descarga_profunda",
-    "regulacion": "regulacion_convocada",
-    "mercado_nuevo": "mercado_nuevo",
+    "funnel": "funnel_full_optimized",
+    "webinar": "webinar_attendance",
+    "nuevo_producto": "new_product_offer",
 }
 
 TOOL_PURPOSES = {
-    "analizar_negocio": "Lee el historico de despacho y resume cobertura de degradacion, ingreso y margen neto por bloque horario.",
+    "analizar_negocio": "Lee el historico de captacion y resume conversion, inversion, ingreso y margen por canal.",
     "obtener_uplift_ml": "Consulta el uplift contrafactual estimado por el modelo para una palanca concreta.",
     "distribucion_montecarlo": "Lee la distribucion de 10.000 futuros de una decision para medir suelo, techo y riesgo.",
     "comparar_decisiones": "Ordena las alternativas lado a lado por beneficio esperado, ROI y probabilidad de perdida.",
@@ -109,8 +108,8 @@ def cargar_artifacts() -> dict[str, pd.DataFrame]:
     }
 
 
-def resumen_por_bloque(df: pd.DataFrame | None = None) -> pd.DataFrame:
-    """Margen del historico agregado por bloque horario.
+def resumen_por_canal(df: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Margen del historico agregado por canal de captacion.
 
     Los nombres de columna salen del CSV que escribe el pipeline. Antes esta
     funcion pedia columnas en castellano que el generador nunca produjo, asi
@@ -119,18 +118,17 @@ def resumen_por_bloque(df: pd.DataFrame | None = None) -> pd.DataFrame:
     if df is None:
         df = cargar_artifacts()["dataset"]
     resumen = (
-        df.groupby("bloque_horario")
+        df.groupby("channel")
         .agg(
-            ventanas=("ventana_id", "count"),
-            cobertura=("cubrio_degradacion", "mean"),
-            energia_mwh=("energia_mwh", "sum"),
-            ingreso_usd=("ingreso_usd", "sum"),
-            margen_neto_usd=("margen_neto_usd", "sum"),
-            degradacion_media_usd=("coste_degradacion_usd", "mean"),
-            diferencial_medio=("diferencial_usd_mwh", "mean"),
-            indice_medio=("indice_despacho", "mean"),
+            oportunidades=("transaction_id", "count"),
+            conversion=("converted_to_sale", "mean"),
+            inversion_usd=("cost_attributed_usd", "sum"),
+            ingreso_usd=("revenue_usd", "sum"),
+            margen_usd=("contribution_profit_usd", "sum"),
+            coste_medio=("cost_attributed_usd", "mean"),
+            score_medio=("lead_score", "mean"),
         )
-        .sort_values("margen_neto_usd", ascending=False)
+        .sort_values("margen_usd", ascending=False)
     )
     return resumen
 
@@ -230,15 +228,15 @@ def recargar_resultados_montecarlo() -> dict[str, pd.DataFrame]:
     return cargar_artifacts()
 
 
-def _tool_analizar_negocio(bloque: str = "todos") -> str:
-    resumen = resumen_por_bloque().reset_index()
-    if bloque == "todos":
+def _tool_analizar_negocio(canal: str = "todos") -> str:
+    resumen = resumen_por_canal().reset_index()
+    if canal == "todos":
         data = resumen.to_dict(orient="records")
     else:
-        fila = resumen[resumen["bloque_horario"] == bloque]
+        fila = resumen[resumen["channel"] == canal]
         if fila.empty:
             return json.dumps(
-                {"error": f"Bloque {bloque!r} no encontrado.", "disponibles": resumen["bloque_horario"].tolist()},
+                {"error": f"Canal {canal!r} no encontrado.", "disponibles": resumen["channel"].tolist()},
                 ensure_ascii=False,
             )
         data = fila.iloc[0].to_dict()
@@ -348,13 +346,13 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "analizar_negocio",
-            "description": "Analiza el historico de despacho por bloque horario: cobertura de degradacion, energia movida, ingreso, margen neto y coste medio de degradacion.",
+            "description": "Analiza el historico de captacion por canal: conversion, inversion, ingreso, margen y coste medio por oportunidad.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "bloque": {"type": "string", "description": "Usa 'todos' para ver todos los bloques horarios."}
+                    "canal": {"type": "string", "description": "Usa 'todos' para ver todos los canales."}
                 },
-                "required": ["bloque"],
+                "required": ["canal"],
             },
         },
     },
@@ -362,11 +360,11 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "obtener_uplift_ml",
-            "description": "Devuelve el uplift contrafactual estimado para control_fino, descarga_profunda, regulacion o mercado_nuevo.",
+            "description": "Devuelve el uplift contrafactual estimado para funnel, webinar o nuevo_producto.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "decision": {"type": "string", "enum": ["control_fino", "descarga_profunda", "regulacion", "mercado_nuevo"]}
+                    "decision": {"type": "string", "enum": ["funnel", "webinar", "nuevo_producto"]}
                 },
                 "required": ["decision"],
             },
@@ -380,7 +378,7 @@ TOOLS_SCHEMA = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "decision": {"type": "string", "enum": ["conservadora", "regulacion", "agresivo", "hibrido"]}
+                    "decision": {"type": "string", "enum": ["sitio", "remarketing", "paid_social", "categoria"]}
                 },
                 "required": ["decision"],
             },
@@ -443,7 +441,7 @@ SYSTEM_PROMPT = """Eres un consultor senior de estrategia de negocio especializa
 Tienes acceso a herramientas que consultan modelos de ML entrenados sobre datos historicos reales y simulaciones Monte Carlo de escenarios futuros de un negocio de marketing digital.
 
 Proceso de analisis:
-1. Llama a analizar_negocio('todos') para entender el punto de partida por bloque horario.
+1. Llama a analizar_negocio('todos') para entender el punto de partida por canal.
 2. Si el usuario quiere rehacer la simulacion o verla en vivo, usa ejecutar_simulacion_montecarlo en modo background, consulta estado_simulacion_montecarlo y cuando el progreso llegue al 100% llama a recargar_resultados_montecarlo.
 3. Para cada decision relevante, consulta uplift ML cuando exista y distribucion Monte Carlo para medir riesgo.
 4. Usa comparar_decisiones para el ranking final.
@@ -653,7 +651,7 @@ def _fallback_agent_memo(summary_json: str, uplift_json: str) -> dict[str, Any]:
             "purpose": TOOL_PURPOSES["obtener_uplift_ml"],
             "args": "decision=control_fino_completo",
             "outcome": (
-                f"El historico muestra un uplift estimado del {control_uplift:.1f}% en cobertura de degradacion con control fino de carga y rampa."
+                f"El historico muestra un uplift estimado del {control_uplift:.1f}% en conversion optimizando landing, CTA y checkout."
                 if control_uplift is not None
                 else "La base historica confirma que el control fino de carga es una palanca repetible."
             ),
@@ -661,66 +659,66 @@ def _fallback_agent_memo(summary_json: str, uplift_json: str) -> dict[str, Any]:
     ]
 
     audience_views = {
-        "finanzas": {
-            "headline": f"Finanzas: comprometer el anio a {best['decision']} es hoy la estrategia con mejor retorno ajustado a riesgo.",
-            "summary": f"La recomendacion prioriza eficiencia del capital inmovilizado en el activo: {_format_currency(best_profit)} esperados, {best_roi:.1f}x de ROI y un suelo de {_format_currency(float(best['p10_usd']))} en P10.",
+        "ceo": {
+            "headline": f"Modo CEO: asignar el presupuesto del trimestre a {best['decision']} es hoy la apuesta con mejor retorno ajustado a riesgo.",
+            "summary": f"La recomendacion prioriza eficiencia de capital: {_format_currency(best_profit)} esperados, {best_roi:.1f}x de retorno y un suelo de {_format_currency(float(best['p10_usd']))} en P10.",
             "reasons": [
                 f"La brecha de {_format_currency(gap)} frente a la segunda opcion permite decidir con conviccion y no por desempate estadistico.",
                 f"El downside esta contenido: {best_loss:.1f}% de probabilidad de perdida y P10 de {_format_currency(float(best['p10_usd']))}.",
-                "La estrategia ganadora se apoya en patrones ya presentes en el historico de despacho, no en una hipotesis de mercado sin respaldo.",
+                "La palanca ganadora se apoya en efectos que el historico ya muestra, no en una hipotesis de canal sin respaldo.",
             ],
             "watchouts": [
-                "Ampliar la profundidad de descarga para forzar facturacion degrada el activo mas rapido de lo que crece el ingreso: el desgaste escala con el cuadrado, no linealmente.",
-                f"{second['decision']} debe quedarse lista como alternativa inmediata si el diferencial de precio capturado no se materializa en el primer trimestre.",
-                f"{riskiest['decision']} exige tolerancia a volatilidad y capital hundido antes de entrar en el plan del anio.",
+                "Subir la inversion en los canales ya saturados compra volumen que no convierte: el coste por oportunidad se dobla y la calidad del lead cae, y eso ya esta medido en el historico.",
+                f"{second['decision']} debe quedarse lista como alternativa inmediata si la mejora esperada no se materializa en el primer ciclo.",
+                f"{riskiest['decision']} exige tolerancia a volatilidad y capacidad de ejecucion antes de entrar en el plan del trimestre.",
             ],
             "next_actions": [
-                "Aprobar una primera fase acotada con responsable, calendario y criterio financiero de exito por trimestre.",
-                "Reservar la segunda estrategia del ranking como alternativa priorizada si la primera no confirma el margen esperado.",
-                "Revisar en comite el delta real frente al caso base antes de comprometer inversion adicional en habilitaciones.",
+                "Aprobar una primera fase acotada con responsable, calendario y criterio financiero de exito.",
+                "Reservar la segunda opcion del ranking como alternativa priorizada si la primera no confirma el uplift.",
+                "Revisar en comite el delta real frente al caso base antes de liberar mas presupuesto.",
             ],
             "switch_signals": [
-                f"Rotar a {second['decision']} si el margen realizado queda muy por debajo de la hipotesis y erosiona el payback del activo.",
-                "Evitar aumentar el ciclado mientras el coste de degradacion por MWh suba mas rapido que el diferencial capturado.",
+                f"Rotar a {second['decision']} si el uplift realizado queda muy por debajo de la hipotesis y erosiona el payback.",
+                "Frenar el escalado de medios mientras el coste por oportunidad suba mas rapido que el volumen incremental.",
                 f"Abrir {third['decision']} solo si cambia el mandato de eficiencia a expansion y se acepta mayor volatilidad.",
             ],
             "due_diligence": [
-                "Cuantificar el coste de degradacion por ciclo equivalente y su efecto sobre el valor residual del banco al final del contrato.",
-                "Asegurar trazabilidad del margen por bloque horario para auditar de donde sale realmente el retorno.",
-                "Confirmar responsables y dependencias con el operador de red antes de comprometer capacidad.",
+                "Cuantificar el coste de implementacion y el payback esperado por etapa antes de comprometer el trimestre.",
+                "Asegurar trazabilidad del margen por canal para auditar de donde sale realmente el retorno, sin depender del panel de cada plataforma.",
+                "Confirmar responsables y dependencias operativas antes de aprobar el despliegue completo.",
             ],
         },
-        "operacion": {
-            "headline": f"Operacion del activo: {best['decision']} es la que mejor equilibra ingreso y vida util del banco.",
-            "summary": "La mejor estrategia de operacion no es la que mas energia mueve, sino la que captura diferencial sin comprarlo con ciclos que no se recuperan.",
+        "growth": {
+            "headline": f"Modo Growth: {best['decision']} es la ruta mas rapida para desbloquear crecimiento sin deteriorar la base.",
+            "summary": "La mejor secuencia de crecimiento no es la mas ruidosa, sino la que ofrece uplift repetible y espacio para iterar con riesgo controlado.",
             "reasons": [
-                "La estrategia ganadora concentra el despacho en las ventanas donde el diferencial paga el desgaste, en vez de ciclar por defecto.",
-                f"El margen frente a la segunda opcion es de {_format_currency(gap)}, suficiente para justificar una sola configuracion de consignas y no un regimen mixto.",
-                f"{second['decision']} queda como complemento para las horas en las que el arbitraje no compensa, sin cambiar el regimen de carga.",
+                "La palanca ganadora se puede medir de forma limpia porque no depende de la atribucion que reporta cada plataforma.",
+                f"El margen frente a la segunda opcion es de {_format_currency(gap)}, suficiente para concentrar al equipo en una sola apuesta principal.",
+                f"{second['decision']} queda como palanca complementaria para capturar valor sobre la base ya generada.",
             ],
             "watchouts": [
-                "Forzar descargas profundas en punta parece rentable en la liquidacion del dia y aparece meses despues como capacidad perdida.",
-                f"{riskiest['decision']} tiene techo alto, pero mezcla habilitacion tecnica con exposicion economica antes de tener datos propios.",
-                "Sin telemetria por ciclo, el equipo puede confundir mas energia despachada con mejor operacion del activo.",
+                "Escalar medios demasiado pronto tapa el aprendizaje real: la saturacion mete ruido y despues no se sabe que funciono.",
+                f"{riskiest['decision']} tiene techo alto, pero mezcla aprendizaje de producto con riesgo economico elevado.",
+                "Sin instrumentacion por etapa, el equipo puede confundir mas volumen con mejora estructural de la conversion.",
             ],
             "next_actions": [
-                "Fijar consignas de estado de carga y profundidad de descarga por bloque horario, con lectura semanal de ciclos consumidos.",
-                "Instrumentar el coste de degradacion por ciclo para que aparezca en el mismo panel que el ingreso, no en un informe aparte.",
-                "Definir gatillos claros para ampliar el ciclado solo despues de demostrar margen neto estable.",
+                "Lanzar un sprint de conversion con lectura semanal por etapa del embudo.",
+                "Preparar en paralelo la palanca de reactivacion para capturar valor sobre la base existente.",
+                "Definir gatillos claros para abrir escala solo despues de demostrar uplift estable.",
             ],
             "switch_signals": [
-                f"Mover el foco a {second['decision']} si el diferencial medio capturado cae por debajo del coste de degradacion del ciclo.",
-                "Mantener la profundidad conservadora hasta que la telemetria confirme que el desgaste real esta por debajo del modelado.",
-                f"Probar {third['decision']} solo con una ventana acotada si aparece evidencia firme de remuneracion superior.",
+                f"Mover el foco a {second['decision']} si la mejora de conversion se estanca tras el primer sprint.",
+                "Mantener los medios pagados como motor secundario hasta que el sitio convierta mejor y no solo atraiga mas trafico.",
+                f"Probar {third['decision']} solo con un experimento limitado si aparece evidencia fuerte de demanda.",
             ],
             "due_diligence": [
-                "Separar la medicion por bloque horario y por profundidad de descarga para saber donde vive el margen real.",
-                "Contrastar la curva de degradacion asumida contra la garantia del fabricante y la telemetria disponible.",
-                "Definir de antemano que indicadores permiten pasar de una ventana piloto a regimen permanente.",
+                "Separar la medicion de landing, CTA, lead magnet y checkout para saber donde vive el uplift.",
+                "Contrastar lo que reporta cada plataforma contra las ventas registradas: la suma de los paneles supera el total real.",
+                "Definir de antemano que metricas permiten pasar de experimento a escala.",
             ],
         },
         "riesgo": {
-            "headline": f"Riesgo: {best['decision']} es la opcion mas defendible por el suelo de su distribucion, no por su media.",
+            "headline": f"Modo Riesgo: {best['decision']} es la opcion mas defendible por el suelo de su distribucion, no por su media.",
             "summary": "La prioridad aqui no es maximizar el techo, sino proteger el escenario adverso manteniendo un retorno claramente atractivo.",
             "reasons": [
                 f"El caso ganador combina {_format_currency(best_profit)} esperados con un P10 de {_format_currency(float(best['p10_usd']))}.",
@@ -729,23 +727,23 @@ def _fallback_agent_memo(summary_json: str, uplift_json: str) -> dict[str, Any]:
             ],
             "watchouts": [
                 f"{most_volatile['decision']} tiene un recorrido de {_format_currency(volatile_range)} entre P10 y P90: el resultado depende mas del escenario que de la ejecucion.",
-                "Comprometer capacidad de reserva y luego no poder entregarla tiene consecuencias con el operador de red que no aparecen en la cuenta de resultados.",
-                "La cola derecha del precio spot es gruesa: unas pocas horas explican gran parte del ingreso, y no estan garantizadas.",
+                "La atribucion de las plataformas esta rota desde los cambios de privacidad: decidir con el dato que reporta el propio canal es asumir un riesgo que no se ve.",
+                "El efecto de saturacion no es lineal: el ultimo tramo de inversion puede tener margen negativo mientras el panel sigue mostrando conversiones.",
             ],
             "next_actions": [
-                "Fijar limites de exposicion por estrategia antes de comprometer el regimen del anio.",
-                "Establecer un punto de control trimestral con criterio explicito de salida.",
-                "Documentar que compromisos con el operador quedan afectados por cada estrategia.",
+                "Fijar limites de exposicion por canal antes de comprometer el presupuesto del trimestre.",
+                "Establecer un punto de control mensual con criterio explicito de salida.",
+                "Documentar que supuestos sostienen la recomendacion y cual de ellos, si falla, la invalida.",
             ],
             "switch_signals": [
                 f"Revisar la decision si la probabilidad de perdida realizada supera el {max(best_loss, 1.0):.1f}% observado en simulacion.",
-                "Salir de cualquier regimen cuyo P10 cruce a negativo tras recalibrar la volatilidad del precio.",
-                "Reevaluar si cambia la regulacion de los productos de reserva o los requisitos de habilitacion.",
+                "Salir de cualquier escalado cuyo P10 cruce a negativo tras recalibrar la volatilidad del canal.",
+                "Reevaluar si cambian las reglas de medicion de las plataformas o la disponibilidad de senal.",
             ],
             "due_diligence": [
-                "Validar la calibracion de la volatilidad del precio contra series reales antes de operar con estos numeros.",
-                "Revisar penalizaciones contractuales por incumplimiento de reserva comprometida.",
-                "Confirmar que el modelo de degradacion no subestima el desgaste en descargas profundas repetidas.",
+                "Validar la calibracion de los tres ruidos contra resultados reales antes de operar con estas cifras.",
+                "Revisar compromisos contractuales con agencias y plataformas antes de mover presupuesto.",
+                "Confirmar que el modelo no subestima la saturacion en los canales que ya operan en tramo alto.",
             ],
         },
     }
@@ -770,23 +768,23 @@ def _fallback_agent_memo(summary_json: str, uplift_json: str) -> dict[str, Any]:
             f"La dispersion mas agresiva sigue en {most_volatile['decision']}: una banda P10-P90 de {_format_currency(volatile_range)} obliga a revisar la exposicion antes de comprometer el regimen del anio.",
         ],
         "next_actions": [
-            "Fijar las consignas de estado de carga y profundidad de descarga como piloto acotado, con responsable, plazo y lectura de margen por bloque horario.",
+            "Ejecutar la optimizacion del sitio como experimento acotado, con responsable, plazo y lectura de conversion por etapa del embudo.",
             (
                 f"Preparar en paralelo la oferta de regulacion de frecuencia como palanca complementaria, especialmente si se confirma un uplift cercano al {regulacion_uplift:.1f}% en las ventanas aptas."
                 if regulacion_uplift is not None
                 else "Preparar en paralelo la oferta de regulacion de frecuencia como palanca complementaria sobre las ventanas aptas."
             ),
-            "Bloquear una revision trimestral para decidir si se amplia el ciclado, se mantiene el regimen o se rota a la segunda opcion.",
+            "Bloquear una revision tras el primer ciclo para decidir si se escala, se mantiene o se rota a la segunda opcion.",
         ],
         "switch_signals": [
-            f"Cambiar a {second['decision']} si el diferencial capturado no sostiene el margen esperado o si el coste real de degradacion supera al modelado.",
+            f"Cambiar a {second['decision']} si la mejora de conversion no sostiene el margen esperado o si el coste por oportunidad sube mas de lo previsto.",
             f"Abrir {third['decision']} solo si se acepta un riesgo superior al {third_loss:.1f}% o si el objetivo pasa de eficiencia a expansion agresiva.",
-            "Retrasar cualquier aumento del ciclado si el coste de degradacion por MWh sube mas rapido que el diferencial capturado, porque ese punto de saturacion ya aparece en el historico.",
+            "Retrasar cualquier escalado de medios si el coste por oportunidad sube mas rapido que el volumen incremental, porque ese punto de saturacion ya aparece en el historico.",
         ],
         "due_diligence": [
-            "Verificar que el margen se pueda atribuir por bloque horario y por profundidad de descarga, para saber que parte del retorno viene de cada palanca.",
+            "Verificar que landing, CTA, lead magnet y checkout tengan medicion separada, para saber en que etapa vive el uplift.",
             "Definir umbrales de exito y criterios de salida antes del despliegue para que la decision no se convierta en opinion post-hoc.",
-            "Contrastar la curva de degradacion asumida contra la garantia del fabricante antes de activar regimenes de mayor dispersion.",
+            "Contrastar lo que reporta cada plataforma contra las ventas registradas antes de activar escenarios de mayor dispersion.",
         ],
         "findings": findings,
         "tool_trace": tool_trace,
@@ -809,7 +807,7 @@ Objetivo:
 Usa tus herramientas antes de responder:
 1. comparar_decisiones
 2. distribucion_montecarlo para cada una de las cuatro estrategias del ranking
-3. obtener_uplift_ml para control_fino, descarga_profunda y regulacion
+3. obtener_uplift_ml para funnel, webinar y nuevo_producto
 
 Contexto ya consolidado del ranking:
 {summary_json}
@@ -828,7 +826,7 @@ Devuelve exclusivamente JSON valido con este esquema:
     "due_diligence": ["string", "string", "string"],
     "findings": ["string", "string", "string"],
     "audience_views": {{
-        "finanzas": {{
+        "ceo": {{
             "headline": "string",
             "summary": "string",
             "reasons": ["string", "string", "string"],
@@ -837,7 +835,7 @@ Devuelve exclusivamente JSON valido con este esquema:
             "switch_signals": ["string", "string", "string"],
             "due_diligence": ["string", "string", "string"]
         }},
-        "operacion": {{
+        "growth": {{
             "headline": "string",
             "summary": "string",
             "reasons": ["string", "string", "string"],
