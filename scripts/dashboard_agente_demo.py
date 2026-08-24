@@ -51,31 +51,29 @@ except ImportError:
 MISSION_DASHBOARD_PATH = DASHBOARDS_DIR / "agente_mission_control.html"
 
 UPLIFT_LABELS = {
-  "control_fino_completo": "Control fino de carga y rampa",
-  "descarga_profunda": "Descarga profunda del banco",
-  "regulacion_convocada": "Regulacion de frecuencia convocada",
-  "mercado_nuevo": "Habilitacion en mercado nuevo",
+  "funnel_full_optimized": "Optimizacion integral del embudo",
+  "webinar_attendance": "Reactivacion sobre base templada",
+  "new_product_offer": "Oferta de categoria nueva",
 }
 
 ADS_LABELS = {
-  "bloque_punta_noche": "Punta de noche",
-  "bloque_punta_tarde": "Punta de tarde",
-  "bloque_manana": "Manana",
-  "bloque_valle_solar": "Valle solar",
+  "paid_budget_low": "Inversion contenida",
+  "paid_budget_medium": "Inversion equilibrada",
+  "paid_budget_high": "Inversion intensiva",
+  "paid_budget_saturated": "Canal saturado",
 }
 
 UPLIFT_EXPLANATIONS = {
-  "control_fino_completo": "Ventana de carga optimizada, rampa suave y reserva comprometida. Es el paquete barato: casi todo consignas y software, sin obra sobre el activo.",
-  "descarga_profunda": "Bajar el estado de carga mas alla del umbral conservador. Mueve mas energia por ciclo, pero el desgaste de las celdas crece con el cuadrado de esa profundidad, no de forma lineal.",
-  "regulacion_convocada": "Ventanas en las que la bateria oferta regulacion de frecuencia y el operador la convoca. Paga por disponibilidad y desgasta poco.",
-  "mercado_nuevo": "Habilitacion en un producto de mercado nuevo. Techo de ingreso alto, pero exige certificacion previa y anade variabilidad de ejecucion.",
+  "funnel_full_optimized": "Landing, CTA, lead magnet y checkout trabajando juntos. Es el paquete barato: no compra trafico, mejora lo que ya llega.",
+  "webinar_attendance": "Secuencia de reactivacion sobre quienes ya interactuaron. Poco coste incremental y ticket alto, pero solo aplica a la base existente.",
+  "new_product_offer": "Abrir una categoria nueva con ticket mayor. El techo de ingreso es el mas alto, pero exige inversion previa y la conversion cae mientras el catalogo madura.",
 }
 
 # Nombre del operador del caso. Es ficticio a proposito: los datos son
 # sinteticos y ninguna instalacion real esta detras. Cambiarlo aqui lo cambia
 # en toda la consola.
-OPERADOR = "Fluenta"
-ACTIVO = "BESS Pampa Alta"
+OPERADOR = "Vantara"
+UNIDAD = "captacion de pago"
 
 STAGES = [
     {
@@ -83,21 +81,21 @@ STAGES = [
         "title": "El problema",
         "eyebrow": "Fase 01",
         "tagline": (
-            "Una bateria de 20 MW / 80 MWh y cuatro formas de operarla durante un anio. "
-            "Solo se puede elegir una, y la que mas factura es la que puede dejar el "
-            "activo sin vida util antes de amortizarlo."
+            "Hay presupuesto para una sola iniciativa y cuatro sobre la mesa. Los paneles "
+            "de Meta, Google y TikTok se atribuyen las mismas ventas, asi que sumados "
+            "reportan mas conversiones de las que registra el ecommerce."
         ),
         "command": "AGENTE.PLANTEAR_LA_DECISION()",
         "duration_ms": 1100,
     },
     {
         "key": "ingesta",
-        "title": "20.000 ventanas de despacho",
+        "title": "20.000 oportunidades",
         "eyebrow": "Fase 02",
         "tagline": (
-            "Carga el historico hora a hora: precio spot, diferencial capturado, estado "
-            "de carga, ciclos consumidos y si cada ciclo llego a cubrir su propio coste "
-            "de degradacion."
+            "Carga el historico de captacion: canal, segmento, nivel de inversion, coste "
+            "atribuido, variantes de landing y CTA, y si la oportunidad acabo en venta y "
+            "por cuanto."
         ),
         "command": "AGENTE.CARGAR_Y_VALIDAR_DATOS()",
         "duration_ms": 1400,
@@ -107,9 +105,9 @@ STAGES = [
         "title": "Que aporta cada palanca",
         "eyebrow": "Fase 03",
         "tagline": (
-            "Contrafactual sobre la misma ventana con una palanca cambiada. Aqui aparece "
-            "el mecanismo del caso: descargar profundo mueve mas energia y destruye margen, "
-            "porque el desgaste crece con el cuadrado de la profundidad."
+            "Contrafactual sobre la misma oportunidad con una palanca cambiada. Aqui "
+            "aparece la saturacion: al subir de tramo de inversion, el coste por "
+            "oportunidad se dobla y la calidad del lead se desploma."
         ),
         "command": "AGENTE.EVALUAR_MODELOS_Y_PALANCAS()",
         "duration_ms": 1500,
@@ -119,9 +117,9 @@ STAGES = [
         "title": "10.000 futuros",
         "eyebrow": "Fase 04",
         "tagline": (
-            "Inyecta volatilidad de precio, riesgo de no ser convocado y error residual. "
-            "El resultado no es un numero: es una distribucion con su suelo, su techo y "
-            "su probabilidad de perdida."
+            "Inyecta incertidumbre del modelo, riesgo de ejecucion y ruido residual. El "
+            "resultado no es un numero: es una distribucion con su suelo, su techo y su "
+            "probabilidad de perdida."
         ),
         "command": "AGENTE.SIMULAR_10000_FUTUROS()",
         "duration_ms": 1600,
@@ -131,9 +129,8 @@ STAGES = [
         "title": "La decision, en dolares",
         "eyebrow": "Fase 05",
         "tagline": (
-            "Tres lecturas independientes sobre las mismas cifras: Finanzas, Operacion del "
-            "activo y Riesgo. Cuando coinciden, la decision es solida; cuando no, ese "
-            "desacuerdo es el dato."
+            "Tres lecturas independientes sobre las mismas cifras: CEO, Growth y Riesgo. "
+            "Cuando coinciden, la decision es solida; cuando no, ese desacuerdo es el dato."
         ),
         "command": "AGENTE.EMITIR_RECOMENDACION()",
         "duration_ms": 1500,
@@ -272,7 +269,7 @@ def _build_payload() -> dict:
 
     period_start = str(dataset["date"].min())
     period_end = str(dataset["date"].max())
-    converted = dataset[dataset["cubrio_degradacion"] == 1]
+    converted = dataset[dataset["converted_to_sale"] == 1]
     conversion_model, auc = build_conversion_model(dataset)
 
     # Mismo corte temporal que usa build_conversion_model. Antes cada archivo
@@ -281,42 +278,44 @@ def _build_payload() -> dict:
     # calcularse sobre datos de entrenamiento sin que nada avisara.
     conversion_train, conversion_test = temporal_split(dataset)
     conversion_scores = conversion_model.predict_proba(conversion_test[FEATURES])[:, 1]
-    gain_chart = _build_gain_chart(conversion_test["cubrio_degradacion"], conversion_scores)
+    gain_chart = _build_gain_chart(conversion_test["converted_to_sale"], conversion_scores)
 
     sold_train, sold_test = temporal_split(converted)
     aov_model = build_aov_model(sold_train)
     aov_pred = np.expm1(aov_model.predict(sold_test[FEATURES]))
-    residuals = sold_test["energia_mwh"].to_numpy() - aov_pred
+    residuals = sold_test["aov_usd"].to_numpy() - aov_pred
     abs_residuals = np.abs(residuals)
 
     dataset_summary = {
         "rows": int(len(dataset)),
         "period_start": period_start,
         "period_end": period_end,
-        "conversion_rate": float(dataset["cubrio_degradacion"].mean()),
-        "ingreso_usd": float(dataset["ingreso_usd"].sum()),
-        "margen_neto_usd": float(dataset["margen_neto_usd"].sum()),
-        "avg_ticket_usd": float(converted["energia_mwh"].mean()),
-        "avg_lead_score": float(dataset["indice_despacho"].mean()),
-        "campaign_count": int(dataset[["bloque_horario", "producto_despacho"]].drop_duplicates().shape[0]),
+        "conversion_rate": float(dataset["converted_to_sale"].mean()),
+        "ingreso_usd": float(dataset["revenue_usd"].sum()),
+        "margen_neto_usd": float(dataset["contribution_profit_usd"].sum()),
+        "avg_ticket_usd": float(converted["aov_usd"].mean()),
+        "avg_lead_score": float(dataset["lead_score"].mean()),
+        "campaign_count": int(dataset[["channel", "campaign_objective"]].drop_duplicates().shape[0]),
         "variable_count": int(len(dataset.columns)),
-        "channel_count": int(dataset["bloque_horario"].nunique()),
-        "segment_count": int(dataset["producto_despacho"].nunique()),
-        "geography_count": int(dataset["zona_red"].nunique()),
-        "objective_count": int(dataset["estado_red"].nunique()),
-        "precio_spot_medio": float(dataset["precio_spot_usd_mwh"].mean()),
-        "diferencial_medio": float(dataset["diferencial_usd_mwh"].mean()),
-        "ciclos_consumidos": float(dataset["ciclos_acumulados"].max()),
-        "energia_total_mwh": float(dataset["energia_mwh"].sum()),
+        "channel_count": int(dataset["channel"].nunique()),
+        "segment_count": int(dataset["customer_segment"].nunique()),
+        "geography_count": int(dataset["geo_region"].nunique()),
+        "objective_count": int(dataset["campaign_objective"].nunique()),
+        "coste_medio": float(dataset["cost_attributed_usd"].mean()),
+        "inversion_total": float(dataset["cost_attributed_usd"].sum()),
+        "roas": float(dataset["revenue_usd"].sum() / dataset["cost_attributed_usd"].sum()),
+        "pct_inversion_sobre_ingreso": float(
+            dataset["cost_attributed_usd"].sum() / dataset["revenue_usd"].sum()
+        ),
         "time_windows": int(dataset["month"].nunique()),
     }
 
     monthly_summary = (
         dataset.groupby("month")
         .agg(
-            ingreso_usd=("ingreso_usd", "sum"),
-            margen_neto_usd=("margen_neto_usd", "sum"),
-            conversion_rate=("cubrio_degradacion", "mean"),
+            ingreso_usd=("revenue_usd", "sum"),
+            margen_neto_usd=("contribution_profit_usd", "sum"),
+            conversion_rate=("converted_to_sale", "mean"),
         )
         .reset_index()
     )
@@ -395,15 +394,14 @@ def _build_payload() -> dict:
 
     sample_columns = [
         "date",
-        "bloque_horario",
-        "zona_red",
-        "profundidad_descarga",
-        "precio_spot_usd_mwh",
-        "diferencial_usd_mwh",
-        "indice_despacho",
-        "cubrio_degradacion",
-        "coste_degradacion_usd",
-        "margen_neto_usd",
+        "channel",
+        "customer_segment",
+        "ad_budget_level",
+        "cost_attributed_usd",
+        "lead_score",
+        "converted_to_sale",
+        "revenue_usd",
+        "contribution_profit_usd",
     ]
     sample_rows = dataset[sample_columns].head(10).to_dict(orient="records")
 
@@ -422,7 +420,7 @@ def _build_payload() -> dict:
         },
         {
         "name": "Tool 04 · Uplift de negocio",
-        "purpose": "Compara las cuatro estrategias de operacion sobre el mismo historico de despacho.",
+        "purpose": "Compara las cuatro palancas de crecimiento sobre el mismo historico comercial.",
         },
         {
             "name": "Tool 05 · Monte Carlo",
@@ -435,11 +433,11 @@ def _build_payload() -> dict:
     )
 
     return {
-      "title": f"{OPERADOR} · Despacho bajo incertidumbre",
+      "title": f"{OPERADOR} · Presupuesto bajo atribucion rota",
       "subtitle": (
-          f"Consola de decision para el {ACTIVO}: aprende del historico de despacho, "
-          "estima que aporta cada palanca de operacion y simula 10.000 futuros antes de "
-          "comprometer la estrategia del anio."
+          f"Consola de decision para la {UNIDAD} de {OPERADOR}: aprende del historico, "
+          "estima que aporta cada palanca y simula 10.000 futuros antes de comprometer "
+          "el presupuesto del trimestre."
       ),
         "stages": STAGES,
         "tools": mission_tools,
@@ -453,15 +451,15 @@ def _build_payload() -> dict:
           "name": "Regresion logistica",
           "purpose": "Calcula la probabilidad de exito de cada oportunidad a partir de canal, segmento, contexto comercial y señales de calidad.",
           "auc": float(auc),
-          "positive_rate": float(conversion_test["cubrio_degradacion"].mean()),
+          "positive_rate": float(conversion_test["converted_to_sale"].mean()),
           "avg_predicted_prob": float(conversion_scores.mean()),
           "gain_chart": gain_chart,
         },
         "regression": {
           "name": "Gradient Boosting Regressor",
-          "purpose": "Estima el ingreso esperado del ciclo para traducir cobertura de degradacion en dolares.",
-          "mae_usd": float(mean_absolute_error(sold_test["energia_mwh"], aov_pred)),
-          "r2": float(r2_score(sold_test["energia_mwh"], aov_pred)),
+          "purpose": "Estima el ticket esperado de la oportunidad para traducir conversion en dolares.",
+          "mae_usd": float(mean_absolute_error(sold_test["aov_usd"], aov_pred)),
+          "r2": float(r2_score(sold_test["aov_usd"], aov_pred)),
           "mean_residual_usd": float(residuals.mean()),
           "p90_abs_error_usd": float(np.percentile(abs_residuals, 90)),
           "residual_bands": _build_residual_bands(residuals),
@@ -492,7 +490,7 @@ HTML_TEMPLATE = """<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fluenta · Despacho bajo incertidumbre</title>
+  <title>Vantara · Presupuesto bajo atribucion rota</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1671,7 +1669,7 @@ HTML_TEMPLATE = """<!doctype html>
             <section class="panel">
               <div class="eyebrow">Cobertura del caso</div>
               <h2 class="panel-title">Que informacion tiene disponible el agente</h2>
-              <p class="panel-copy">Antes de modelizar conviene comprobar que el historico cubre suficiente variedad de condiciones: bloques horarios, productos de mercado, nodos, estados de red y ventana temporal.</p>
+              <p class="panel-copy">Antes de modelizar conviene comprobar que el historico cubre suficiente variedad de condiciones: canales, campañas, segmentos, geografias y ventana temporal.</p>
               <div class="kpi-grid" id="dataset-structure-cards"></div>
             </section>
             <section class="panel">
@@ -1688,7 +1686,7 @@ HTML_TEMPLATE = """<!doctype html>
                   <th>Fecha</th>
                   <th>Canal</th>
                   <th>Segmento</th>
-                  <th>Objetivo</th>
+                  <th>Nivel de inversion</th>
                   <th>Lead score</th>
                   <th>Conversion</th>
                   <th>Revenue</th>
@@ -1758,8 +1756,8 @@ HTML_TEMPLATE = """<!doctype html>
               <div class="eyebrow">Recomendacion final</div>
               <div class="audience-caption">Selecciona enfoque de lectura</div>
               <div class="audience-switch" id="audience-switch">
-                <button class="audience-chip active" data-audience="finanzas">Finanzas</button>
-                <button class="audience-chip" data-audience="operacion">Operacion</button>
+                <button class="audience-chip active" data-audience="ceo">Finanzas</button>
+                <button class="audience-chip" data-audience="growth">Operacion</button>
                 <button class="audience-chip" data-audience="riesgo">Riesgo</button>
               </div>
               <div class="audience-summary" id="audience-summary"></div>
@@ -1814,8 +1812,8 @@ HTML_TEMPLATE = """<!doctype html>
   <script>
     const PAYLOAD = __PAYLOAD__;
     const AUDIENCE_META = {
-      finanzas: 'Prioriza asignacion de capital, payback y claridad de decision ejecutiva.',
-      operacion: 'Prioriza velocidad de aprendizaje, iteracion y escalado de palancas.',
+      ceo: 'Prioriza asignacion de capital, payback y claridad de decision ejecutiva.',
+      growth: 'Prioriza velocidad de aprendizaje, iteracion y escalado de palancas.',
       riesgo: 'Prioriza control del downside, robustez del suelo y criterios de contencion.',
     };
     const API_BASE = window.location.protocol.startsWith('http') ? window.location.origin : '';
@@ -1830,7 +1828,7 @@ HTML_TEMPLATE = """<!doctype html>
     });
     const state = {
       activeStage: 'briefing',
-      audience: 'finanzas',
+      audience: 'ceo',
       autoTimer: null,
       progressTimer: null,
       autoplay: false,
@@ -1946,7 +1944,7 @@ HTML_TEMPLATE = """<!doctype html>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${PHASE_ICONS[key] || ''}</svg></span>`;
 
     const HERO_ROTATION = [
-      { word: 'Carga y valida.', rest: '20,000 ventanas de despacho historicas, listas para modelizar.', phase: 'ingesta' },
+      { word: 'Carga y valida.', rest: '20,000 oportunidades comerciales historicas, listas para modelizar.', phase: 'ingesta' },
       { word: 'Modela el uplift.', rest: 'Regresion logistica + HistGradientBoosting por palanca.', phase: 'uplift' },
       { word: 'Simula 10,000 futuros.', rest: 'Montecarlo con incertidumbre real, no un escenario unico.', phase: 'montecarlo' },
       { word: 'Decide con datos.', rest: 'Recomendacion ejecutiva desde 3 roles de negocio.', phase: 'reporte' },
@@ -1984,10 +1982,10 @@ HTML_TEMPLATE = """<!doctype html>
       const simulation = asObject(PAYLOAD.simulation);
       const totalSimulations = Number(simulation.total_simulations || 0);
       const metrics = [
-        createMetric('Ventanas analizadas', ds.rows.toLocaleString('es-ES'), `${ds.period_start} -> ${ds.period_end}`),
+        createMetric('Oportunidades analizadas', ds.rows.toLocaleString('es-ES'), `${ds.period_start} -> ${ds.period_end}`),
         createMetric('Futuros a evaluar', totalSimulations.toLocaleString('es-ES'), 'Escenarios preparados para visualizar la toma de decision'),
         createMetric('Variables disponibles', ds.variable_count.toLocaleString('es-ES'), `${ds.segment_count} segmentos · ${ds.geography_count} geografias`),
-        createMetric('Ventanas temporales', ds.time_windows.toLocaleString('es-ES'), 'Meses historicos disponibles para la decision'),
+        createMetric('Meses de historico', ds.time_windows.toLocaleString('es-ES'), 'Meses historicos disponibles para la decision'),
       ];
       document.getElementById('hero-kpis').innerHTML = metrics.join('');
       // coordenadas decorativas reales: periodo real del dataset, no lat/long inventado
@@ -2008,7 +2006,7 @@ HTML_TEMPLATE = """<!doctype html>
       const track = document.getElementById('ticker-track');
       if (!track) return;
       const items = [
-        `<strong>${ds.rows.toLocaleString('es-ES')}</strong> ventanas de despacho históricas`,
+        `<strong>${ds.rows.toLocaleString('es-ES')}</strong> oportunidades históricas`,
         `<strong>${fmtPct(ds.conversion_rate)}</strong> conversión promedio`,
         `<strong>${fmtCurrency(ds.avg_ticket_usd)}</strong> ticket medio`,
         `<strong>${totalSimulations.toLocaleString('es-ES')}</strong> futuros simulados`,
@@ -2052,23 +2050,22 @@ HTML_TEMPLATE = """<!doctype html>
       ].join('');
 
       document.getElementById('dataset-structure-cards').innerHTML = [
-        createMetric('Regímenes', ds.campaign_count.toLocaleString('es-ES'), 'Combinaciones distintas de bloque horario y producto de mercado'),
+        createMetric('Campañas', ds.campaign_count.toLocaleString('es-ES'), 'Campañas distintas ejecutadas en el periodo'),
         createMetric('Variables', ds.variable_count.toLocaleString('es-ES'), 'Campos disponibles para explicar comportamiento y resultado'),
-        createMetric('Productos', ds.segment_count.toLocaleString('es-ES'), 'Productos de mercado a los que puede acudir la bateria'),
-        createMetric('Nodos', ds.geography_count.toLocaleString('es-ES'), 'Nodos de la red donde inyecta el activo'),
+        createMetric('Segmentos', ds.segment_count.toLocaleString('es-ES'), 'Segmentos de cliente cubiertos por el historico'),
+        createMetric('Geografias', ds.geography_count.toLocaleString('es-ES'), 'Mercados donde opera la unidad'),
       ].join('');
 
       document.getElementById('sample-table').innerHTML = asArray(dataset.sample).map((row) => `
         <tr>
           <td>${row.date}</td>
-          <td>${row.bloque_horario}</td>
-          <td>${row.zona_red}</td>
-          <td>${row.profundidad_descarga}</td>
-          <td>${fmtCurrency(row.diferencial_usd_mwh)}</td>
-          <td>${row.indice_despacho}</td>
-          <td>${row.cubrio_degradacion ? 'Si' : 'No'}</td>
-          <td>${fmtCurrency(row.coste_degradacion_usd)}</td>
-          <td>${fmtCurrency(row.margen_neto_usd)}</td>
+          <td>${row.channel}</td>
+          <td>${row.customer_segment}</td>
+          <td>${row.ad_budget_level}</td>
+          <td>${row.lead_score}</td>
+          <td>${row.converted_to_sale ? 'Si' : 'No'}</td>
+          <td>${fmtCurrency(row.revenue_usd)}</td>
+          <td>${fmtCurrency(row.contribution_profit_usd)}</td>
         </tr>
       `).join('');
 
@@ -2678,13 +2675,13 @@ HTML_TEMPLATE = """<!doctype html>
       });
       document.querySelectorAll('[data-audience]').forEach((button) => {
         button.addEventListener('click', () => {
-          state.audience = button.dataset.audience || 'finanzas';
+          state.audience = button.dataset.audience || 'ceo';
           renderReport();
         });
       });
       document.getElementById('reset-btn').addEventListener('click', () => {
         state.autoplay = false;
-        state.audience = 'finanzas';
+        state.audience = 'ceo';
         clearTimeout(state.autoTimer);
         clearInterval(state.montecarloPollHandle);
         state.montecarloPollHandle = null;
