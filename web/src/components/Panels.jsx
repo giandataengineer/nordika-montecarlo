@@ -44,10 +44,10 @@ export function DatasetPanel({ payload }) {
   return (
     <Card>
       <div className="stat-row">
-        <Stat label="Regímenes" value={s.campaign_count} animate />
+        <Stat label="Campañas" value={s.campaign_count} animate />
         <Stat label="Variables" value={s.variable_count} animate />
-        <Stat label="Productos" value={s.segment_count} animate />
-        <Stat label="Nodos" value={s.geography_count} animate />
+        <Stat label="Segmentos" value={s.segment_count} animate />
+        <Stat label="Geografías" value={s.geography_count} animate />
       </div>
       <span className="card__foot label">
         <DecryptedText

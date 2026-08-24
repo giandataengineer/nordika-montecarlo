@@ -16,7 +16,7 @@ import { ProblemaSection } from "./components/ProblemaSection";
 import "./styles/global.css";
 
 const PHASE_LABEL = {
-  ingesta: "Fase 02 · 20.000 ventanas de despacho",
+  ingesta: "Fase 02 · 20.000 oportunidades",
   uplift: "Fase 03 · Qué aporta cada palanca",
   montecarlo: "Fase 04 · 10.000 futuros",
   reporte: "Fase 05 · La decisión, en dólares",
@@ -29,15 +29,15 @@ const FAQ = [
   },
   {
     q: "¿Qué es el uplift contrafactual?",
-    a: "Es la diferencia entre lo que se espera de una ventana de despacho tal como está y lo que se esperaría si se cambiara una palanca concreta (profundidad de descarga, ventana de carga, producto de mercado), manteniendo todo lo demás igual.",
+    a: "Es la diferencia entre lo que se espera de una oportunidad tal como está y lo que se esperaría si se cambiara una palanca concreta (creatividad, landing, nivel de inversión), manteniendo todo lo demás igual.",
   },
   {
     q: "¿De dónde salen los datos?",
-    a: "De 20.000 ventanas horarias de despacho ya ejecutadas. Es un caso sintético: los datos se generan con distribuciones coherentes con el dominio, no se descargan de ningún operador de red real. Los modelos aprenden de lo que pasó cuando se movió cada palanca, no de supuestos inventados en una hoja de cálculo.",
+    a: "De 20.000 oportunidades comerciales ya cerradas en 28 meses. Es un caso sintético: los datos se generan con distribuciones coherentes con el dominio, no se descargan de ninguna cuenta publicitaria real. Los modelos aprenden de lo que pasó cuando se movió cada palanca, no de supuestos inventados en una hoja de cálculo.",
   },
   {
     q: "¿Por qué gana la opción menos espectacular?",
-    a: "Porque el desgaste de las celdas crece más que proporcionalmente con la profundidad de descarga. La estrategia que más energía mueve factura más y deja menos: compra ingreso de hoy pagándolo con vida útil que no se recupera. La decisión correcta es la de mayor esperanza ajustada al riesgo, no la de mayor techo.",
+    a: "Porque el coste por oportunidad crece más que proporcionalmente con el gasto en paid social. La estrategia que más volumen compra factura más y deja menos: compra ingreso de hoy pagándolo con margen que no vuelve. La decisión correcta es la de mayor esperanza ajustada al riesgo, no la de mayor techo.",
   },
   {
     q: "¿La simulación corre de verdad o es una animación?",
@@ -51,9 +51,9 @@ export default function App() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("/api/payload")
+    fetch("payload.json")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d) => setPayload(d.payload))
+      .then((d) => setPayload(d))
       .catch((e) => setError(e.message));
   }, []);
 
@@ -91,10 +91,10 @@ export default function App() {
         index={2}
         eyebrow={f("ingesta")?.eyebrow}
         faseTitulo={f("ingesta")?.title}
-        solid="El histórico de despacho"
+        solid="El histórico comercial"
         ghost="es la única fuente de verdad."
         echo="Sin diversidad real no hay modelo, hay memorización."
-        copy="Antes de modelizar hay que comprobar que el histórico cubre condiciones diversas: bloques horarios, productos de mercado, nodos de red y una ventana temporal suficiente para que el modelo aprenda de algo más que del ruido de un trimestre."
+        copy="Antes de modelizar hay que comprobar que el histórico cubre condiciones diversas: canales, campañas, segmentos, geografías y una ventana temporal suficiente para que el modelo aprenda de algo más que del ruido de un trimestre."
         wide
         media={<DatasetSection payload={payload} />}
       />
@@ -107,7 +107,7 @@ export default function App() {
         solid="Dos modelos"
         ghost="estiman el impacto de cada palanca."
         echo="El uplift no es una opinión, es una diferencia medida."
-        copy="Una regresión logística estima si el ciclo cubrirá su coste de degradación; un gradient boosting estima el ingreso esperado. La diferencia contra el escenario base es el uplift contrafactual de mover esa palanca y nada más."
+        copy="Una regresión logística estima si la oportunidad convertirá; un gradient boosting estima el ticket esperado. La diferencia contra el escenario base es el uplift contrafactual de mover esa palanca y nada más."
         wide
         media={<ModelsSection payload={payload} />}
       />

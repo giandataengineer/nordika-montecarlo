@@ -67,13 +67,13 @@ export function ModelsSection({ payload }) {
           <p className="panel__copy">{c.purpose}</p>
           <MetricGrid cols={4}>
             <Metric label="AUC" value={c.auc.toFixed(3)} gloss="Capacidad de separar oportunidades con mayor y menor probabilidad de éxito" accent />
-            <Metric label="Base de cobertura" value={pct(c.positive_rate)} gloss="Ventanas que cubrieron su coste de degradación en validación" />
+            <Metric label="Base de cobertura" value={pct(c.positive_rate)} gloss="Oportunidades que convirtieron en validación" />
             <Metric label="Probabilidad media" value={pct(c.avg_predicted_prob)} gloss="Propensión media estimada por el modelo" />
-            <Metric label="Top decil" value={pct(topDecile.conversion_rate)} gloss="Cobertura del 10% de ventanas con mayor índice de despacho" />
+            <Metric label="Top decil" value={pct(topDecile.conversion_rate)} gloss="Conversión del 10% de oportunidades con mayor probabilidad estimada" />
           </MetricGrid>
 
           <div className="chart-head">
-            <span className="label">Captura acumulada de ventanas rentables</span>
+            <span className="label">Captura acumulada de conversiones</span>
             <span className="label">Gain chart</span>
           </div>
           <div className="chart">
@@ -126,7 +126,7 @@ export function ModelsSection({ payload }) {
       <Panel eyebrow="Palancas de negocio" title="Escenarios con mayor uplift esperado">
         <p className="panel__copy">
           Estas son las iniciativas mejor posicionadas según el análisis contrafactual:
-          cuánto mejoran la cobertura y cuánto margen añaden por ventana. El uplift no es
+          cuánto mejoran la conversión y cuánto margen añaden por oportunidad. El uplift no es
           una hipótesis puesta a mano, sale de comparar cada oportunidad consigo misma con la
           palanca cambiada.
         </p>

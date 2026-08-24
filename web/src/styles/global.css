@@ -2769,9 +2769,9 @@ a:hover {
 }
 .problema__coste b { color: var(--text); font-weight: 600; }
 
-/* El mecanismo en tres pasos. La prosa explicaba carga, descarga y desgaste,
-   pero el tercero es el unico que no se ve en la liquidacion del dia y por eso
-   necesita separarse de los otros dos. */
+/* El mecanismo en tres pasos: coste por oportunidad, conversion y margen. El
+   tercero es el unico que no se ve en el panel del canal y por eso necesita
+   separarse de los otros dos. */
 .mecanismo {
   list-style: none;
   margin: 0 0 20px;

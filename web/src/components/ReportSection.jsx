@@ -6,15 +6,15 @@ import { IconAlert, IconArrowRight, IconCheck, IconDecide, IconLayers, IconTrend
 import { Consenso } from "./Consenso";
 
 const ROLES = [
-  { key: "finanzas", label: "Finanzas", lead: "Prioriza el retorno sobre el capital del activo, el payback y la defensa ante el comité." },
-  { key: "operacion", label: "Operación", lead: "Prioriza la vida útil del banco, los ciclos consumidos y la disponibilidad del activo." },
-  { key: "riesgo", label: "Riesgo", lead: "Prioriza el control del escenario adverso, el suelo de la distribución y el compromiso con el operador de red." },
+  { key: "ceo", label: "CEO", lead: "Prioriza asignación de capital, payback y claridad de decisión ejecutiva." },
+  { key: "growth", label: "Growth", lead: "Prioriza velocidad de aprendizaje, iteración y escalado de canales." },
+  { key: "riesgo", label: "Riesgo", lead: "Prioriza el control del downside, la robustez del suelo y los criterios de contención." },
 ];
 
 export function ReportSection({ payload }) {
   const rec = payload?.recommendation;
   const report = payload?.report;
-  const [role, setRole] = useState("finanzas");
+  const [role, setRole] = useState("ceo");
 
   if (!rec) return <Panel dark>Consolidando informe...</Panel>;
 

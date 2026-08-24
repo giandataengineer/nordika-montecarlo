@@ -104,7 +104,7 @@ export function Console({ summary, top, totalSims, phase }) {
 
       {summary && (
         <p className="label" style={{ display: "block", marginTop: 16 }}>
-          Energía media {summary.avg_ticket_usd?.toFixed(1)} MWh · {usd(summary.rows)} ventanas
+          Ticket medio ${usd(summary.avg_ticket_usd)} · {usd(summary.rows)} oportunidades
         </p>
       )}
     </article>

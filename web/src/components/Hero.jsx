@@ -205,7 +205,7 @@ export function Hero({ summary, top, totalSims, fase, onPhaseChange }) {
         <div className="hero__body">
           <div>
             <p className="hero__lead">
-              Aprende del histórico de despacho ya ejecutado, simula miles de futuros con
+              Aprende del histórico comercial ya cerrado, simula miles de futuros con
               incertidumbre real y devuelve la decisión que sobrevive al peor
               escenario.
             </p>

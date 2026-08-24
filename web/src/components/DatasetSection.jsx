@@ -28,12 +28,12 @@ export function DatasetSection({ payload }) {
         <Metric
           label="Conversión observada"
           value={pct(s.conversion_rate)}
-          gloss="Ventanas que cubrieron su coste de degradación"
+          gloss="Oportunidades que acabaron en venta"
         />
         <Metric
-          label="Energía por ciclo"
-          value={`${Number(s.avg_ticket_usd || 0).toFixed(1)} MWh`}
-          gloss="Energía media movida en las ventanas que cubrieron su degradación"
+          label="Ticket medio"
+          value={usd(s.avg_ticket_usd)}
+          gloss="Valor medio de las operaciones cerradas"
         />
         <Metric
           label="Beneficio acumulado"
@@ -47,18 +47,18 @@ export function DatasetSection({ payload }) {
         <Panel eyebrow="Cobertura del caso" title="Qué información tiene disponible el agente">
           <p className="panel__copy">
             Antes de modelizar conviene comprobar que el caso tiene suficiente diversidad
-            de operación: bloques horarios, productos, nodos, estados de red y ventana temporal.
+            comercial: campañas, canales, segmentos, mercados y ventana temporal.
           </p>
           <MetricGrid cols={4}>
-            <Metric label="Regímenes" value={s.campaign_count} animate gloss="Combinaciones distintas de bloque horario y producto de mercado" />
+            <Metric label="Campañas" value={s.campaign_count} animate gloss="Combinaciones distintas de canal y objetivo" />
             <Metric label="Variables" value={s.variable_count} animate gloss="Campos disponibles para explicar comportamiento y resultado" />
-            <Metric label="Productos" value={s.segment_count} animate gloss="Productos de mercado a los que puede acudir la batería" />
+            <Metric label="Segmentos" value={s.segment_count} animate gloss="Perfiles de cliente presentes en el histórico" />
             <Metric label="Geografías" value={s.geography_count} animate gloss="Mercados presentes en la base histórica" />
           </MetricGrid>
           <MetricGrid cols={3}>
-            <Metric label="Bloques horarios" value={s.channel_count} animate gloss="Franjas de la curva de demanda diaria" />
-            <Metric label="Estados de red" value={s.objective_count} animate gloss="Nivel de tensión del sistema marcado por el operador" />
-            <Metric label="Índice de despacho" value={s.avg_lead_score.toFixed(1)} gloss="Atractivo medio de la ventana, de 1 a 99" />
+            <Metric label="Canales" value={s.channel_count} animate gloss="Vías de captación registradas" />
+            <Metric label="Objetivos" value={s.objective_count} animate gloss="Tipos de objetivo de campaña" />
+            <Metric label="Lead score medio" value={s.avg_lead_score.toFixed(1)} gloss="Calidad media de la oportunidad, de 1 a 99" />
           </MetricGrid>
         </Panel>
 
@@ -105,13 +105,14 @@ export function DatasetSection({ payload }) {
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Bloque</th>
+                <th>Canal</th>
                 <th>Segmento</th>
-                <th>Objetivo</th>
+                <th>Inversión</th>
+                <th className="ta-r">Coste</th>
                 <th className="ta-r">Índice</th>
-                <th className="ta-r">Conversión</th>
-                <th className="ta-r">Revenue</th>
-                <th className="ta-r">Beneficio</th>
+                <th className="ta-r">Convirtió</th>
+                <th className="ta-r">Ingreso</th>
+                <th className="ta-r">Margen</th>
               </tr>
             </thead>
             <tbody>
@@ -120,16 +121,17 @@ export function DatasetSection({ payload }) {
                   <td>{r.date}</td>
                   <td>{r.channel}</td>
                   <td>{r.customer_segment}</td>
-                  <td>{r.campaign_objective}</td>
-                  <td className="ta-r">{r.indice_despacho}</td>
+                  <td>{r.ad_budget_level}</td>
+                  <td className="ta-r">{usd(r.cost_attributed_usd)}</td>
+                  <td className="ta-r">{r.lead_score}</td>
                   <td className="ta-r">
-                    <span className={r.cubrio_degradacion ? "flag flag--yes" : "flag"}>
-                      {r.cubrio_degradacion ? "Sí" : "No"}
+                    <span className={r.converted_to_sale ? "flag flag--yes" : "flag"}>
+                      {r.converted_to_sale ? "Sí" : "No"}
                     </span>
                   </td>
-                  <td className="ta-r">{usd(r.ingreso_usd)}</td>
-                  <td className={`ta-r ${Number(r.margen_neto_usd) < 0 ? "neg" : ""}`}>
-                    {usd(r.margen_neto_usd)}
+                  <td className="ta-r">{usd(r.revenue_usd)}</td>
+                  <td className={`ta-r ${Number(r.contribution_profit_usd) < 0 ? "neg" : ""}`}>
+                    {usd(r.contribution_profit_usd)}
                   </td>
                 </tr>
               ))}

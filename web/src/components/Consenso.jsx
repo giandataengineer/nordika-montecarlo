@@ -1,7 +1,7 @@
 import { Panel } from "./Blocks";
 import { IconAlert, IconCheck, IconLayers } from "./Icons";
 
-const ETIQUETA = { finanzas: "Finanzas", operacion: "Operación", riesgo: "Riesgo" };
+const ETIQUETA = { ceo: "Finanzas", growth: "Operación", riesgo: "Riesgo" };
 
 /* El desacuerdo entre roles es el dato con más valor de toda la pantalla:
    significa que la elección depende de qué prioriza quien decide, no de los

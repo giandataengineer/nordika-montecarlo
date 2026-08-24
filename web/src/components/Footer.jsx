@@ -49,8 +49,8 @@ export function Footer({ meta, fases = [] }) {
           <div>
             <h4>Modelos</h4>
             <ul>
-              <li>LogisticRegression · cobertura del ciclo</li>
-              <li>HistGradientBoosting · ingreso esperado</li>
+              <li>LogisticRegression · probabilidad de conversión</li>
+              <li>HistGradientBoosting · ticket esperado</li>
               <li>Uplift contrafactual · corte temporal</li>
               <li>Monte Carlo · 10.000 escenarios</li>
             </ul>
