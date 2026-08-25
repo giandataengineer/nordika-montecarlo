@@ -45,9 +45,10 @@ export function useSimulacion(total = 10000) {
 
     cancelar.current = simular(motor, {
       total,
-      // lotes pequeños al principio para que se vea arrancar, y mas grandes
-      // despues: si no, los 10.000 pasan tan rapido que no se aprecia nada
-      lote: 400,
+      // el motor termina en menos de un segundo; sin ritmo, el anillo saltaba
+      // de 0 a 100 y las curvas salian ya dibujadas
+      pasos: 130,
+      duracionMs: 26000,
       alAvanzar: (parcial, n) => {
         setRanking(parcial);
         setHecho(n);
@@ -56,7 +57,7 @@ export function useSimulacion(total = 10000) {
           parcial.forEach((d) => {
             punto[d.decision] = d.expected_profit_usd;
           });
-          return [...h, punto].slice(-90);
+          return [...h, punto].slice(-140);
         });
       },
       alTerminar: (final) => {

@@ -4,7 +4,7 @@ Sistema de Decision Intelligence para inversión de captación. Aprende del
 histórico comercial, estima qué aporta cada palanca de crecimiento y simula
 10.000 futuros antes de comprometer el presupuesto del trimestre.
 
-**Consola en vivo** · https://vantara-decision-console.vercel.app
+**Consola en vivo** · https://vantara-console.vercel.app
 
 > **Caso sintético.** Los datos se generan con distribuciones coherentes con el
 > dominio de marketing de performance. No proceden de ninguna cuenta

@@ -54,11 +54,18 @@ function percentil(ordenados, q) {
 
 /* Corre la simulación completa.
 
-   `alTerminarLote` recibe el progreso para que la página pueda dibujar el
-   avance en vivo, igual que hacía contra el backend. Se ejecuta por lotes con
-   setTimeout para no bloquear el hilo principal: si no, la interfaz se congela
-   los 10.000 escenarios y no se ve nada moverse. */
-export function simular(motor, { total = 10000, lote = 250, alAvanzar, alTerminar } = {}) {
+   Se ejecuta por lotes con setTimeout para no bloquear el hilo principal: si
+   no, la interfaz se congela los 10.000 escenarios y no se ve nada moverse.
+
+   La pausa entre lotes no es un adorno. El navegador termina los 10.000
+   escenarios en menos de un segundo, asi que sin ritmo el anillo saltaba de 0
+   a 100 y las curvas aparecian ya dibujadas: la fase prometia una simulacion
+   en vivo y enseñaba un resultado congelado. `duracionMs` reparte el trabajo
+   en `pasos` tramos para que el avance se vea escenario a escenario. */
+export function simular(
+  motor,
+  { total = 10000, pasos = 130, duracionMs = 26000, alAvanzar, alTerminar } = {},
+) {
   const rand = mulberry32(motor.semilla);
   const base = motor.valor_base;
   const nombres = Object.keys(motor.estrategias);
@@ -67,6 +74,9 @@ export function simular(motor, { total = 10000, lote = 250, alAvanzar, alTermina
   nombres.forEach((n) => {
     acumulado[n] = [];
   });
+
+  const lote = Math.max(1, Math.ceil(total / pasos));
+  const pausa = Math.max(0, Math.round(duracionMs / pasos));
 
   let hecho = 0;
   let cancelado = false;
@@ -113,19 +123,19 @@ export function simular(motor, { total = 10000, lote = 250, alAvanzar, alTermina
     // resumir implica ordenar 10.000 valores por estrategia: hacerlo en cada
     // lote y repintar las graficas cada vez atasca el hilo principal
     const ahora = performance.now();
-    if (alAvanzar && (ahora - ultimoPintado > 90 || hecho >= total)) {
+    if (alAvanzar && (ahora - ultimoPintado > 40 || hecho >= total)) {
       ultimoPintado = ahora;
       alAvanzar(resumen(acumulado, motor), hecho, total);
     }
 
     if (hecho < total) {
-      setTimeout(siguienteLote, 0);
+      setTimeout(siguienteLote, pausa);
     } else if (alTerminar) {
       alTerminar(resumen(acumulado, motor), acumulado);
     }
   }
 
-  setTimeout(siguienteLote, 0);
+  setTimeout(siguienteLote, pausa);
   return () => {
     cancelado = true;
   };

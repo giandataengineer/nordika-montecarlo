@@ -61,12 +61,12 @@ export function TopBar({ stats, error, fases = [] }) {
         <span className="topbar__glyph">
           <IconMontecarlo />
         </span>
-        Montecarlo
+        Vantara
       </a>
 
       <div className="topbar__pill">
         <span className="status-dot" aria-hidden="true" />
-        <span className="topbar__stats">{error ? `Sin conexión con el backend (${error})` : stats}</span>
+        <span className="topbar__stats">{error ? `No se pudo cargar el motor de simulación (${error})` : stats}</span>
         {fase && (
           <AnimatePresence mode="wait">
             <motion.a
