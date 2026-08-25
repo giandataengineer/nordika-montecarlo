@@ -1,5 +1,5 @@
--- Serie mensual con media movil de tres meses. La funcion de ventana es la
--- razon por la que esto vive en SQL y no en pandas.
+-- Serie mensual con media móvil de tres meses. La función de ventana es la
+-- razón por la que esto vive en SQL y no en pandas.
 WITH por_mes AS (
     SELECT
         month                       AS mes,

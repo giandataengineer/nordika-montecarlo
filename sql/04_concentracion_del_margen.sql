@@ -1,4 +1,4 @@
--- Cuantas oportunidades pagan de verdad el ano: acumulado por percentil.
+-- Cuántas oportunidades pagan de verdad el año: acumulado por percentil.
 WITH rentables AS (
     SELECT contribution_profit_usd
     FROM oportunidades

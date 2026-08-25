@@ -1,4 +1,4 @@
--- De donde sale el margen y que canal esta comprando volumen caro.
+-- De dónde sale el margen y qué canal está comprando volumen caro.
 SELECT
     channel                                             AS canal,
     count(*)                                            AS oportunidades,

@@ -1,5 +1,5 @@
--- El hallazgo central: al subir el nivel de inversion crece el volumen,
--- cae la calidad del lead y el margen por oportunidad se da vuelta.
+-- El hallazgo central: al subir el nivel de inversión crece el volumen,
+-- cae la calidad del lead y el margen por oportunidad se da la vuelta.
 SELECT
     ad_budget_level                                     AS nivel_inversion,
     count(*)                                            AS oportunidades,
