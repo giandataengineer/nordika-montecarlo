@@ -1,8 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- La marca es la curva de la distribucion con su cola: es lo que hace el
-       proyecto y se distingue a 16px, que es donde vive un favicon. -->
-  <rect width="32" height="32" rx="7" fill="#131313"/>
-  <path d="M4 24c4.6 0 5.2-15 12-15s7.4 15 12 15"
-        fill="none" stroke="#d9531e" stroke-width="2.6" stroke-linecap="round"/>
-  <circle cx="16" cy="14.4" r="1.7" fill="#ededed"/>
+  <!-- Fondo claro, campana naranja y cola izquierda en tono suave: es el suelo
+       del escenario, que es lo que decide el caso. Sin adornos sueltos, porque
+       a 16px cualquier detalle se convierte en una mancha. -->
+  <defs>
+    <linearGradient id="f" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ef7a34"/>
+      <stop offset="1" stop-color="#c9410f"/>
+    </linearGradient>
+    <clipPath id="campana">
+      <path d="M3.5 25C9.5 25 9.5 6 16 6s6.5 19 12.5 19Z"/>
+    </clipPath>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#ffffff"/>
+  <g clip-path="url(#campana)">
+    <rect width="32" height="32" fill="url(#f)"/>
+    <rect width="10.5" height="32" fill="#f8c9a9"/>
+  </g>
+  <rect x="3.5" y="24.9" width="25" height="2.2" rx="1.1" fill="#131313"/>
 </svg>

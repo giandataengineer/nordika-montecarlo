@@ -176,7 +176,7 @@ export function Hero({ summary, top, totalSims, fase, onPhaseChange }) {
               lineColor="#ffffff"
               intensity={1.2}
               shineSize={14}
-              onClick={() => scrollTo("fase-01")}
+              onClick={() => scrollTo("fase-00")}
             >
             Recorrer las 5 fases
           </SpecularButton>
@@ -210,7 +210,7 @@ export function Hero({ summary, top, totalSims, fase, onPhaseChange }) {
               devuelve es la decisión que aguanta cuando el escenario sale mal.
             </p>
             <Magnet padding={70} magnetStrength={5}>
-              <button className="hero__explore" type="button" onClick={() => scrollTo("fase-01")}>
+              <button className="hero__explore" type="button" onClick={() => scrollTo("fase-00")}>
                 <span><IconArrowDown /></span>
                 Explorar
               </button>
