@@ -51,29 +51,29 @@ except ImportError:
 MISSION_DASHBOARD_PATH = DASHBOARDS_DIR / "agente_mission_control.html"
 
 UPLIFT_LABELS = {
-  "funnel_full_optimized": "Optimizacion integral del embudo",
-  "webinar_attendance": "Reactivacion sobre base templada",
-  "new_product_offer": "Oferta de categoria nueva",
+  "funnel_full_optimized": "Optimización integral del embudo",
+  "webinar_attendance": "Reactivación sobre base templada",
+  "new_product_offer": "Oferta de categoría nueva",
 }
 
 ADS_LABELS = {
-  "paid_budget_low": "Inversion contenida",
-  "paid_budget_medium": "Inversion equilibrada",
-  "paid_budget_high": "Inversion intensiva",
+  "paid_budget_low": "Inversión contenida",
+  "paid_budget_medium": "Inversión equilibrada",
+  "paid_budget_high": "Inversión intensiva",
   "paid_budget_saturated": "Canal saturado",
 }
 
 UPLIFT_EXPLANATIONS = {
-  "funnel_full_optimized": "Landing, CTA, lead magnet y checkout trabajando juntos. Es el paquete barato: no compra trafico, mejora lo que ya llega.",
-  "webinar_attendance": "Secuencia de reactivacion sobre quienes ya interactuaron. Poco coste incremental y ticket alto, pero solo aplica a la base existente.",
-  "new_product_offer": "Abrir una categoria nueva con ticket mayor. El techo de ingreso es el mas alto, pero exige inversion previa y la conversion cae mientras el catalogo madura.",
+  "funnel_full_optimized": "Landing, CTA, lead magnet y checkout trabajando juntos. Es el paquete barato: no compra tráfico, mejora lo que ya llega.",
+  "webinar_attendance": "Secuencia de reactivación sobre quienes ya interactuaron. Poco coste incremental y ticket alto, pero solo aplica a la base existente.",
+  "new_product_offer": "Abrir una categoría nueva con ticket mayor. El techo de ingreso es el más alto, pero exige inversión previa y la conversión cae mientras el catalogo madura.",
 }
 
 # Nombre del operador del caso. Es ficticio a proposito: los datos son
 # sinteticos y ninguna instalacion real esta detras. Cambiarlo aqui lo cambia
 # en toda la consola.
 OPERADOR = "Vantara"
-UNIDAD = "captacion de pago"
+UNIDAD = "captación de pago"
 
 STAGES = [
     {
@@ -81,9 +81,9 @@ STAGES = [
         "title": "El problema",
         "eyebrow": "Fase 01",
         "tagline": (
-            "Hay presupuesto para una sola iniciativa y cuatro sobre la mesa. Los paneles "
-            "de Meta, Google y TikTok se atribuyen las mismas ventas, asi que sumados "
-            "reportan mas conversiones de las que registra el ecommerce."
+            "Hay cuatro iniciativas sobre la mesa y presupuesto para una sola. Los "
+            "paneles de Meta, Google y TikTok se atribuyen las mismas ventas, de modo "
+            "que sumados reportan más conversiones de las que registra el ecommerce."
         ),
         "command": "AGENTE.PLANTEAR_LA_DECISION()",
         "duration_ms": 1100,
@@ -93,21 +93,21 @@ STAGES = [
         "title": "20.000 oportunidades",
         "eyebrow": "Fase 02",
         "tagline": (
-            "Carga el historico de captacion: canal, segmento, nivel de inversion, coste "
-            "atribuido, variantes de landing y CTA, y si la oportunidad acabo en venta y "
-            "por cuanto."
+            "Carga el histórico de captación con el canal, el segmento, el nivel de "
+            "inversión, el coste atribuido, las variantes de landing y de CTA, y el "
+            "desenlace de cada oportunidad."
         ),
         "command": "AGENTE.CARGAR_Y_VALIDAR_DATOS()",
         "duration_ms": 1400,
     },
     {
         "key": "uplift",
-        "title": "Que aporta cada palanca",
+        "title": "Qué aporta cada palanca",
         "eyebrow": "Fase 03",
         "tagline": (
-            "Contrafactual sobre la misma oportunidad con una palanca cambiada. Aqui "
-            "aparece la saturacion: al subir de tramo de inversion, el coste por "
-            "oportunidad se dobla y la calidad del lead se desploma."
+            "Estima el contrafactual sobre la misma oportunidad con una sola palanca "
+            "modificada. Aquí aparece la saturación: al subir de tramo de inversión, "
+            "el coste por oportunidad se duplica y la conversión se desploma."
         ),
         "command": "AGENTE.EVALUAR_MODELOS_Y_PALANCAS()",
         "duration_ms": 1500,
@@ -117,20 +117,21 @@ STAGES = [
         "title": "10.000 futuros",
         "eyebrow": "Fase 04",
         "tagline": (
-            "Inyecta incertidumbre del modelo, riesgo de ejecucion y ruido residual. El "
-            "resultado no es un numero: es una distribucion con su suelo, su techo y su "
-            "probabilidad de perdida."
+            "Incorpora la incertidumbre del modelo, el riesgo de ejecución y el error "
+            "residual. El resultado no es una cifra, sino una distribución con su "
+            "suelo, su techo y su probabilidad de pérdida."
         ),
         "command": "AGENTE.SIMULAR_10000_FUTUROS()",
         "duration_ms": 1600,
     },
     {
         "key": "reporte",
-        "title": "La decision, en dolares",
+        "title": "La decisión, en dólares",
         "eyebrow": "Fase 05",
         "tagline": (
-            "Tres lecturas independientes sobre las mismas cifras: CEO, Growth y Riesgo. "
-            "Cuando coinciden, la decision es solida; cuando no, ese desacuerdo es el dato."
+            "Tres lecturas independientes sobre las mismas cifras, desde Finanzas, "
+            "Growth y Riesgo. Cuando coinciden, la decisión queda respaldada; cuando "
+            "no, ese desacuerdo es precisamente lo que hay que llevar al comité."
         ),
         "command": "AGENTE.EMITIR_RECOMENDACION()",
         "duration_ms": 1500,
@@ -194,7 +195,7 @@ def _build_residual_bands(residuals: np.ndarray) -> list[dict[str, object]]:
 def _analisis_avanzado(simulations, summary, dataset, conversion_model, aov_model) -> dict:
     """Las capas que el caso base no cubre: EVPI, estabilidad y sensibilidad.
 
-    Las dos primeras salen de la matriz de escenarios que ya esta calculada, asi
+    Las dos primeras salen de la matriz de escenarios que ya esta calculada, así
     que no cuestan nada. La tercera reejecuta el Monte Carlo con pocos escenarios
     porque escalar el ruido a posteriori no es equivalente a simular con el.
     """
@@ -243,7 +244,7 @@ def _analisis_avanzado(simulations, summary, dataset, conversion_model, aov_mode
 def _lecturas_multirol(top_summary, important_uplift, avanzado) -> dict:
     """Las tres lecturas con modelos independientes.
 
-    Se aisla en su propia funcion porque depende de servicios externos: si un
+    Se aisla en su propia función porque depende de servicios externos: si un
     proveedor cae, el resto del payload tiene que seguir construyendose.
     """
     try:
@@ -332,7 +333,7 @@ def _build_payload() -> dict:
     best = top_summary.iloc[0]
     second = top_summary.iloc[1]
     gap_vs_second = float(best["expected_profit_usd"] - second["expected_profit_usd"])
-    summary_snapshot = (
+    summary_snapshot_df = (
       top_summary.rename(
         columns={
           "expected_profit_usd": "beneficio_esperado_usd",
@@ -351,8 +352,15 @@ def _build_payload() -> dict:
           "roi_esperado",
         ]
       ]
-      .to_json(orient="records", force_ascii=False)
+      .copy()
     )
+    # La memo imprime esta columna como porcentaje, asi que se convierte aqui:
+    # dejarla en fraccion hacia que un 17% de riesgo se leyese como 0,2%.
+    summary_snapshot_df["probabilidad_perdida"] = (
+      summary_snapshot_df["probabilidad_perdida"] * 100
+    ).round(1)
+    summary_snapshot = summary_snapshot_df.to_json(orient="records", force_ascii=False)
+
     uplift_snapshot = (
       important_uplift.rename(columns={"conversion_lift_pct": "uplift_conversion_pct"})[
         ["label", "description", "uplift_conversion_pct"]
@@ -372,7 +380,7 @@ def _build_payload() -> dict:
         if capture and line.startswith("-"):
             executive_notes.append(line[1:].strip())
 
-    report_checks = [line[1:].strip() for line in report_lines if line.startswith("- dataset") or line.startswith("- parametros") or line.startswith("- conclusion")]
+    report_checks = [line[1:].strip() for line in report_lines if line.startswith("- dataset") or line.startswith("- parámetros") or line.startswith("- conclusión")]
 
     recommendation = {
       "headline": agent_memo["headline"],
@@ -408,23 +416,23 @@ def _build_payload() -> dict:
     mission_tools = [
         {
             "name": "Tool 01 · Carga de datos",
-        "purpose": "Carga la base historica y valida que el caso tenga cobertura suficiente antes de analizar decisiones.",
+        "purpose": "Carga la base histórica y valida que el caso tenga cobertura suficiente antes de analizar decisiones.",
         },
         {
-        "name": "Tool 02 · Modelo de propension",
-        "purpose": "Estima la probabilidad de exito de cada oportunidad para priorizar mejor las palancas de crecimiento.",
+        "name": "Tool 02 · Modelo de propensión",
+        "purpose": "Estima la probabilidad de éxito de cada oportunidad para priorizar las palancas de crecimiento.",
         },
         {
         "name": "Tool 03 · Modelo de valor esperado",
-        "purpose": "Estima el ticket esperado de las oportunidades que convierten para traducir conversion en impacto economico.",
+        "purpose": "Estima el ticket esperado de las oportunidades que convierten, para traducir la conversión en impacto económico.",
         },
         {
         "name": "Tool 04 · Uplift de negocio",
-        "purpose": "Compara las cuatro palancas de crecimiento sobre el mismo historico comercial.",
+        "purpose": "Compara las cuatro palancas de crecimiento sobre el mismo histórico comercial.",
         },
         {
             "name": "Tool 05 · Monte Carlo",
-        "purpose": "Simula 10.000 futuros para ordenar decisiones por retorno esperado, dispersion y riesgo de perdida.",
+        "purpose": "Simula 10.000 futuros para ordenar las iniciativas por retorno esperado, dispersión y riesgo de pérdida.",
         },
     ]
 
@@ -433,9 +441,9 @@ def _build_payload() -> dict:
     )
 
     return {
-      "title": f"{OPERADOR} · Presupuesto bajo atribucion rota",
+      "title": f"{OPERADOR} · Presupuesto bajo atribución rota",
       "subtitle": (
-          f"Consola de decision para la {UNIDAD} de {OPERADOR}: aprende del historico, "
+          f"Consola de decisión para la {UNIDAD} de {OPERADOR}: aprende del histórico, "
           "estima que aporta cada palanca y simula 10.000 futuros antes de comprometer "
           "el presupuesto del trimestre."
       ),
@@ -448,8 +456,8 @@ def _build_payload() -> dict:
         },
       "models": {
         "classification": {
-          "name": "Regresion logistica",
-          "purpose": "Calcula la probabilidad de exito de cada oportunidad a partir de canal, segmento, contexto comercial y señales de calidad.",
+          "name": "Regresión logística",
+          "purpose": "Calcula la probabilidad de éxito de cada oportunidad a partir del canal, el segmento, el contexto comercial y las señales de calidad.",
           "auc": float(auc),
           "positive_rate": float(conversion_test["converted_to_sale"].mean()),
           "avg_predicted_prob": float(conversion_scores.mean()),
@@ -457,7 +465,7 @@ def _build_payload() -> dict:
         },
         "regression": {
           "name": "Gradient Boosting Regressor",
-          "purpose": "Estima el ticket esperado de la oportunidad para traducir conversion en dolares.",
+          "purpose": "Estima el ticket esperado de la oportunidad para traducir la conversión en dólares.",
           "mae_usd": float(mean_absolute_error(sold_test["aov_usd"], aov_pred)),
           "r2": float(r2_score(sold_test["aov_usd"], aov_pred)),
           "mean_residual_usd": float(residuals.mean()),

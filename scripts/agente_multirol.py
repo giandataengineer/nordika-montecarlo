@@ -1,13 +1,13 @@
 """Tres lecturas del mismo resultado, cada una con su propio modelo.
 
 El caso base tenia una sola voz repartida en tres plantillas: los tres roles
-justificaban siempre la misma decision, asi que la pantalla de "tres angulos"
-era decorativa. Aqui cada rol:
+justificaban siempre la misma decisión, así que la pantalla de "tres angulos"
+era decorativa. Aquí cada rol:
 
 - corre en un proveedor distinto, para que no compartan sesgos,
 - ve la evidencia con el encuadre que le importa,
-- **puede elegir una decision distinta**, que es lo unico que hace informativa
-  la comparacion,
+- **puede elegir una decisión distinta**, que es lo único que hace informativa
+  la comparación,
 - pasa por el guardarrail de coherencia igual que el camino determinista.
 
 Sin claves, cada rol cae al texto determinista y el agregador lo dice.
@@ -274,7 +274,7 @@ def candidatos(rol: str, ya_usados: set[str]) -> list[tuple[str, str]]:
 
     Cada rol arranca por un proveedor distinto y recorre el resto en rueda, de
     modo que tres roles simultaneos no compitan por la misma cuota. Se prefieren
-    los modelos que ningun otro rol haya usado todavia, porque dos roles sobre
+    los modelos que ningun otro rol haya usado todavía, porque dos roles sobre
     el mismo modelo dejan de ser dos opiniones independientes.
     """
     cfg = ROLES[rol]
@@ -313,13 +313,13 @@ ROLES: dict[str, dict[str, Any]] = {
         "etiqueta": "CEO",
         "proveedor": "groq",
         "modelo": "qwen/qwen3.6-27b",
-        "prioriza": "asignacion de capital, payback y claridad de decision ejecutiva",
+        "prioriza": "asignación de capital, payback y claridad de decisión ejecutiva",
         "sistema": (
             "Eres el CEO. Decides donde va el presupuesto de la compania. Te importa el "
-            "retorno sobre el capital comprometido, el plazo de recuperacion y poder "
-            "defender la decision ante un consejo. Te molesta la dispersion sin "
-            "justificacion y las apuestas que no puedes explicar con numeros. No eres el "
-            "mas prudente ni el mas agresivo: eres el que tiene que responder por el "
+            "retorno sobre el capital comprometido, el plazo de recuperación y poder "
+            "defender la decisión ante un consejo. Te molesta la dispersión sin "
+            "justificación y las apuestas que no puedes explicar con números. No eres el "
+            "más prudente ni el más agresivo: eres el que tiene que responder por el "
             "resultado del trimestre."
         ),
     },
@@ -327,30 +327,30 @@ ROLES: dict[str, dict[str, Any]] = {
         "etiqueta": "Growth",
         "proveedor": "openrouter",
         "modelo": "nvidia/nemotron-3-super-120b-a12b:free",
-        "prioriza": "velocidad de aprendizaje, iteracion y escalado de canales",
+        "prioriza": "velocidad de aprendizaje, iteración y escalado de canales",
         "sistema": (
             "Eres el director de crecimiento. Te importa la velocidad a la que la "
             "compania aprende que funciona, y prefieres una palanca que puedas iterar "
-            "rapido antes que una apuesta grande y lenta. Sabes que la atribucion de las "
-            "plataformas esta rota y que cada panel se cuelga las mismas ventas, asi que "
-            "desconfias del dato que te da el propio canal. Toleras mas riesgo si a cambio "
-            "obtienes senal limpia y rapida. Estas dispuesto a discrepar del CEO si crees "
-            "que la opcion segura frena el aprendizaje."
+            "rápido antes que una apuesta grande y lenta. Sabes que la atribución de las "
+            "plataformas esta rota y que cada panel se cuelga las mismas ventas, así que "
+            "desconfias del dato que te da el propio canal. Toleras más riesgo si a cambio "
+            "obtienes señal limpia y rápida. Estas dispuesto a discrepar del CEO si crees "
+            "que la opción segura frena el aprendizaje."
         ),
     },
     "riesgo": {
         "etiqueta": "Riesgo",
         "proveedor": "gemini",
         "modelo": "gemini-3.6-flash",
-        "prioriza": "control del downside, robustez del suelo y criterios de contencion",
+        "prioriza": "control del downside, robustez del suelo y criterios de contención",
         "sistema": (
             "Eres el director de riesgos. Tu trabajo no es maximizar el retorno esperado, "
             "es evitar que la compania se lleve un golpe del que no se recupere. Miras el "
-            "percentil 10 antes que la media, y la probabilidad de perdida antes que el "
-            "ROI. Una opcion con mejor media pero cola izquierda peligrosa es peor para "
-            "ti. Vigilas ademas la saturacion de canal: comprar volumen que no convierte "
-            "destruye margen y ese efecto ya esta en el historico. Discrepa abiertamente "
-            "si la opcion mejor situada en media no es la mas defendible."
+            "percentil 10 antes que la media, y la probabilidad de pérdida antes que el "
+            "ROI. Una opción con mejor media pero cola izquierda peligrosa es peor para "
+            "ti. Vigilas además la saturación de canal: comprar volumen que no convierte "
+            "destruye margen y ese efecto ya esta en el histórico. Discrepa abiertamente "
+            "si la opción mejor situada en media no es la más defendible."
         ),
     },
 }
@@ -363,7 +363,7 @@ ESQUEMA = """Devuelve exclusivamente JSON valido, sin markdown ni bloques de cod
   "reasons": ["tres razones"],
   "watchouts": ["tres cosas a vigilar"],
   "next_actions": ["tres siguientes pasos"],
-  "switch_signals": ["tres senales que te harian cambiar de opinion"],
+  "switch_signals": ["tres señales que te harian cambiar de opinion"],
   "due_diligence": ["tres preguntas antes de ejecutar"]
 }
 
@@ -420,7 +420,7 @@ def _contexto(ranking: list[dict], uplift: list[dict], avanzado: dict | None) ->
             "Evidencia adicional sobre la solidez de este ranking:",
             f"- Estabilidad: {estab.get('veredicto', 'no calculada')}",
             f"- Sensibilidad al ruido: {sens.get('veredicto', 'no calculada')}",
-            f"- Valor de la informacion perfecta: {evpi.get('lectura', 'no calculado')}",
+            f"- Valor de la información perfecta: {evpi.get('lectura', 'no calculado')}",
         ]
     return "\n".join(partes)
 
@@ -533,11 +533,11 @@ def _sin_vallas(texto: str) -> str:
 
 
 def agregar_lecturas(lecturas: list[dict], ranking: list[dict]) -> dict[str, Any]:
-    """Compara las tres decisiones y convierte el (des)acuerdo en informacion.
+    """Compara las tres decisiones y convierte el (des)acuerdo en información.
 
-    El desacuerdo es el dato mas valioso de la pantalla: significa que la eleccion
-    depende de que prioriza quien decide, no de los numeros. Coincidencia total
-    significa que la conclusion aguanta los tres criterios.
+    El desacuerdo es el dato más valioso de la pantalla: significa que la elección
+    depende de que prioriza quien decide, no de los números. Coincidencia total
+    significa que la conclusión aguanta los tres criterios.
     """
     con_llm = [l for l in lecturas if l.get("fuente") == "llm"]
     elecciones = {l["rol"]: l.get("decision_elegida") for l in con_llm}
@@ -556,8 +556,8 @@ def agregar_lecturas(lecturas: list[dict], ranking: list[dict]) -> dict[str, Any
             "consenso": None,
             "veredicto": (
                 "Sin claves de API configuradas: las tres lecturas salen de plantillas "
-                "deterministas contrastadas contra las cifras. Coinciden por construccion, "
-                "asi que su acuerdo no aporta informacion."
+                "deterministas contrastadas contra las cifras. Coinciden por construcción, "
+                "así que su acuerdo no aporta información."
             ),
             "elecciones": {},
             "roles_con_llm": 0,
@@ -568,9 +568,9 @@ def agregar_lecturas(lecturas: list[dict], ranking: list[dict]) -> dict[str, Any
         veredicto = (
             f"Los {len(con_llm)} roles coinciden en {unica}. "
             + (
-                "Al correr en modelos independientes, la coincidencia es una senal real de robustez."
+                "Al correr en modelos independientes, la coincidencia es una señal real de robustez."
                 if modelos_independientes
-                else "Varios roles comparten modelo, asi que la coincidencia vale menos de lo que parece."
+                else "Varios roles comparten modelo, así que la coincidencia vale menos de lo que parece."
             )
         )
         return {
@@ -588,8 +588,8 @@ def agregar_lecturas(lecturas: list[dict], ranking: list[dict]) -> dict[str, Any
         "modo": "llm",
         "consenso": False,
         "veredicto": (
-            f"No hay consenso: {detalle}. La eleccion depende de que se prioriza, "
-            "no de los numeros. Esta discrepancia es el hallazgo, no un fallo."
+            f"No hay consenso: {detalle}. La elección depende de que se prioriza, "
+            "no de los números. Esta discrepancia es el hallazgo, no un fallo."
         ),
         "elecciones": elecciones,
         "roles_con_llm": len(con_llm),
@@ -642,7 +642,7 @@ def lecturas_multirol(
 
 def _autocomprobacion() -> None:
     ranking = [
-        {"decision": "Optimizar la conversion del sitio", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
+        {"decision": "Optimizar la conversión del sitio", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
         {"decision": "Escalar paid social", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
     ]
 
@@ -654,7 +654,7 @@ def _autocomprobacion() -> None:
         assert all(l["fuente"] == "determinista" for l in res["lecturas"])
         assert res["agregacion"]["modo"] == "determinista"
         assert res["agregacion"]["consenso"] is None
-        assert "no aporta informacion" in res["agregacion"]["veredicto"]
+        assert "no aporta información" in res["agregacion"]["veredicto"]
     finally:
         for k, v in guardadas.items():
             if v is not None:
@@ -663,8 +663,8 @@ def _autocomprobacion() -> None:
     # consenso con proveedores distintos vale mas que con el mismo
     # mismo modelo en los dos roles: la coincidencia no informa
     iguales = [
-        {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Optimizar la conversion del sitio"},
-        {"rol": "growth", "fuente": "llm", "proveedor": "openrouter", "modelo": "qwen", "decision_elegida": "Optimizar la conversion del sitio"},
+        {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Optimizar la conversión del sitio"},
+        {"rol": "growth", "fuente": "llm", "proveedor": "openrouter", "modelo": "qwen", "decision_elegida": "Optimizar la conversión del sitio"},
     ]
     a = agregar_lecturas(iguales, ranking)
     assert a["consenso"] is True and a["modelos_independientes"] is False
@@ -672,22 +672,22 @@ def _autocomprobacion() -> None:
 
     # modelos distintos aunque compartan proveedor: la coincidencia si informa
     distintos = [
-        {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Optimizar la conversion del sitio"},
-        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Optimizar la conversion del sitio"},
+        {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Optimizar la conversión del sitio"},
+        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Optimizar la conversión del sitio"},
     ]
     b = agregar_lecturas(distintos, ranking)
     assert b["consenso"] is True and b["modelos_independientes"] is True
-    assert "senal real de robustez" in b["veredicto"]
+    assert "señal real de robustez" in b["veredicto"]
 
     # desacuerdo: es hallazgo, no fallo
     discrepan = [
         {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Escalar paid social"},
-        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Optimizar la conversion del sitio"},
+        {"rol": "riesgo", "fuente": "llm", "proveedor": "groq", "modelo": "gpt-oss", "decision_elegida": "Optimizar la conversión del sitio"},
     ]
     c = agregar_lecturas(discrepan, ranking)
     assert c["consenso"] is False
     assert "CEO elige Escalar paid social" in c["veredicto"]
-    assert "Riesgo elige Optimizar la conversion del sitio" in c["veredicto"]
+    assert "Riesgo elige Optimizar la conversión del sitio" in c["veredicto"]
 
     print("agente_multirol: todas las comprobaciones pasan")
 

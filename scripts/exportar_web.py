@@ -1,12 +1,12 @@
 """Exporta a JSON todo lo que la consola necesita para correr sin backend.
 
-Los modelos de ML se entrenan aqui, en Python, como siempre. Lo que se exporta
+Los modelos de ML se entrenan aquí, en Python, como siempre. Lo que se exporta
 es el resultado: el valor esperado de cada oportunidad bajo el escenario base y
 bajo cada estrategia. Con eso el navegador puede hacer el remuestreo y los
 tres ruidos por su cuenta, que es aritmetica y le sobra.
 
-Asi la pagina desplegada no necesita servidor: ni cold start, ni rate limit,
-ni una simulacion de 40 segundos ida y vuelta.
+Así la pagina desplegada no necesita servidor: ni cold start, ni rate limit,
+ni una simulación de 40 segundos ida y vuelta.
 """
 
 from __future__ import annotations

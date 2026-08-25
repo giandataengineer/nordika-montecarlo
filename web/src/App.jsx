@@ -13,6 +13,8 @@ import { LiveSimulation } from "./components/LiveSimulation";
 import { ReportSection } from "./components/ReportSection";
 import { RobustezSection } from "./components/RobustezSection";
 import { ProblemaSection } from "./components/ProblemaSection";
+import { Definiciones } from "./components/Definiciones";
+import { Respuestas } from "./components/Respuestas";
 import "./styles/global.css";
 
 const PHASE_LABEL = {
@@ -24,24 +26,24 @@ const PHASE_LABEL = {
 
 const FAQ = [
   {
-    q: "¿Por qué miles de escenarios y no una predicción?",
-    a: "Una predicción puntual esconde el riesgo. Al simular miles de futuros con ruido realista se obtiene la distribución completa: cuánto se gana en el peor caso, en la mediana y en el mejor, y con qué probabilidad se pierde dinero.",
+    q: "¿Por qué se simulan miles de escenarios en lugar de calcular una predicción?",
+    a: "Una predicción puntual oculta el riesgo, porque resume en un solo número resultados muy distintos entre sí. Al simular miles de futuros con incertidumbre realista se obtiene la distribución completa, que permite conocer el resultado en el peor caso, en la mediana y en el mejor, así como la probabilidad de terminar en pérdidas.",
   },
   {
     q: "¿Qué es el uplift contrafactual?",
-    a: "Es la diferencia entre lo que se espera de una oportunidad tal como está y lo que se esperaría si se cambiara una palanca concreta (creatividad, landing, nivel de inversión), manteniendo todo lo demás igual.",
+    a: "Es la diferencia entre el resultado esperado de una oportunidad tal como se registró y el resultado que cabría esperar si se modificara una única palanca, como la creatividad, la landing o el nivel de inversión, manteniendo constante todo lo demás. Esa segunda versión no existe en el histórico, de modo que se estima con los modelos entrenados sobre los casos en los que sí se movió esa palanca.",
   },
   {
     q: "¿De dónde salen los datos?",
-    a: "De 20.000 oportunidades comerciales ya cerradas en 28 meses. Es un caso sintético: los datos se generan con distribuciones coherentes con el dominio, no se descargan de ninguna cuenta publicitaria real. Los modelos aprenden de lo que pasó cuando se movió cada palanca, no de supuestos inventados en una hoja de cálculo.",
+    a: "De 20.000 oportunidades comerciales cerradas a lo largo de 28 meses. Se trata de un caso sintético: los datos se generan con distribuciones coherentes con el dominio y no proceden de ninguna cuenta publicitaria real. Los modelos aprenden de lo que ocurrió cada vez que se movió una palanca, no de supuestos escritos a mano en una hoja de cálculo.",
   },
   {
-    q: "¿Por qué gana la opción menos espectacular?",
-    a: "Porque el coste por oportunidad crece más que proporcionalmente con el gasto en paid social. La estrategia que más volumen compra factura más y deja menos: compra ingreso de hoy pagándolo con margen que no vuelve. La decisión correcta es la de mayor esperanza ajustada al riesgo, no la de mayor techo.",
+    q: "¿Por qué gana la iniciativa menos llamativa?",
+    a: "Porque el coste por oportunidad crece más deprisa que el volumen a medida que se escala la inversión en paid social. La iniciativa que más tráfico compra factura más y deja menos margen, ya que adelanta ingreso a costa de un margen que después no se recupera. El criterio de decisión es la esperanza ajustada al riesgo, no el techo del mejor escenario.",
   },
   {
-    q: "¿La simulación corre de verdad o es una animación?",
-    a: "Corre en el backend de Python. El progreso que se ve en pantalla viene de un endpoint real que reporta escenarios completados, no de un temporizador de la interfaz.",
+    q: "¿La simulación se ejecuta de verdad o es una animación?",
+    a: "Se ejecuta de verdad. Los modelos se entrenan en Python y su resultado se exporta al navegador, donde se calculan el remuestreo y las tres fuentes de ruido escenario a escenario. El progreso que aparece en pantalla corresponde a escenarios ya completados y no a un temporizador de la interfaz.",
   },
 ];
 
@@ -86,6 +88,8 @@ export default function App() {
 
       <ProblemaSection fase={f("briefing")} summary={summary} ranking={payload?.simulation?.summary ?? []} />
 
+      <Definiciones />
+
       <Feature
         id="fase-01"
         index={2}
@@ -93,8 +97,8 @@ export default function App() {
         faseTitulo={f("ingesta")?.title}
         solid="El histórico comercial"
         ghost="es la única fuente de verdad."
-        echo="Sin diversidad real no hay modelo, hay memorización."
-        copy="Antes de modelizar hay que comprobar que el histórico cubre condiciones diversas: canales, campañas, segmentos, geografías y una ventana temporal suficiente para que el modelo aprenda de algo más que del ruido de un trimestre."
+        echo="Sin diversidad real no hay modelo: hay memorización."
+        copy="Antes de modelizar es necesario comprobar que el histórico recoge condiciones suficientemente diversas. Se revisan los canales, las campañas, los segmentos de cliente, las geografías y la ventana temporal cubierta, de manera que el modelo aprenda del comportamiento del negocio y no del ruido de un único trimestre."
         wide
         media={<DatasetSection payload={payload} />}
       />
@@ -107,7 +111,7 @@ export default function App() {
         solid="Dos modelos"
         ghost="estiman el impacto de cada palanca."
         echo="El uplift no es una opinión, es una diferencia medida."
-        copy="Una regresión logística estima si la oportunidad convertirá; un gradient boosting estima el ticket esperado. La diferencia contra el escenario base es el uplift contrafactual de mover esa palanca y nada más."
+        copy="Una regresión logística estima la probabilidad de que la oportunidad convierta y un gradient boosting estima el ingreso esperado cuando lo hace. La diferencia entre el escenario base y el escenario con la palanca modificada es el uplift contrafactual de esa palanca, aislado del resto de factores."
         wide
         media={<ModelsSection payload={payload} />}
       />
@@ -121,8 +125,8 @@ export default function App() {
         faseTitulo={f("montecarlo")?.title}
         solid={totalSims ? `${fmtInt(totalSims)} futuros` : "Miles de futuros"}
         ghost="en vez de una sola predicción."
-        echo="Un número esconde el riesgo. Una distribución lo enseña."
-        copy="La simulación inyecta incertidumbre en los parámetros, riesgo de ejecución y ruido residual. El resultado no es un número: es una distribución con suelo, techo y probabilidad de perder dinero."
+        echo="Un valor único esconde el riesgo. Una distribución lo muestra."
+        copy="La simulación incorpora tres fuentes de incertidumbre: la variabilidad de los parámetros estimados, el riesgo de que la iniciativa no llegue a ejecutarse por completo y el error residual del modelo. El resultado no es una cifra, sino una distribución con suelo, techo y probabilidad de pérdida."
         wide
         media={
           <>
@@ -140,12 +144,14 @@ export default function App() {
         faseTitulo={f("reporte")?.title}
         solid="La recomendación"
         ghost="cambia según quién la lea."
-        echo="Mismo dato, tres decisiones distintas."
-        copy="El mismo resultado interpretado desde tres ángulos: retorno sobre el capital, vida útil del activo y control del escenario adverso. No es un resumen distinto del mismo texto, es una decisión distinta con el mismo dato."
+        echo="Mismas cifras, tres criterios distintos."
+        copy="El mismo resultado se interpreta desde tres ángulos: el retorno sobre el capital invertido, el aprendizaje que deja la palanca para los trimestres siguientes y el control del escenario adverso. No son tres resúmenes del mismo texto, sino tres lecturas que pueden no coincidir."
         wide
         media={<ReportSection payload={payload} />}
       />
       )}
+
+      {sim.lista && <Respuestas payload={payload} />}
 
       <section className="section" id="faq">
         <div className="shell section__inner faq__grid">

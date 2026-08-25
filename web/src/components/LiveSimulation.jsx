@@ -112,11 +112,12 @@ function Compuerta({ total, onLanzar }) {
   return (
     <Panel eyebrow="Fase 04 · Simulación Monte Carlo" title="Todavía no hay resultados que mostrar" className="compuerta">
       <p className="panel__copy">
-        Los modelos ya estimaron el uplift de cada palanca, pero eso es una única
-        predicción. Para saber qué decisión aguanta hace falta simular
-        {" "}{Number(total).toLocaleString("en-US")} futuros inyectando incertidumbre,
-        riesgo de ejecución y ruido residual. El ranking, el radar y el informe
-        aparecen cuando termine.
+        Los modelos ya estimaron el uplift de cada palanca, pero eso sigue siendo una
+        única predicción. Para saber qué decisión resiste la incertidumbre es necesario
+        simular
+        {" "}{Number(total).toLocaleString("en-US")} futuros incorporando la variabilidad de los parámetros, el riesgo de ejecución y
+        el error residual del modelo. El ranking, el radar y el informe aparecen al
+        terminar.
       </p>
       <div className="compuerta__cta">
         <Magnet padding={80} magnetStrength={6}>
@@ -125,13 +126,13 @@ function Compuerta({ total, onLanzar }) {
             Empezar la simulación de {Number(total).toLocaleString("en-US")} futuros
           </button>
         </Magnet>
-        <span className="label">Los resultados aparecen al terminar · unos 30 segundos</span>
+        <span className="label">Los resultados aparecen al terminar la ejecución · unos 30 segundos</span>
       </div>
       <ul className="compuerta__pasos">
-        <li><b>1</b> Muestrea los parámetros de cada palanca de su distribución</li>
-        <li><b>2</b> Sortea si la ejecución sale completa, a medias o se cae</li>
-        <li><b>3</b> Añade el ruido que el modelo no explica</li>
-        <li><b>4</b> Repite y ordena por esperanza ajustada a riesgo</li>
+        <li><b>1</b> Muestrea los parámetros de cada palanca a partir de su distribución</li>
+        <li><b>2</b> Sortea si la iniciativa se ejecuta completa, a medias o no llega a ejecutarse</li>
+        <li><b>3</b> Añade el error residual que el modelo no logra explicar</li>
+        <li><b>4</b> Repite el proceso y ordena las iniciativas por esperanza ajustada al riesgo</li>
       </ul>
     </Panel>
   );
@@ -170,8 +171,10 @@ export function LiveSimulation({ payload, sim }) {
     <div className="stack">
       <Panel eyebrow="Mission control" title={sim.corriendo ? "Simulación en directo" : "Simulación completada"}>
         <p className="panel__copy">
-          Cada punto del recorrido es un futuro distinto. El progreso y las cifras vienen de
-          <code> /api/montecarlo-status</code>: son escenarios realmente completados en el backend.
+          Cada punto del recorrido corresponde a un futuro distinto. El progreso y las
+          cifras se calculan en el propio navegador sobre el motor exportado desde
+          Python, de modo que reflejan escenarios realmente completados y no una
+          animación.
         </p>
 
         <div className="live-top">
@@ -229,8 +232,9 @@ export function LiveSimulation({ payload, sim }) {
       <div className="split-2">
         <Panel eyebrow="Radar riesgo / retorno" title="Dónde cae cada alternativa">
           <p className="panel__copy">
-            Cuanto más arriba, mayor beneficio esperado. Cuanto más a la derecha, mayor
-            probabilidad de pérdida. {sim.corriendo && "Los puntos se desplazan según entran escenarios."}
+            La posición vertical indica el beneficio esperado y la horizontal, la
+            probabilidad de pérdida. La iniciativa preferible es la que queda arriba y a
+            la izquierda. {sim.corriendo && "Los puntos se desplazan a medida que entran nuevos escenarios."}
           </p>
           <div className="chart">
             <ResponsiveContainer width="100%" height={340}>
@@ -290,9 +294,10 @@ export function LiveSimulation({ payload, sim }) {
 
         <Panel eyebrow="Evolución del beneficio esperado" title="Cómo se mueve cada estrategia">
           <p className="panel__copy">
-            Cada línea es una decisión y cada punto una lectura del backend según avanza la
-            simulación. Las curvas que se estabilizan pronto son las que menos dependen de la
-            suerte; las que siguen oscilando necesitan más escenarios.
+            Cada línea representa una iniciativa y cada punto una lectura tomada
+            mientras avanza la simulación. Las curvas que se estabilizan pronto son las
+            que menos dependen del azar; las que siguen oscilando necesitan más
+            escenarios para dar una media fiable.
           </p>
           <div className="chart">
             <ResponsiveContainer width="100%" height={330}>
@@ -318,7 +323,7 @@ export function LiveSimulation({ payload, sim }) {
           </div>
           {sim.historial.length < 3 && (
             <span className="card__foot label">
-              Las curvas se dibujan según llegan lecturas del backend
+              Las curvas se dibujan a medida que se completan los escenarios
             </span>
           )}
         </Panel>
@@ -327,8 +332,8 @@ export function LiveSimulation({ payload, sim }) {
       {sim.lista && finales.length > 0 && (
         <Panel eyebrow="Lectura consolidada" title="Ranking final de alternativas">
           <p className="panel__copy">
-            El percentil 10 es el suelo: si es negativo, esa estrategia puede destruir margen
-            aunque su mediana sea alta.
+            El percentil 10 marca el suelo de la distribución. Cuando resulta negativo,
+            la iniciativa puede destruir margen aunque su mediana sea elevada.
           </p>
           <div className="rank-rows">
             {finales.map((r, i) => (
@@ -346,7 +351,7 @@ export function LiveSimulation({ payload, sim }) {
                 {Number(r.p10_usd) < 0 && (
                   <p className="rank-row__warn">
                     <IconAlert style={{ width: 14, height: 14 }} />
-                    Su percentil 10 entra en pérdida: puede destruir margen aunque su mediana sea alta.
+                    Su percentil 10 entra en pérdidas, de modo que puede destruir margen aunque su mediana sea elevada.
                   </p>
                 )}
               </article>

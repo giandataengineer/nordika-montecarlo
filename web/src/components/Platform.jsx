@@ -118,25 +118,25 @@ const PLATES = [
   {
     n: "01",
     title: "Incertidumbre en los parámetros.",
-    copy: "Cada coeficiente estimado por el modelo se muestrea de una lognormal alrededor de su valor central. Los parámetros no son constantes: son distribuciones.",
+    copy: "Cada coeficiente estimado por el modelo se muestrea de una distribución lognormal centrada en su valor puntual, porque un parámetro estimado no es una constante sino un rango con incertidumbre propia.",
     Art: ArtUncertainty,
   },
   {
     n: "02",
     title: "Riesgo de ejecución.",
-    copy: "Un sorteo discreto decide en cada escenario si la palanca se aplica completa, a medias o se cae. Es el riesgo de que el plan no llegue a ejecutarse tal cual.",
+    copy: "Un sorteo discreto decide en cada escenario si la palanca se aplica por completo, de forma parcial o no llega a aplicarse. Recoge el riesgo de que el plan no se ejecute tal como se aprobó.",
     Art: ArtExecution,
   },
   {
     n: "03",
     title: "Ruido residual.",
-    copy: "Lo que el modelo no explica se inyecta como ruido gaussiano calibrado sobre el error del entrenamiento. Sin esto la distribución sale artificialmente estrecha.",
+    copy: "La parte del resultado que el modelo no explica se incorpora como ruido gaussiano, calibrado sobre el error observado en el entrenamiento. Sin ese término la distribución resultaría artificialmente estrecha.",
     Art: ArtResidual,
   },
   {
     n: "04",
     title: "Ranking ajustado al riesgo.",
-    copy: "Las estrategias se ordenan por esperanza matemática penalizada por la cola izquierda, no por techo. La opción más espectacular casi nunca es la correcta.",
+    copy: "Las iniciativas se ordenan por esperanza matemática penalizada por la cola izquierda de la distribución, no por el techo del mejor escenario. La alternativa más llamativa rara vez es la más rentable.",
     Art: ArtRanking,
   },
 ];

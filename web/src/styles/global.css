@@ -2553,6 +2553,72 @@ a:hover {
   max-width: 52ch;
 }
 
+/* --- el enunciado: contexto, restricciones y preguntas ---
+   Dos columnas porque el texto se lee seguido y las preguntas se consultan
+   salteadas: mezclarlas en una sola columna obliga a releer el enunciado
+   cada vez que se vuelve a la lista. */
+
+.problema__enunciado {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(28px, 4vw, 60px);
+  align-items: start;
+  margin-top: clamp(44px, 6vw, 76px);
+}
+
+.problema__enunciado-texto p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  max-width: 60ch;
+  line-height: 1.62;
+}
+
+.problema__enunciado-texto p:last-child { margin-bottom: 0; }
+.problema__enunciado-texto .problema__sub { margin: 14px 0 18px; }
+
+.preguntas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  counter-reset: pregunta;
+}
+
+.preguntas li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.preguntas li p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.preguntas__n {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.preguntas__fase {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .problema__enunciado { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* --- el villano --- */
 
 .problema__villano {
@@ -2887,4 +2953,178 @@ a:hover {
   letter-spacing: -0.02em;
   color: var(--text);
   max-width: 30ch;
+}
+
+/* --- definiciones: los indicadores, antes de usarlos --- */
+
+.definiciones__titulo {
+  font-size: clamp(1.9rem, 1.4rem + 2.2vw, 3.4rem);
+  line-height: 1.04;
+  margin: 20px 0 0;
+}
+
+.definiciones__lede {
+  margin: 20px 0 0;
+  color: var(--muted);
+  max-width: 62ch;
+  line-height: 1.62;
+}
+
+.definiciones__lista {
+  list-style: none;
+  margin: clamp(32px, 5vw, 56px) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: clamp(20px, 3vw, 34px);
+}
+
+.definiciones__lista li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.definiciones__n {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+}
+
+.definiciones__termino {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  letter-spacing: -0.01em;
+}
+
+.definiciones__formula {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: var(--panel-warm);
+  border-left: 2px solid var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.definiciones__copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.6;
+}
+
+.definiciones__relacion {
+  margin-top: clamp(40px, 6vw, 68px);
+  padding-top: clamp(28px, 4vw, 40px);
+  border-top: 1px solid var(--line);
+  max-width: 68ch;
+}
+
+.definiciones__relacion p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  line-height: 1.62;
+}
+
+.definiciones__relacion p:last-child { margin-bottom: 0; }
+.definiciones__relacion b { color: var(--text); font-weight: 600; }
+
+/* --- respuestas: el cierre del informe --- */
+
+.respuestas__titulo {
+  font-size: clamp(1.9rem, 1.4rem + 2.2vw, 3.4rem);
+  line-height: 1.04;
+  margin: 20px 0 0;
+}
+
+.respuestas__lede {
+  margin: 20px 0 0;
+  color: var(--muted);
+  max-width: 62ch;
+  line-height: 1.62;
+}
+
+.respuestas__lista {
+  list-style: none;
+  margin: clamp(32px, 5vw, 56px) 0 0;
+  padding: 0;
+}
+
+.respuestas__lista li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+}
+
+.respuestas__lista li:last-child { border-bottom: 1px solid var(--line); }
+
+.respuestas__n {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.respuestas__q {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 1.06rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  max-width: 62ch;
+}
+
+.respuestas__a {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.62;
+  max-width: 78ch;
+}
+
+.respuestas__cierre {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: clamp(26px, 4vw, 48px);
+  margin-top: clamp(44px, 6vw, 76px);
+}
+
+.respuestas__bullets {
+  margin: 0;
+  padding: 0 0 0 18px;
+  color: var(--muted);
+}
+
+.respuestas__bullets li {
+  margin: 0 0 12px;
+  line-height: 1.6;
+  font-size: 0.94rem;
+}
+
+.respuestas__bullets li:last-child { margin-bottom: 0; }
+
+@media (max-width: 720px) {
+  .definiciones__lista li,
+  .respuestas__lista li { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
+
+/* Lectura de cada grafica: que se observa, en prosa. Un panel sin lectura
+   obliga al lector a deducir la conclusion por su cuenta. */
+.chart-lectura {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  max-width: 72ch;
 }

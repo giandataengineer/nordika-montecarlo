@@ -1,8 +1,8 @@
 parameter,sample_size,baseline_conversion,scenario_conversion,conversion_lift_pct,profit_lift_per_opportunity_usd,profit_lift_ci_low_usd,profit_lift_ci_high_usd,profit_lift_significativo,source
-funnel_full_optimized,20000,0.0959,0.1334,0.3917,29.55,29.17,30.01,True,Estimado con contrafactual ML sobre historico sintetico
-paid_budget_low,792,0.0682,0.0642,,35.46,,,,Historico por nivel de inversion en ads
-paid_budget_medium,3320,0.0645,0.0645,,34.42,,,,Historico por nivel de inversion en ads
-paid_budget_high,2030,0.0498,0.0448,,18.27,,,,Historico por nivel de inversion en ads
-paid_budget_saturated,1760,0.025,0.027,,-1.07,,,,Historico por nivel de inversion en ads
-webinar_attendance,13561,0.1239,0.1742,0.4061,48.11,47.57,48.69,True,Estimado con contrafactual ML sobre historico sintetico
-new_product_offer,11607,0.1061,0.0609,-0.426,15.39,14.79,16.01,True,Estimado con contrafactual ML sobre historico sintetico
+funnel_full_optimized,20000,0.0959,0.1334,0.3917,29.55,29.17,30.01,True,Estimado con contrafactual ML sobre histórico sintético
+paid_budget_low,792,0.0682,0.0642,,35.46,,,,Histórico por nivel de inversión en ads
+paid_budget_medium,3320,0.0645,0.0645,,34.42,,,,Histórico por nivel de inversión en ads
+paid_budget_high,2030,0.0498,0.0448,,18.27,,,,Histórico por nivel de inversión en ads
+paid_budget_saturated,1760,0.025,0.027,,-1.07,,,,Histórico por nivel de inversión en ads
+webinar_attendance,13561,0.1239,0.1742,0.4061,48.11,47.57,48.69,True,Estimado con contrafactual ML sobre histórico sintético
+new_product_offer,11607,0.1061,0.0609,-0.426,15.39,14.79,16.01,True,Estimado con contrafactual ML sobre histórico sintético

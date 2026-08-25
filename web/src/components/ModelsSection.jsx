@@ -92,13 +92,20 @@ export function ModelsSection({ payload }) {
               </LineChart>
             </ResponsiveContainer>
           </div>
+          <p className="chart-lectura">
+            La lectura del gráfico es la siguiente: la diagonal representa lo que se
+            capturaría eligiendo oportunidades al azar y la curva, lo que se captura
+            siguiendo el orden que propone el modelo. Cuanto más se despega la curva
+            de la diagonal en el tramo izquierdo, más conversiones se concentran en
+            el primer decil y menos esfuerzo hace falta para alcanzarlas.
+          </p>
         </Panel>
 
         <Panel eyebrow="Modelo 02" title={`${r.name} para valor esperado`}>
           <p className="panel__copy">{r.purpose}</p>
           <MetricGrid cols={4}>
             <Metric label="MAE" value={usd(r.mae_usd)} gloss="Error absoluto medio sobre el valor estimado" accent />
-            <Metric label="R²" value={r.r2.toFixed(3)} gloss="Capacidad del modelo para explicar la variación del ingreso del ciclo" />
+            <Metric label="R²" value={r.r2.toFixed(3)} gloss="Capacidad del modelo para explicar la variación del ingreso" />
             <Metric label="Sesgo medio" value={usd(r.mean_residual_usd)} gloss="Diferencia media entre valor real y valor estimado" />
             <Metric label="P90 error" value={usd(r.p90_abs_error_usd)} gloss="Error absoluto en el percentil 90" />
           </MetricGrid>
@@ -125,10 +132,10 @@ export function ModelsSection({ payload }) {
 
       <Panel eyebrow="Palancas de negocio" title="Escenarios con mayor uplift esperado">
         <p className="panel__copy">
-          Estas son las iniciativas mejor posicionadas según el análisis contrafactual:
-          cuánto mejoran la conversión y cuánto margen añaden por oportunidad. El uplift no es
-          una hipótesis puesta a mano, sale de comparar cada oportunidad consigo misma con la
-          palanca cambiada.
+          Estas son las iniciativas mejor posicionadas según el análisis contrafactual,
+          ordenadas por la conversión que añaden y por el margen que aportan a cada
+          oportunidad. El uplift no procede de una hipótesis escrita a mano, sino de
+          comparar cada oportunidad consigo misma después de modificar una sola palanca.
         </p>
         <div className="lever-grid">{main.map((u) => lever(u, "var(--purple)"))}</div>
       </Panel>
@@ -136,8 +143,9 @@ export function ModelsSection({ payload }) {
       {ads.length > 0 && (
         <Panel eyebrow="Sensibilidad" title="Qué pasa al mover la inversión en Ads">
           <p className="panel__copy">
-            El retorno de la inversión publicitaria no es lineal: al escalarla aparece
-            saturación. Estos escenarios muestran hasta dónde compensa.
+            El retorno de la inversión publicitaria no es lineal, porque al escalarla
+            aparece la saturación de la audiencia. Estos escenarios muestran hasta qué
+            tramo de inversión sigue compensando el gasto.
           </p>
           <div className="lever-grid">{ads.map((u) => lever(u, "var(--blue)"))}</div>
         </Panel>

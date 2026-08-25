@@ -205,8 +205,9 @@ export function Hero({ summary, top, totalSims, fase, onPhaseChange }) {
         <div className="hero__body">
           <div>
             <p className="hero__lead">
-              Aprende del histórico comercial ya cerrado, simula miles de futuros con
-              incertidumbre real y devuelve la decisión que sobrevive al peor
+              El sistema aprende del histórico comercial ya cerrado, estima qué aporta
+              cada palanca de crecimiento y simula diez mil futuros con incertidumbre
+              realista, para devolver la decisión que se sostiene también en el peor
               escenario.
             </p>
             <Magnet padding={70} magnetStrength={5}>

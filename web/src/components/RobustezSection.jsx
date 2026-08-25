@@ -84,9 +84,10 @@ export function RobustezSection({ payload }) {
 
         <Panel eyebrow="Sensibilidad" title="Qué pasa si el ruido está mal calibrado">
           <p className="panel__copy">
-            La magnitud de los tres ruidos la elige el analista. Aquí se escala cada uno por
-            separado para ver a partir de qué exageración cambia la recomendación. Sin esto es
-            un número puesto a mano dentro de una caja negra.
+            La magnitud de las tres fuentes de ruido la fija el analista, de modo que
+            conviene comprobar hasta qué punto la recomendación depende de esa elección.
+            Aquí se escala cada una por separado para determinar a partir de qué
+            exageración cambiaría la decisión.
           </p>
           <div className="sens-grid">
             {(sens.resultados ?? []).map((r) => (
@@ -122,9 +123,11 @@ export function RobustezSection({ payload }) {
       <div className="split-2">
         <Panel eyebrow="Valor de la información" title="Cuánto vale saber el futuro de antemano">
           <p className="panel__copy">
-            Con incertidumbre eliges la de mayor media y te quedas con ella. Con información
-            perfecta elegirías, en cada escenario, la que mejor sale ahí. La diferencia es el
-            techo de lo que tiene sentido gastar en un piloto o en mejores datos.
+            Bajo incertidumbre se elige la iniciativa de mayor media y se mantiene esa
+            elección en todos los escenarios. Con información perfecta se elegiría, en
+            cada escenario, la que mejor resulta en él. La diferencia entre ambas
+            situaciones es el techo de lo que tiene sentido invertir en un piloto o en
+            mejores datos.
           </p>
           <MetricGrid cols={2}>
             <Metric label="Sin información" value={usd(evpi.valor_sin_informacion)} gloss={evpi.decision_sin_informacion} />
@@ -149,9 +152,11 @@ export function RobustezSection({ payload }) {
 
         <Panel eyebrow="Validación" title="Cómo se comprobó que los modelos generalizan">
           <p className="panel__copy">
-            Un split aleatorio sobre datos con fecha entrena con registros posteriores a los de
-            validación: el modelo ve futuro al aprender y la métrica sale inflada. Aquí el corte
-            es temporal, que es como se usará en producción.
+            Una partición aleatoria sobre datos fechados entrena con registros
+            posteriores a los de validación, de manera que el modelo aprende con
+            información del futuro y la métrica resultante queda inflada. Aquí la
+            partición es temporal, que es la forma en que el modelo se utilizará en
+            producción.
           </p>
           <MetricGrid cols={2}>
             <Metric label="Entrenamiento" value={`${val.train_start} → ${val.train_end}`} gloss={`${Number(val.train_rows || 0).toLocaleString("en-US")} registros, la parte antigua`} />
@@ -161,9 +166,9 @@ export function RobustezSection({ payload }) {
             icon={IconLayers}
             tone="var(--blue)"
             items={[
-              "El corte sale de una sola función compartida: las métricas del panel y las del pipeline no pueden desincronizarse.",
-              "El uplift de cada palanca lleva intervalo de confianza por bootstrap, así se ve si el efecto cruza el cero.",
-              "La semilla está fija, de modo que cualquier diferencia entre ejecuciones la causaste tú y no el azar.",
+              "El corte procede de una única función compartida, de modo que las métricas del panel y las del pipeline no pueden desincronizarse.",
+              "El uplift de cada palanca lleva intervalo de confianza calculado por bootstrap, lo que permite comprobar si el efecto llega a cruzar el cero.",
+              "La semilla está fijada, de modo que cualquier diferencia entre dos ejecuciones procede de un cambio en el código o en los datos, y no del azar.",
             ]}
           />
         </Panel>

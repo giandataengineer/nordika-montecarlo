@@ -1,7 +1,7 @@
-"""Capa SQL sobre el historico de captacion.
+"""Capa SQL sobre el histórico de captación.
 
 Las agregaciones del informe estaban en pandas. En SQL se leen mejor, sobre
-todo las de ventana, y el dia que el historico no quepa en memoria estas
+todo las de ventana, y el dia que el histórico no quepa en memoria estas
 mismas consultas corren contra Postgres cambiando la conexion.
 
 DuckDB lee el CSV directamente, sin paso de ingesta que mantener.
@@ -156,8 +156,8 @@ def _autocomprobacion() -> None:
 if __name__ == "__main__":
     for titulo, fn in [
         ("Rentabilidad por canal", rentabilidad_por_canal),
-        ("Curva de saturacion publicitaria", curva_de_saturacion),
-        ("Concentracion del margen", concentracion_del_margen),
+        ("Curva de saturación publicitaria", curva_de_saturacion),
+        ("Concentración del margen", concentracion_del_margen),
     ]:
         print(f"\n{titulo}")
         print(fn().to_string(index=False))

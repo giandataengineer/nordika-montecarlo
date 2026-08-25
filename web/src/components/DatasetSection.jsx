@@ -46,8 +46,10 @@ export function DatasetSection({ payload }) {
       <div className="split-2">
         <Panel eyebrow="Cobertura del caso" title="Qué información tiene disponible el agente">
           <p className="panel__copy">
-            Antes de modelizar conviene comprobar que el caso tiene suficiente diversidad
-            comercial: campañas, canales, segmentos, mercados y ventana temporal.
+            Antes de modelizar conviene comprobar que el caso reúne suficiente
+            diversidad comercial. Se revisan las campañas ejecutadas, los canales de
+            captación, los segmentos de cliente, los mercados cubiertos y la ventana
+            temporal disponible.
           </p>
           <MetricGrid cols={4}>
             <Metric label="Campañas" value={s.campaign_count} animate gloss="Combinaciones distintas de canal y objetivo" />
@@ -64,8 +66,9 @@ export function DatasetSection({ payload }) {
 
         <Panel eyebrow="Serie temporal" title="Evolución mensual del negocio">
           <p className="panel__copy">
-            La serie de revenue y beneficio de contribución da contexto sobre la estabilidad
-            del negocio antes de evaluar nuevas palancas.
+            La serie mensual de ingreso y de beneficio de contribución sitúa el punto de
+            partida: muestra si el negocio es estable o si arrastra una tendencia que
+            conviene tener en cuenta antes de evaluar nuevas palancas.
           </p>
           <div className="chart chart--tall">
             <ResponsiveContainer width="100%" height={280}>
@@ -96,6 +99,14 @@ export function DatasetSection({ payload }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          <p className="chart-lectura">
+            Lo que conviene observar aquí no es el nivel de cada mes, sino la
+            distancia entre las dos curvas. El ingreso marca el volumen que entra y
+            el beneficio de contribución, lo que queda después de pagar la
+            captación. Cuando ambas se separan, el negocio crece comprando volumen
+            más caro, que es exactamente el efecto que la Fase 03 mide palanca a
+            palanca.
+          </p>
         </Panel>
       </div>
 

@@ -356,7 +356,7 @@ def temporal_split(df: pd.DataFrame, test_fraction: float = TEST_FRACTION) -> tu
 
 
 def split_boundary(df: pd.DataFrame, test_fraction: float = TEST_FRACTION) -> dict[str, str]:
-    """Fechas del corte, para poder mostrarlas y auditar la validacion."""
+    """Fechas del corte, para poder mostrarlas y auditar la validación."""
     train, test = temporal_split(df, test_fraction)
     return {
         "train_start": str(train["date"].min()),
@@ -453,7 +453,7 @@ def estimate_historical_parameters(df: pd.DataFrame, conversion_model: Pipeline,
                 "profit_lift_ci_low_usd": round(float(ic["inferior"]), 2) if ic.get("inferior") is not None else None,
                 "profit_lift_ci_high_usd": round(float(ic["superior"]), 2) if ic.get("superior") is not None else None,
                 "profit_lift_significativo": bool(ic.get("significativo", False)),
-                "source": "Estimado con contrafactual ML sobre historico sintetico",
+                "source": "Estimado con contrafactual ML sobre histórico sintético",
             }
         )
 
@@ -479,7 +479,7 @@ def estimate_historical_parameters(df: pd.DataFrame, conversion_model: Pipeline,
                 "scenario_conversion": round(float(p.mean()), 4),
                 "conversion_lift_pct": "",
                 "profit_lift_per_opportunity_usd": round(float((p * a * m - c).mean()), 2),
-                "source": "Historico por nivel de inversion en ads",
+                "source": "Histórico por nivel de inversión en ads",
             }
         )
 
@@ -505,7 +505,7 @@ def scenario_frames(base: pd.DataFrame, rng: np.random.Generator) -> dict[str, t
     funnel["cta_variant"] = "benefit_cta"
     funnel["lead_magnet"] = 1
     funnel["checkout_simplified"] = 1
-    scenarios["Optimizar la conversion del sitio"] = (funnel, 1200.0)
+    scenarios["Optimizar la conversión del sitio"] = (funnel, 1200.0)
 
     paid_pool = base[base["channel"].isin(["Facebook Ads", "Google Ads"])].copy()
     extra_count = max(620, int(len(paid_pool) * 2.00))
@@ -523,14 +523,14 @@ def scenario_frames(base: pd.DataFrame, rng: np.random.Generator) -> dict[str, t
     attended = invited & (rng.random(len(warm)) < 0.34)
     warm.loc[invited, "webinar_invited"] = 1
     warm.loc[attended, "webinar_attended"] = 1
-    scenarios["Reactivacion y remarketing"] = (warm, 2500.0)
+    scenarios["Reactivación y remarketing"] = (warm, 2500.0)
 
     product = base.copy()
     eligible = product["customer_segment"].isin(["Enterprise", "B2B Services", "Ecommerce"])
     offered = eligible & (rng.random(len(product)) < 0.32)
     product.loc[offered, "new_product_offer"] = 1
     product.loc[offered, "cost_attributed_usd"] = product.loc[offered, "cost_attributed_usd"] + rng.lognormal(np.log(5.0), 0.35, offered.sum())
-    scenarios["Abrir categoria nueva"] = (product, 12000.0)
+    scenarios["Abrir categoría nueva"] = (product, 12000.0)
 
     return scenarios
 
@@ -540,7 +540,7 @@ def scenario_frames(base: pd.DataFrame, rng: np.random.Generator) -> dict[str, t
 # (mu, sigma) de la lognormal de incertidumbre; valores y pesos del retraso de
 # ejecucion; suelo y proporcion del ruido residual.
 NOISE_PROFILES: dict[str, dict[str, object]] = {
-    "Abrir categoria nueva": {
+    "Abrir categoría nueva": {
         "uncertainty": (-0.90, 1.38),
         "execution": ([0.10, 0.30, 0.76, 1.65, 3.40], [0.23, 0.25, 0.24, 0.18, 0.10]),
         "residual": (18_000, 0.34),
@@ -550,7 +550,7 @@ NOISE_PROFILES: dict[str, dict[str, object]] = {
         "execution": ([0.58, 0.82, 1.00, 1.16], [0.18, 0.30, 0.34, 0.18]),
         "residual": (16_000, 0.26),
     },
-    "Reactivacion y remarketing": {
+    "Reactivación y remarketing": {
         "uncertainty": (0.0, 0.16),
         "execution": ([0.72, 0.94, 1.10, 1.22], [0.18, 0.36, 0.32, 0.14]),
         "residual": (4_000, 0.12),
@@ -702,10 +702,10 @@ def write_live_dashboard(
         )
 
     colors = {
-        "Optimizar la conversion del sitio": "#1fa971",
-        "Reactivacion y remarketing": "#2f80ed",
+        "Optimizar la conversión del sitio": "#1fa971",
+        "Reactivación y remarketing": "#2f80ed",
         "Escalar paid social": "#d9531e",
-        "Abrir categoria nueva": "#7c3aed",
+        "Abrir categoría nueva": "#7c3aed",
     }
     initial_status = json.dumps(status, ensure_ascii=False)
     colors_json = json.dumps(colors, ensure_ascii=False)
@@ -955,11 +955,11 @@ function setProgressRing(progressPct) {{
 function renderCards(leaderboard) {{
     const root = document.getElementById('leader-cards');
     root.innerHTML = leaderboard.slice(0, 4).map((row) => `
-        <section class="card" style="--accent:${{COLORS[row.decision] || '#d9531e'}}">
-            <div class="kicker">Posicion ${{row.ranking}}</div>
+        <section class="card" style="--accent:${{COLORS[row.decisión] || '#d9531e'}}">
+            <div class="kicker">Posición ${{row.ranking}}</div>
             <div class="metric">${{shortMoney(row.expected_profit_usd)}}</div>
             <div class="sub">${{row.decision}}</div>
-            <div class="sub">Perdida: ${{pct(row.probability_loss)}} · ROI: ${{Number(row.expected_roi).toFixed(2)}}x</div>
+            <div class="sub">Pérdida: ${{pct(row.probability_loss)}} · ROI: ${{Number(row.expected_roi).toFixed(2)}}x</div>
         </section>
     `).join('');
 }}
@@ -1043,8 +1043,8 @@ function renderSparks(status) {{
     const root = document.getElementById('spark-grid');
     const grouped = new Map();
     (status.recent_runs || []).forEach((row) => {{
-        if (!grouped.has(row.decision)) grouped.set(row.decision, []);
-        grouped.get(row.decision).push(row);
+        if (!grouped.has(row.decisión)) grouped.set(row.decisión, []);
+        grouped.get(row.decisión).push(row);
     }});
     const rows = (status.leaderboard || []).map((entry) => {{
         const series = grouped.get(entry.decision) || [];
@@ -1186,14 +1186,14 @@ def evaluate(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, auc:
         (
             "conclusion_y_narrativa",
             # gana por el suelo, no por el techo: es lo que hace el caso
-            summary.iloc[0]["decision"] == "Optimizar la conversion del sitio"
+            summary.iloc[0]["decision"] == "Optimizar la conversión del sitio"
             and by_decision.loc[summary.iloc[0]["decision"], "p10_usd"] > 0
             and by_decision.loc[summary.iloc[0]["decision"], "probability_loss"] < 0.01
             # la apuesta de producto es la mas dispersa y la que mas pierde
-            and by_decision.loc["Abrir categoria nueva", "probability_loss"] > 0.18
+            and by_decision.loc["Abrir categoría nueva", "probability_loss"] > 0.18
             and (
-                by_decision.loc["Abrir categoria nueva", "p90_usd"]
-                - by_decision.loc["Abrir categoria nueva", "p10_usd"]
+                by_decision.loc["Abrir categoría nueva", "p90_usd"]
+                - by_decision.loc["Abrir categoría nueva", "p10_usd"]
             )
             == (by_decision["p90_usd"] - by_decision["p10_usd"]).max()
             and by_decision.loc["Escalar paid social", "probability_loss"] > 0.05,
@@ -1229,41 +1229,41 @@ def write_report(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, 
     pretty_summary["expected_roi"] = pretty_summary["expected_roi"].round(1).astype(str) + "x"
 
     lines = [
-        "# Evaluacion del dataset transaccional sintetico",
+        "# Evaluación del dataset transaccional sintético",
         "",
         "## Checks",
         *[f"- {check}" for check in checks],
         "",
-        "## Baseline historico",
+        "## Baseline histórico",
         f"- Registros: {len(df):,}",
         f"- Periodo: {df['date'].min()} a {df['date'].max()}",
-        f"- Conversion media: {conversion:.1%}",
-        f"- Revenue historico: {revenue:,.0f} USD",
-        f"- Contribution profit historico: {profit:,.0f} USD",
-        f"- AUC modelo de conversion: {auc:.3f}",
+        f"- Conversión media: {conversion:.1%}",
+        f"- Revenue histórico: {revenue:,.0f} USD",
+        f"- Contribution profit histórico: {profit:,.0f} USD",
+        f"- AUC modelo de conversión: {auc:.3f}",
         "",
         "## Variables clave para estimar hipotesis",
         "- Cambios de funnel: landing_variant, cta_variant, lead_magnet, checkout_simplified.",
         "- Presion de ads: ad_budget_level, campaign_daily_spend_usd, cost_attributed_usd, lead_score.",
         "- Webinar: webinar_invited, webinar_attended.",
-        "- Abrir categoria nueva: new_product_offer, customer_segment, aov_usd, gross_margin_pct.",
+        "- Abrir categoría nueva: new_product_offer, customer_segment, aov_usd, gross_margin_pct.",
         "- Resultado de negocio: converted_to_sale, revenue_usd, gross_profit_usd, contribution_profit_usd.",
         "",
         "## Resumen por canal",
         markdown_table(channel),
         "",
-        "## Parametros estimados desde historico",
+        "## Parámetros estimados desde histórico",
         markdown_table(params),
         "",
-        "## Simulacion Monte Carlo",
+        "## Simulación Monte Carlo",
         markdown_table(pretty_summary),
         "",
         "## Lectura ejecutiva",
-        "- Las hipotesis no se fijan como tabla externa: se estiman con contrafactuales del modelo entrenado sobre el historico.",
-        "- Mejorar el funnel gana porque el historico contiene tests de landing, CTA, lead magnet y checkout que el modelo aprende como mejora de conversion.",
-        "- Duplicar ads usa el patron historico de saturacion: cuando sube el nivel de inversion, crece el volumen pero baja la calidad media y sube el coste por oportunidad.",
-        "- Webinar emerge como buena segunda opcion porque el historico contiene invitados/asistentes y el modelo aprende uplift en leads templados.",
-        "- Abrir categoria nueva mantiene el P90 mas alto por ticket mayor, pero tambien mayor probabilidad de perdida por menor conversion, coste fijo y variabilidad de ejecucion.",
+        "- Las hipotesis no se fijan como tabla externa: se estiman con contrafactuales del modelo entrenado sobre el histórico.",
+        "- Mejorar el funnel gana porque el histórico contiene tests de landing, CTA, lead magnet y checkout que el modelo aprende como mejora de conversión.",
+        "- Duplicar ads usa el patron histórico de saturación: cuando sube el nivel de inversión, crece el volumen pero baja la calidad media y sube el coste por oportunidad.",
+        "- Webinar emerge como buena segunda opción porque el histórico contiene invitados/asistentes y el modelo aprende uplift en leads templados.",
+        "- Abrir categoría nueva mantiene el P90 más alto por ticket mayor, pero también mayor probabilidad de pérdida por menor conversión, coste fijo y variabilidad de ejecución.",
     ]
     REPORT_PATH.write_text("\n".join(lines), encoding="utf-8")
 
@@ -1343,11 +1343,11 @@ def run_pipeline(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Simulacion Monte Carlo end-to-end para el caso de negocio")
-    parser.add_argument("--simulations", type=int, default=N_SIMULATIONS, help="Numero de iteraciones Monte Carlo")
-    parser.add_argument("--live-dashboard", action="store_true", help="Genera un dashboard vivo durante la simulacion")
-    parser.add_argument("--progress-every", type=int, default=80, help="Frecuencia de actualizacion del dashboard")
-    parser.add_argument("--live-duration-seconds", type=float, default=40.0, help="Duracion objetivo del modo live en segundos")
+    parser = argparse.ArgumentParser(description="Simulación Monte Carlo end-to-end para el caso de negocio")
+    parser.add_argument("--simulations", type=int, default=N_SIMULATIONS, help="Número de iteraciones Monte Carlo")
+    parser.add_argument("--live-dashboard", action="store_true", help="Genera un dashboard vivo durante la simulación")
+    parser.add_argument("--progress-every", type=int, default=80, help="Frecuencia de actualización del dashboard")
+    parser.add_argument("--live-duration-seconds", type=float, default=40.0, help="Duración objetivo del modo live en segundos")
     parser.add_argument("--no-persist", action="store_true", help="No sobrescribir los CSV finales")
     return parser.parse_args()
 

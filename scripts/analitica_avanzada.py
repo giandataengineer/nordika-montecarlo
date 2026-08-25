@@ -26,32 +26,32 @@ _REGLAS: list[tuple[str, Callable[[dict[str, float]], bool], str]] = [
     (
         r"suelo positivo",
         lambda m: m["p10"] < 0,
-        "el percentil 10 es negativo, asi que el suelo no es positivo",
+        "el percentil 10 es negativo, así que el suelo no es positivo",
     ),
     (
-        r"perdida esperada practicamente nula|perdida esperada nula|sin riesgo de perdida",
+        r"pérdida esperada practicamente nula|pérdida esperada nula|sin riesgo de pérdida",
         lambda m: m["prob_perdida"] > 0.05,
-        "la probabilidad de perdida supera el 5%",
+        "la probabilidad de pérdida supera el 5%",
     ),
     (
-        r"opcion mas robusta|mas robusta por suelo",
+        r"opción más robusta|más robusta por suelo",
         lambda m: m["p10"] < 0 or m["prob_perdida"] > 0.10,
-        "una opcion con suelo negativo o mas de 10% de perdida no puede llamarse la mas robusta",
+        "una opción con suelo negativo o más de 10% de pérdida no puede llamarse la más robusta",
     ),
     (
         r"downside esta contenido",
         lambda m: m["p10"] < 0 or m["prob_perdida"] > 0.10,
-        "el downside no esta contenido con suelo negativo o perdida por encima del 10%",
+        "el downside no esta contenido con suelo negativo o pérdida por encima del 10%",
     ),
     (
         r"retorno ajustado a control|mejor retorno ajustado",
         lambda m: m["prob_perdida"] > 0.20,
-        "por encima del 20% de perdida no se puede presentar como retorno bajo control",
+        "por encima del 20% de pérdida no se puede presentar como retorno bajo control",
     ),
     (
-        r"no depende de un empate estadistico|no depende de ruido marginal",
+        r"no depende de un empate estadístico|no depende de ruido marginal",
         lambda m: m["brecha_relativa"] < 0.10,
-        "la ventaja sobre la segunda opcion es menor al 10%, asi que si podria ser un empate",
+        "la ventaja sobre la segunda opción es menor al 10%, así que si podría ser un empate",
     ),
 ]
 
@@ -85,11 +85,11 @@ _CAMPOS_OBLIGATORIOS = ("headline", "summary")
 
 def _frase_factual(ranking: Sequence[dict[str, Any]], metricas: dict[str, float]) -> str:
     mejor = ranking[0]
-    nombre = mejor.get("decision", "la opcion mejor situada")
+    nombre = mejor.get("decision", "la opción mejor situada")
     beneficio = float(mejor.get("expected_profit_usd", mejor.get("beneficio_esperado_usd", 0.0)))
     riesgo = (
         f"con un suelo (P10) de {metricas['p10']:,.0f} y {metricas['prob_perdida']:.1%} "
-        "de probabilidad de perdida"
+        "de probabilidad de pérdida"
     )
     if metricas["p10"] < 0 or metricas["prob_perdida"] > 0.10:
         return (
@@ -153,10 +153,10 @@ def intervalo_uplift(
 ) -> dict[str, float | str]:
     """Bootstrap sobre el delta contrafactual fila a fila.
 
-    Importante para no vender mas de lo que hace: re-muestrea las predicciones ya
-    calculadas, asi que mide **incertidumbre de muestreo** (¿cambiaria el delta con
+    Importante para no vender más de lo que hace: re-muestrea las predicciones ya
+    calculadas, así que mide **incertidumbre de muestreo** (¿cambiaria el delta con
     otra muestra de oportunidades?). No mide incertidumbre del modelo, que exigiria
-    reentrenar en cada replica y cuesta unas 30 veces mas. El campo `alcance` lo
+    reentrenar en cada replica y cuesta unas 30 veces más. El campo `alcance` lo
     deja escrito en el propio resultado.
     """
     datos = np.asarray(delta_por_oportunidad, dtype=float)
@@ -196,10 +196,10 @@ def estabilidad_ranking(
 ) -> dict[str, Any]:
     """Repite solo la capa Monte Carlo con distintas semillas y cuenta victorias.
 
-    `simular(semilla)` debe devolver el resumen por decision de esa realizacion.
+    `simular(semilla)` debe devolver el resumen por decisión de esa realización.
     Responde a "¿cuanto del ranking depende de los dados?", no a "¿cuanto depende
     de los datos?": para lo segundo habria que regenerar el dataset entero, que es
-    un experimento distinto y mucho mas caro.
+    un experimento distinto y mucho más caro.
     """
     semillas = list(semillas)
     victorias: dict[str, int] = {}
@@ -256,9 +256,9 @@ def sensibilidad_ruidos(
 ) -> dict[str, Any]:
     """Escala cada ruido por separado y observa si el ranking aguanta.
 
-    La magnitud de los tres ruidos la elige el analista. Sin esto es un numero
+    La magnitud de los tres ruidos la elige el analista. Sin esto es un número
     puesto a mano dentro de una caja negra; con esto queda auditado: se ve a partir
-    de que exageracion la conclusion cambia.
+    de que exageración la conclusión cambia.
     """
     ruidos = ["incertidumbre", "ejecucion", "residual"]
     resultados = []
@@ -291,9 +291,9 @@ def sensibilidad_ruidos(
         "resultados": resultados,
         "robusto": not frágiles,
         "veredicto": (
-            "La recomendacion aguanta duplicar cualquiera de los tres ruidos"
+            "La recomendación aguanta duplicar cualquiera de los tres ruidos"
             if not frágiles
-            else "La recomendacion cambia al exagerar: " + ", ".join(frágiles)
+            else "La recomendación cambia al exagerar: " + ", ".join(frágiles)
         ),
     }
 
@@ -344,7 +344,7 @@ def valor_informacion(matriz_escenarios: dict[str, np.ndarray]) -> dict[str, Any
         "acierto_de_la_apuesta": acierto,
         "reparto_de_escenarios": reparto,
         "lectura": (
-            f"Reducir la incertidumbre vale como maximo {evpi:,.0f} por decision. "
+            f"Reducir la incertidumbre vale como máximo {evpi:,.0f} por decisión. "
             f"La apuesta elegida es la mejor en el {acierto:.0%} de los escenarios."
         ),
     }
@@ -354,9 +354,9 @@ def _autocomprobacion() -> None:
     """Comprobaciones minimas: cada bloque falla si la logica se rompe."""
     ranking_malo = [
         {"decision": "Escalar paid social", "expected_profit_usd": 63446, "p10_usd": -33868, "probability_loss": 0.356},
-        {"decision": "Optimizar la conversion del sitio", "expected_profit_usd": 53882, "p10_usd": 45485, "probability_loss": 0.0},
+        {"decision": "Optimizar la conversión del sitio", "expected_profit_usd": 53882, "p10_usd": 45485, "probability_loss": 0.0},
     ]
-    informe = {"headline": "Es la opcion mas robusta por suelo positivo y perdida esperada practicamente nula.",
+    informe = {"headline": "Es la opción más robusta por suelo positivo y pérdida esperada practicamente nula.",
                "razones": ["El downside esta contenido.", "Beneficio de 63.446."]}
     res = coherencia_informe(informe, ranking_malo)
     assert res["frases_retiradas"] == 2, res
@@ -367,8 +367,8 @@ def _autocomprobacion() -> None:
     assert res["informe"]["razones"] == ["Beneficio de 63.446."]
 
     ranking_bueno = [
-        {"decision": "Optimizar la conversion del sitio", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
-        {"decision": "Reactivacion y remarketing", "expected_profit_usd": 31154, "p10_usd": 20076, "probability_loss": 0.0},
+        {"decision": "Optimizar la conversión del sitio", "expected_profit_usd": 66132, "p10_usd": 56068, "probability_loss": 0.0},
+        {"decision": "Reactivación y remarketing", "expected_profit_usd": 31154, "p10_usd": 20076, "probability_loss": 0.0},
     ]
     ok = coherencia_informe(informe, ranking_bueno)
     assert ok["frases_retiradas"] == 0, ok

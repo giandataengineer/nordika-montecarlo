@@ -6,9 +6,9 @@ import { IconAlert, IconArrowRight, IconCheck, IconDecide, IconLayers, IconTrend
 import { Consenso } from "./Consenso";
 
 const ROLES = [
-  { key: "ceo", label: "CEO", lead: "Prioriza asignación de capital, payback y claridad de decisión ejecutiva." },
-  { key: "growth", label: "Growth", lead: "Prioriza velocidad de aprendizaje, iteración y escalado de canales." },
-  { key: "riesgo", label: "Riesgo", lead: "Prioriza el control del downside, la robustez del suelo y los criterios de contención." },
+  { key: "ceo", label: "CEO", lead: "Prioriza la asignación de capital, el plazo de recuperación y la claridad de la decisión ejecutiva." },
+  { key: "growth", label: "Growth", lead: "Prioriza la velocidad de aprendizaje, la capacidad de iterar y el escalado de los canales." },
+  { key: "riesgo", label: "Riesgo", lead: "Prioriza el control del escenario adverso, la solidez del suelo y los criterios de contención." },
 ];
 
 export function ReportSection({ payload }) {
@@ -108,8 +108,9 @@ export function ReportSection({ payload }) {
       <div className="split-2">
         <Panel eyebrow="Consultas realizadas" title="Huella de herramientas">
           <p className="panel__copy">
-            El agente no responde de memoria: cada afirmación viene de una consulta concreta
-            sobre los resultados del simulador y de los modelos.
+            El agente no responde de memoria. Cada afirmación procede de una consulta
+            concreta sobre los resultados del simulador y de los modelos, y puede
+            rastrearse hasta la cifra que la respalda.
           </p>
           <div className="trace-list">
             {(rec.tool_trace ?? []).map((t) => (

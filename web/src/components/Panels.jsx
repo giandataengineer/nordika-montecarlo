@@ -138,7 +138,7 @@ export function SimulationPanel({ payload }) {
 
       <span className="card__foot label">
         <IconSpread style={{ width: 13, height: 13, verticalAlign: "-2px", marginRight: 8 }} />
-        En gris: probabilidad de pérdida superior al 20 %
+        En gris, las iniciativas con probabilidad de pérdida superior al 20 %
       </span>
     </Card>
   );
@@ -167,7 +167,7 @@ export function ReportPanel({ payload }) {
       icon: <IconAlert />,
       title: "Riesgo",
       description:
-        "El uplift se estimó por contrafactual sobre histórico sintético. Antes de extrapolar hace falta validarlo con un A/B real.",
+        "El uplift se estimó por contrafactual sobre un histórico sintético. Antes de extrapolar el resultado es necesario validarlo con una prueba A/B real.",
     },
   ];
 

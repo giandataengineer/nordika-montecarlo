@@ -88,10 +88,10 @@ def test_saturar_destruye_margen(df):
 def test_los_escenarios_no_meten_nulos(df):
     rng = np.random.default_rng(SEED)
     esperados = {
-        "Optimizar la conversion del sitio",
+        "Optimizar la conversión del sitio",
         "Escalar paid social",
-        "Reactivacion y remarketing",
-        "Abrir categoria nueva",
+        "Reactivación y remarketing",
+        "Abrir categoría nueva",
     }
     escenarios = scenario_frames(df, rng)
     assert set(escenarios) == esperados
@@ -110,14 +110,14 @@ class TestGuardarrail:
     def test_retira_la_frase_que_contradice_el_p10(self):
         ranking = [
             {
-                "decision": "Abrir categoria nueva",
+                "decision": "Abrir categoría nueva",
                 "expected_profit_usd": 4582,
                 "p10_usd": -29826,
                 "probability_loss": 0.568,
             }
         ]
         informe = {
-            "headline": "Abrir categoria nueva tiene suelo positivo en P10",
+            "headline": "Abrir categoría nueva tiene suelo positivo en P10",
             "reasons": ["El suelo es positivo y la perdida es practicamente nula"],
         }
         limpio = coherencia_informe(informe, ranking)
@@ -126,14 +126,14 @@ class TestGuardarrail:
     def test_deja_pasar_lo_que_si_cuadra(self):
         ranking = [
             {
-                "decision": "Optimizar la conversion del sitio",
+                "decision": "Optimizar la conversión del sitio",
                 "expected_profit_usd": 54119,
                 "p10_usd": 46022,
                 "probability_loss": 0.0,
             }
         ]
         informe = {
-            "headline": "Optimizar la conversion del sitio mantiene un suelo positivo en P10",
+            "headline": "Optimizar la conversión del sitio mantiene un suelo positivo en P10",
             "reasons": ["El P10 se queda en 46.022 USD"],
         }
         limpio = coherencia_informe(informe, ranking)
