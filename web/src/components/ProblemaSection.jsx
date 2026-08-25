@@ -38,7 +38,7 @@ const CANDIDATAS = [
 ];
 
 export function ProblemaSection({ fase, summary, ranking = [] }) {
-  const n = (v, d = 0) => Number(v || 0).toLocaleString("es-ES", { maximumFractionDigits: d });
+  const n = (v, d = 0) => Number(v || 0).toLocaleString("es-ES", { maximumFractionDigits: d, useGrouping: "always" });
   const usd = (v) => (v < 0 ? "-" : "+") + "$" + n(Math.abs(v));
 
   /* La cifra sale del ranking, no esta escrita a mano: si cambian los datos,

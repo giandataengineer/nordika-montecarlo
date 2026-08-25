@@ -10,7 +10,7 @@ export function Respuestas({ payload }) {
 
   if (ranking.length === 0) return null;
 
-  const n = (v, d = 0) => Number(v || 0).toLocaleString("es-ES", { maximumFractionDigits: d });
+  const n = (v, d = 0) => Number(v || 0).toLocaleString("es-ES", { maximumFractionDigits: d, useGrouping: "always" });
   const usd = (v) => (Number(v) < 0 ? "-" : "+") + "$" + n(Math.abs(Number(v)));
   const pct = (v, d = 1) => n(Number(v || 0) * 100, d) + " %";
 
