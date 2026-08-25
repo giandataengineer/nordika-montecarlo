@@ -61,7 +61,7 @@ export function TopBar({ stats, error, fases = [] }) {
         <span className="topbar__glyph">
           <IconMontecarlo />
         </span>
-        Vantara
+        Nordika
       </a>
 
       <div className="topbar__pill">

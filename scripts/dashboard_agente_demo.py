@@ -72,7 +72,7 @@ UPLIFT_EXPLANATIONS = {
 # Nombre del operador del caso. Es ficticio a proposito: los datos son
 # sinteticos y ninguna instalacion real esta detras. Cambiarlo aqui lo cambia
 # en toda la consola.
-OPERADOR = "Vantara"
+OPERADOR = "Nordika"
 UNIDAD = "captación de pago"
 
 STAGES = [
@@ -498,7 +498,7 @@ HTML_TEMPLATE = """<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vantara · Consola de decisión</title>
+  <title>Nordika · Consola de decisión</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

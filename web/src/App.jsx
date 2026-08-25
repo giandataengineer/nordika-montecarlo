@@ -13,7 +13,6 @@ import { LiveSimulation } from "./components/LiveSimulation";
 import { ReportSection } from "./components/ReportSection";
 import { RobustezSection } from "./components/RobustezSection";
 import { ProblemaSection } from "./components/ProblemaSection";
-import { Definiciones } from "./components/Definiciones";
 import { Respuestas } from "./components/Respuestas";
 import "./styles/global.css";
 
@@ -26,24 +25,16 @@ const PHASE_LABEL = {
 
 const FAQ = [
   {
-    q: "¿Por qué se simulan miles de escenarios en lugar de calcular una predicción?",
-    a: "Una predicción puntual oculta el riesgo, porque resume en un solo número resultados muy distintos entre sí. Al simular miles de futuros con incertidumbre realista se obtiene la distribución completa, que permite conocer el resultado en el peor caso, en la mediana y en el mejor, así como la probabilidad de terminar en pérdidas.",
+    q: "¿Por qué simular y no predecir?",
+    a: "Una predicción puntual oculta el riesgo. Diez mil escenarios con incertidumbre realista dan la distribución completa: el suelo, la mediana, el techo y con qué probabilidad se pierde dinero. El presupuesto se compromete una sola vez, no cien.",
   },
   {
     q: "¿Qué es el uplift contrafactual?",
-    a: "Es la diferencia entre el resultado esperado de una oportunidad tal como se registró y el resultado que cabría esperar si se modificara una única palanca, como la creatividad, la landing o el nivel de inversión, manteniendo constante todo lo demás. Esa segunda versión no existe en el histórico, de modo que se estima con los modelos entrenados sobre los casos en los que sí se movió esa palanca.",
+    a: "La diferencia entre el resultado esperado de una oportunidad tal como se registró y el que cabría esperar cambiando una sola palanca. Esa segunda versión no existe en el histórico, así que se estima con los modelos entrenados sobre los casos en los que sí se movió esa palanca.",
   },
   {
-    q: "¿De dónde salen los datos?",
-    a: "De 20.000 oportunidades comerciales cerradas a lo largo de 28 meses. Se trata de un caso sintético: los datos se generan con distribuciones coherentes con el dominio y no proceden de ninguna cuenta publicitaria real. Los modelos aprenden de lo que ocurrió cada vez que se movió una palanca, no de supuestos escritos a mano en una hoja de cálculo.",
-  },
-  {
-    q: "¿Por qué gana la iniciativa menos llamativa?",
-    a: "Porque el coste por oportunidad crece más deprisa que el volumen a medida que se escala la inversión en paid social. La iniciativa que más tráfico compra factura más y deja menos margen, ya que adelanta ingreso a costa de un margen que después no se recupera. El criterio de decisión es la esperanza ajustada al riesgo, no el techo del mejor escenario.",
-  },
-  {
-    q: "¿La simulación se ejecuta de verdad o es una animación?",
-    a: "Se ejecuta de verdad. Los modelos se entrenan en Python y su resultado se exporta al navegador, donde se calculan el remuestreo y las tres fuentes de ruido escenario a escenario. El progreso que aparece en pantalla corresponde a escenarios ya completados y no a un temporizador de la interfaz.",
+    q: "¿La simulación se ejecuta de verdad?",
+    a: "Sí. Los modelos se entrenan en Python y su resultado se exporta al navegador, donde se calculan el remuestreo y los tres ruidos escenario a escenario. El progreso en pantalla son escenarios completados, no un temporizador.",
   },
 ];
 
@@ -87,8 +78,6 @@ export default function App() {
       />
 
       <ProblemaSection fase={f("briefing")} summary={summary} ranking={payload?.simulation?.summary ?? []} />
-
-      <Definiciones />
 
       <Feature
         id="fase-01"
