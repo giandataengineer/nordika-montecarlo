@@ -54,7 +54,7 @@ def exportar(destino: Path = SALIDA) -> Path:
         estrategias[decision] = {
             "valor": [round(float(v), 3) for v in valor],
             "coste_fijo": float(coste_fijo),
-            # mismo tamano que la base significa comparacion 1 a 1; distinto
+            # mismo tamano que la base significa comparación 1 a 1; distinto
             # significa que la estrategia anade oportunidades nuevas
             "mismo_tamano": len(valor) == len(valor_base),
             "ruido": {

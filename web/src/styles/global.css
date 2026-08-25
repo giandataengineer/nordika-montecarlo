@@ -70,7 +70,7 @@ a:hover {
   min-width: 0;
 }
 
-/* Las cifras largas son lo que empuja la rejilla mas alla de su columna. */
+/* Las cifras largas son lo que empuja la rejilla más alla de su columna. */
 .metric__value,
 .metric__gloss,
 .rank-row__grid b,
@@ -2533,8 +2533,8 @@ a:hover {
 
 /* ---------------------------------------------------------------------------
    Fase 01 · el problema
-   Antes de esta seccion la página abria con graficas: se veia el metodo pero
-   no el problema. Aqui se plantea la decision antes de ensenar como se resuelve.
+   Antes de esta sección la página abría con graficas: se veía el metodo pero
+   no el problema. Aquí se plantea la decisión antes de ensenar como se resuelve.
    --------------------------------------------------------------------------- */
 
 .problema__head { max-width: 62ch; }
@@ -2835,8 +2835,8 @@ a:hover {
 }
 .problema__coste b { color: var(--text); font-weight: 600; }
 
-/* El mecanismo en tres pasos: coste por oportunidad, conversion y margen. El
-   tercero es el unico que no se ve en el panel del canal y por eso necesita
+/* El mecanismo en tres pasos: coste por oportunidad, conversión y margen. El
+   tercero es el único que no se ve en el panel del canal y por eso necesita
    separarse de los otros dos. */
 .mecanismo {
   list-style: none;
@@ -2885,8 +2885,8 @@ a:hover {
   .mecanismo li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }
 
-/* Inversion de cada candidata. Sin el coste al lado, comparar las cuatro no
-   significa nada: una que gana mas puede ser peor si costo ocho veces mas. */
+/* Inversión de cada candidata. Sin el coste al lado, comparar las cuatro no
+   significa nada: una que gana más puede ser peor si costo ocho veces más. */
 .candidata__inversion {
   display: block;
   font-family: var(--font-mono);
@@ -2896,8 +2896,8 @@ a:hover {
   margin: -4px 0 12px;
 }
 
-/* La respuesta que cada razon dispara. Separada del cuerpo porque no es mas
-   explicacion del problema: es el puente a la capa que lo resuelve. */
+/* La respuesta que cada razon dispara. Separada del cuerpo porque no es más
+   explicación del problema: es el puente a la capa que lo resuelve. */
 .razon__respuesta {
   margin-top: 10px !important;
   padding-left: 12px;
@@ -2907,7 +2907,7 @@ a:hover {
 }
 
 /* Que hace el sistema que un Excel no puede. Sin este bloque el lector
-   entiende el problema pero no por que la solucion es distinta. */
+   entiende el problema pero no por que la solución es distinta. */
 .problema__solucion {
   margin-top: clamp(52px, 7vw, 92px);
   padding-top: clamp(28px, 4vw, 44px);
@@ -3118,7 +3118,7 @@ a:hover {
 }
 
 /* Lectura de cada grafica: que se observa, en prosa. Un panel sin lectura
-   obliga al lector a deducir la conclusion por su cuenta. */
+   obliga al lector a deducir la conclusión por su cuenta. */
 .chart-lectura {
   margin: 16px 0 0;
   padding-top: 14px;

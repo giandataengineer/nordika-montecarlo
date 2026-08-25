@@ -335,7 +335,7 @@ NUMERIC = [
 
 FEATURES = CATEGORICAL + NUMERIC
 
-# Proporcion de la ventana temporal reservada para validacion.
+# Proporción de la ventana temporal reservada para validación.
 TEST_FRACTION = 0.25
 
 
@@ -432,7 +432,7 @@ def estimate_historical_parameters(df: pd.DataFrame, conversion_model: Pipeline,
         delta = value1 - value0
 
         # El uplift medio por si solo no dice si el efecto sobrevive a otra muestra
-        # de oportunidades. El intervalo si, y ademas deja ver cuando cruza el cero.
+        # de oportunidades. El intervalo si, y además deja ver cuando cruza el cero.
         try:
             from analitica_avanzada import intervalo_uplift
 
@@ -535,10 +535,10 @@ def scenario_frames(base: pd.DataFrame, rng: np.random.Generator) -> dict[str, t
     return scenarios
 
 
-# Calibracion de los tres ruidos por decision, extraida del cuerpo del bucle
-# para poder escalarla desde fuera y auditar de que depende la conclusion.
+# Calibración de los tres ruidos por decisión, extraida del cuerpo del bucle
+# para poder escalarla desde fuera y auditar de que depende la conclusión.
 # (mu, sigma) de la lognormal de incertidumbre; valores y pesos del retraso de
-# ejecucion; suelo y proporcion del ruido residual.
+# ejecución; suelo y proporción del ruido residual.
 NOISE_PROFILES: dict[str, dict[str, object]] = {
     "Abrir categoría nueva": {
         "uncertainty": (-0.90, 1.38),
@@ -1189,7 +1189,7 @@ def evaluate(df: pd.DataFrame, params: pd.DataFrame, summary: pd.DataFrame, auc:
             summary.iloc[0]["decision"] == "Optimizar la conversión del sitio"
             and by_decision.loc[summary.iloc[0]["decision"], "p10_usd"] > 0
             and by_decision.loc[summary.iloc[0]["decision"], "probability_loss"] < 0.01
-            # la apuesta de producto es la mas dispersa y la que mas pierde
+            # la apuesta de producto es la más dispersa y la que más pierde
             and by_decision.loc["Abrir categoría nueva", "probability_loss"] > 0.18
             and (
                 by_decision.loc["Abrir categoría nueva", "p90_usd"]

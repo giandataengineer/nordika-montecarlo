@@ -18,10 +18,10 @@ import numpy as np
 import pandas as pd
 
 
-# 1. Guardarrail de coherencia entre narrativa y numeros
+# 1. Guardarrail de coherencia entre narrativa y números
 
-# Cada regla es: (patron que aparece en el texto, condicion que lo haria falso,
-# explicacion de por que se retira). El patron se busca sin acentos ni mayusculas.
+# Cada regla es: (patron que aparece en el texto, condición que lo haría falso,
+# explicación de por que se retira). El patron se busca sin acentos ni mayusculas.
 _REGLAS: list[tuple[str, Callable[[dict[str, float]], bool], str]] = [
     (
         r"suelo positivo",
@@ -246,7 +246,7 @@ def estabilidad_ranking(
     }
 
 
-# 4. Sensibilidad a la calibracion de los tres ruidos
+# 4. Sensibilidad a la calibración de los tres ruidos
 
 def sensibilidad_ruidos(
     simular: Callable[[float, float, float], pd.DataFrame],
@@ -298,9 +298,9 @@ def sensibilidad_ruidos(
     }
 
 
-# 5. Valor esperado de la informacion perfecta
+# 5. Valor esperado de la información perfecta
 
-# TODO: revisar si el EVPI aguanta bien con mas de cuatro decisiones
+# TODO: revisar si el EVPI aguanta bien con más de cuatro decisiones
 def valor_informacion(matriz_escenarios: dict[str, np.ndarray]) -> dict[str, Any]:
     """EVPI: cuanto vale saber de antemano como va a salir el futuro.
 
@@ -387,7 +387,7 @@ def _autocomprobacion() -> None:
     assert evpi["evpi"] > 0
     assert 0 <= evpi["acierto_de_la_apuesta"] <= 1
 
-    # una opcion que domina a la otra en todos los escenarios no deja valor a la informacion
+    # una opción que domina a la otra en todos los escenarios no deja valor a la información
     dominante = valor_informacion({"A": np.full(1000, 100.0), "B": np.full(1000, 10.0)})
     assert abs(dominante["evpi"]) < 1e-9, dominante
 

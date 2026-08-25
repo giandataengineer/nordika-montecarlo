@@ -159,7 +159,7 @@ export default function App() {
 
       <Footer
         fases={listaFases}
-        meta={summary ? `${summary.period_start} - ${summary.period_end} · ${fmtInt(summary.rows)} registros` : "Decision Intelligence"}
+        meta={summary ? `${summary.period_start} - ${summary.period_end} · ${fmtInt(summary.rows)} registros` : "Decisión Intelligence"}
       />
     </div>
   );

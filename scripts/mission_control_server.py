@@ -115,7 +115,7 @@ class MissionRuntime:
             _debug_log("worker_start_skipped", reason="preparation_not_ready")
             return False
         self.preparation.launch_requested = False
-        _reset_live_status("Lanzando simulacion Monte Carlo.")
+        _reset_live_status("Lanzando simulación Monte Carlo.")
         self.worker = threading.Thread(target=self._run_montecarlo_worker, daemon=True)
         self.worker.start()
         _debug_log("worker_started", total_simulations=N_SIMULATIONS)
@@ -186,7 +186,7 @@ class MissionRuntime:
                 self.preparation.ready = False
                 self.preparation.preparing = False
                 self.preparation.launch_requested = False
-                self.preparation.error = "No se pudo preparar el entorno de simulacion."
+                self.preparation.error = "No se pudo preparar el entorno de simulación."
             _debug_log(
                 "prepare_failed",
                 duration_ms=round((time.perf_counter() - started_at) * 1000, 2),
@@ -244,7 +244,7 @@ class MissionRuntime:
             _write_preparing_status(
                 current_simulation=0,
                 total_simulations=N_SIMULATIONS,
-                message="Preparacion incompleta. Reintentando precalculo.",
+                message="Preparación incompleta. Reintentando precalculo.",
             )
             with self.lock:
                 self.preparation.launch_requested = True
@@ -308,7 +308,7 @@ class MissionRuntime:
         with self.lock:
             if self.worker is not None and self.worker.is_alive():
                 # no se interrumpe una corrida en curso, solo se limpia el
-                # resultado de la anterior para permitir relanzar despues.
+                # resultado de la anterior para permitir relanzar después.
                 return
             self.worker = None
             self.completed = False
@@ -329,8 +329,8 @@ RUNTIME = MissionRuntime()
 
 # _build_payload() re-entrena ambos modelos de ML desde cero cada vez que se
 # llama (reentrenar cuesta segundos, y antes se llamaba en cada cambio de
-# fase). El payload solo cambia de verdad cuando termina una simulacion
-# nueva, asi que se cachea aca y se invalida explicitamente en ese momento.
+# fase). El payload solo cambia de verdad cuando termina una simulación
+# nueva, así que se cachea aca y se invalida explicitamente en ese momento.
 _payload_cache: dict[str, Any] | None = None
 _payload_cache_lock = threading.Lock()
 
@@ -444,9 +444,9 @@ def _stage_response(stage_key: str) -> dict[str, Any]:
             "delay_ms": stage["duration_ms"],
             "payload": payload,
             "logs": [
-                "> aplicacion inicializada correctamente",
+                "> aplicación inicializada correctamente",
                 "> backend conectado y payload sincronizado",
-                "> entorno listo para recorrer el analisis completo",
+                "> entorno listo para recorrer el análisis completo",
             ],
         }
 
@@ -459,7 +459,7 @@ def _stage_response(stage_key: str) -> dict[str, Any]:
             "delay_ms": stage["duration_ms"],
             "payload": payload,
             "logs": [
-                "> cargando base historica del caso",
+                "> cargando base histórica del caso",
                 f"> registros disponibles: {summary['rows']:,}",
                 f"> periodo cubierto: {summary['period_start']} -> {summary['period_end']}",
                 f"> conversion observada: {summary['conversion_rate']:.1%}",
@@ -475,7 +475,7 @@ def _stage_response(stage_key: str) -> dict[str, Any]:
             "delay_ms": stage["duration_ms"],
             "payload": payload,
             "logs": [
-                "> ejecutando los modelos de evaluacion",
+                "> ejecutando los modelos de evaluación",
                 *[
                     f"> {row['label']}: conversion esperada {row['scenario_conversion']:.1%}"
                     for row in uplift
@@ -487,25 +487,25 @@ def _stage_response(stage_key: str) -> dict[str, Any]:
         launch = RUNTIME.start_montecarlo()
         status = _read_live_status()
         prep = RUNTIME.preparation_info()
-        logs = ["> activando simulacion Monte Carlo"]
+        logs = ["> activando simulación Monte Carlo"]
         if launch["status"] == "preparing":
             logs.extend(
                 [
                     "> precalculando dataset y modelos en memoria",
-                    "> el panel live se activara en cuanto arranque la simulacion real",
+                    "> el panel live se activara en cuanto arranque la simulación real",
                 ]
             )
         elif launch["status"] == "completed":
             logs.extend(
                 [
-                    "> simulacion ya ejecutada en esta sesion",
+                    "> simulación ya ejecutada en esta sesión",
                     "> mostrando los 10.000 escenarios calculados previamente",
                 ]
             )
         else:
             logs.extend(
                 [
-                    "> simulacion lanzada correctamente",
+                    "> simulación lanzada correctamente",
                     "> objetivo: 10.000 escenarios en 40 segundos",
                 ]
             )
@@ -538,7 +538,7 @@ def _stage_response(stage_key: str) -> dict[str, Any]:
                 "> consolidando el ranking final",
                 f"> mejor alternativa: {recommendation['decision']}",
                 f"> beneficio esperado: {recommendation['expected_profit_usd']:,.0f} USD",
-                "> recomendacion ejecutiva lista para presentacion",
+                "> recomendación ejecutiva lista para presentación",
             ],
         }
 
@@ -581,9 +581,9 @@ def _montecarlo_status_response() -> dict[str, Any]:
         "phase": live_status.get("phase", "idle"),
         "status_message": live_status.get("status_message", ""),
         "leader": leader,
-        # El leaderboard completo y las ultimas iteraciones son lo que permite
+        # El leaderboard completo y las últimas iteraciones son lo que permite
         # que las graficas del panel se muevan con datos reales durante la
-        # simulacion, en vez de quedarse quietas hasta el final.
+        # simulación, en vez de quedarse quietas hasta el final.
         "leaderboard": live_status.get("leaderboard") or [],
         "recent_runs": live_status.get("recent_runs") or [],
         "live_dashboard": f"dashboards/{LIVE_DASHBOARD_PATH.name}",
@@ -592,9 +592,9 @@ def _montecarlo_status_response() -> dict[str, Any]:
     }
 
 
-# Unico arbol que el servidor puede entregar. Todo lo demas (.env, scripts/,
-# datos/, .venv/) queda fuera del alcance de una peticion HTTP.
-# Sin esto, /api/stage lanza 10.000 simulaciones por peticion y encadenar
+# Único arbol que el servidor puede entregar. Todo lo demas (.env, scripts/,
+# datos/, .venv/) queda fuera del alcance de una petición HTTP.
+# Sin esto, /api/stage lanza 10.000 simulaciones por petición y encadenar
 # reset+stage en bucle deja la maquina al 100 % de CPU indefinidamente, gratis
 # para quien ataca. Ventana deslizante en memoria: suficiente para un solo
 # proceso, que es como corre esto.
@@ -647,7 +647,7 @@ class MissionControlHandler(SimpleHTTPRequestHandler):
 
     def end_headers(self) -> None:
         # servidor local de desarrollo: nunca cachear, para que un refresh
-        # normal (o el navegador reusando pestaña) siempre traiga lo ultimo.
+        # normal (o el navegador reusando pestaña) siempre traiga lo último.
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
         self.send_header("Pragma", "no-cache")
         # cabeceras de seguridad: sin estas el navegador adivina tipos MIME y
@@ -708,7 +708,7 @@ class MissionControlHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         # self.path puede traer query string (?v=... para cache-busting,
         # ?ts=... del iframe live). Las rutas especiales se comparan sin ella
-        # para que nunca se rompan por un parametro de mas.
+        # para que nunca se rompan por un parámetro de más.
         route_path = urlsplit(self.path).path
 
         if route_path in {"/", "/index.html"}:
@@ -754,7 +754,7 @@ class MissionControlHandler(SimpleHTTPRequestHandler):
         return
 
     def do_POST(self) -> None:
-        # una sola puerta para los tres POST: limite de tasa y cuerpo valido
+        # una sola puerta para los tres POST: límite de tasa y cuerpo valido
         if _supera_limite(self.client_address[0]):
             self._send_json(
                 {"status": "error", "error": "Demasiadas solicitudes"},
@@ -831,7 +831,7 @@ def serve(host: str = HOST, port: int = PORT) -> None:
     _reset_live_status()
     RUNTIME.ensure_prepared_async()
     server = ThreadingHTTPServer((host, port), MissionControlHandler)
-    print(f"Mission Control en http://{host}:{port}")
+    print(f"Missión Control en http://{host}:{port}")
     print(f"Debug log en {DEBUG_LOG_PATH}")
     _debug_log("server_started", host=host, port=port, cwd=str(PROJECT_ROOT), python=os.sys.executable)
     try:

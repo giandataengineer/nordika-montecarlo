@@ -21,7 +21,7 @@ const STATES = [
   { key: "reporte", verb: "Decide", tailKey: "roles", Icon: IconDecide, coords: ["8.1091° S", "79.0215° O"] },
 ];
 
-/* Solo lo que el proyecto usa de verdad. Antes aparecian FastAPI y SciPy y
+/* Solo lo que el proyecto usa de verdad. Antes aparecían FastAPI y SciPy y
    ninguna de las dos esta importada en el codigo: el servidor es
    http.server de la biblioteca estandar y SciPy no se usa en ningun sitio.
    Afirmar una dependencia que no existe es lo primero que se cae si alguien

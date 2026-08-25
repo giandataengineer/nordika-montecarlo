@@ -70,7 +70,7 @@ UPLIFT_EXPLANATIONS = {
 }
 
 # Nombre del operador del caso. Es ficticio a proposito: los datos son
-# sinteticos y ninguna instalacion real esta detras. Cambiarlo aqui lo cambia
+# sinteticos y ninguna instalación real esta detras. Cambiarlo aquí lo cambia
 # en toda la consola.
 OPERADOR = "Nordika"
 UNIDAD = "captación de pago"
@@ -211,7 +211,7 @@ def _analisis_avanzado(simulations, summary, dataset, conversion_model, aov_mode
     evpi = valor_informacion(escenarios)
 
     # Estabilidad: re-muestrea escenarios de la propia matriz. Cada replica es una
-    # realizacion alternativa del mismo experimento, sin reentrenar nada.
+    # realización alternativa del mismo experimento, sin reentrenar nada.
     n_cols = matriz.shape[1]
     nombres = list(matriz.index)
 
@@ -258,9 +258,9 @@ def _lecturas_multirol(top_summary, important_uplift, avanzado) -> dict:
 def _capa_sql() -> dict[str, Any]:
     """Las consultas de sql/*.sql con su resultado, para enseñarlas en la web.
 
-    La capa SQL existia desde el principio pero no se veia en ningun sitio:
-    quien abria la consola no sabia que el analisis descriptivo estaba resuelto
-    con DuckDB, CTEs y funciones de ventana. Aqui viaja el texto de cada
+    La capa SQL existia desde el principio pero no se veía en ningun sitio:
+    quien abría la consola no sabía que el análisis descriptivo estaba resuelto
+    con DuckDB, CTEs y funciones de ventana. Aquí viaja el texto de cada
     consulta junto a las filas que devuelve, para que se lea una al lado de la
     otra.
     """
@@ -335,8 +335,8 @@ def _build_payload() -> dict:
     conversion_model, auc = build_conversion_model(dataset)
 
     # Mismo corte temporal que usa build_conversion_model. Antes cada archivo
-    # rehacia su propio train_test_split con los mismos parametros: coincidian
-    # por casualidad, y bastaba tocar uno para que las metricas pasaran a
+    # rehacía su propio train_test_split con los mismos parámetros: coincidían
+    # por casualidad, y bastaba tocar uno para que las métricas pasaran a
     # calcularse sobre datos de entrenamiento sin que nada avisara.
     conversion_train, conversion_test = temporal_split(dataset)
     conversion_scores = conversion_model.predict_proba(conversion_test[FEATURES])[:, 1]
@@ -404,7 +404,7 @@ def _build_payload() -> dict:
       )[
         [
           "ranking",
-          "decision",
+          "decisión",
           "beneficio_esperado_usd",
           "p10_usd",
           "p50_usd",
@@ -415,8 +415,8 @@ def _build_payload() -> dict:
       ]
       .copy()
     )
-    # La memo imprime esta columna como porcentaje, asi que se convierte aqui:
-    # dejarla en fraccion hacia que un 17% de riesgo se leyese como 0,2%.
+    # La memo imprime esta columna como porcentaje, así que se convierte aquí:
+    # dejarla en fracción hacía que un 17% de riesgo se leyese como 0,2%.
     summary_snapshot_df["probabilidad_perdida"] = (
       summary_snapshot_df["probabilidad_perdida"] * 100
     ).round(1)
@@ -445,7 +445,7 @@ def _build_payload() -> dict:
 
     recommendation = {
       "headline": agent_memo["headline"],
-        "decision": best["decision"],
+        "decisión": best["decisión"],
         "expected_profit_usd": float(best["expected_profit_usd"]),
         "expected_roi": float(best["expected_roi"]),
         "probability_loss": float(best["probability_loss"]),
@@ -524,7 +524,7 @@ def _build_payload() -> dict:
           "avg_predicted_prob": float(conversion_scores.mean()),
           "gain_chart": gain_chart,
         },
-        "regression": {
+        "regressión": {
           "name": "Gradient Boosting Regressor",
           "purpose": "Estima el ticket esperado de la oportunidad para traducir la conversión en dólares.",
           "mae_usd": float(mean_absolute_error(sold_test["aov_usd"], aov_pred)),
@@ -591,7 +591,7 @@ HTML_TEMPLATE = """<!doctype html>
       --font-display: "IBM Plex Mono", "SFMono-Regular", Menlo, monospace;
       --font-text: "Inter", -apple-system, "Segoe UI", sans-serif;
     }
-    /* rotacion de acento por fase, tomada del hero rotativo de legend.xyz */
+    /* rotación de acento por fase, tomada del hero rotativo de legend.xyz */
     [data-phase-accent="briefing"] { --phase-accent: var(--accent); }
     [data-phase-accent="ingesta"] { --phase-accent: var(--blue); }
     [data-phase-accent="uplift"] { --phase-accent: var(--pink); }
@@ -608,7 +608,7 @@ HTML_TEMPLATE = """<!doctype html>
       position: relative;
     }
     /* grid editorial de 3 columnas con divisores 1px, la firma visual de
-       legend.xyz: sensacion de papel cuadriculado detras de todo el contenido */
+       legend.xyz: sensación de papel cuadriculado detras de todo el contenido */
     body::before {
       content: "";
       position: fixed;
@@ -680,7 +680,7 @@ HTML_TEMPLATE = """<!doctype html>
       font-weight: 500;
       letter-spacing: -0.025em;
     }
-    /* etiquetas tecnicas: unico lugar donde vive la mono, como legend.xyz */
+    /* etiquetas tecnicas: único lugar donde vive la mono, como legend.xyz */
     .eyebrow, .stage-index, .hero-coord, .ticker-item, .topbar,
     .metric-label, .hud-chip-label, .footer-meta, .status-chip {
       font-family: var(--font-display);
@@ -779,7 +779,7 @@ HTML_TEMPLATE = """<!doctype html>
       text-transform: uppercase;
       color: #8f8f8f;
     }
-    /* ticker de metricas reales, mismo patron que el marquee de logos de
+    /* ticker de métricas reales, mismo patron que el marquee de logos de
        partners de legend.xyz, pero con datos del caso en vez de logos */
     .ticker {
       margin-top: 18px;
@@ -929,7 +929,7 @@ HTML_TEMPLATE = """<!doctype html>
       line-height: 1.45;
     }
     .console {
-      /* bloque oscuro deliberado, seccion "core actions" al estilo legend.xyz:
+      /* bloque oscuro deliberado, sección "core actions" al estilo legend.xyz:
          contraste editorial claro/oscuro, no es un accidente de tema */
       padding: 18px;
       min-height: 220px;
@@ -996,7 +996,7 @@ HTML_TEMPLATE = """<!doctype html>
       gap: 10px;
       flex-wrap: wrap;
     }
-    /* pastilla ghost/outline (secundario), como pide la guia legend.xyz */
+    /* pastilla ghost/outline (secundario), como pide la guía legend.xyz */
     .action {
       border: 1px solid var(--line);
       background: transparent;
@@ -1017,7 +1017,7 @@ HTML_TEMPLATE = """<!doctype html>
       opacity: 0.45;
       cursor: wait;
     }
-    /* pastilla negra solida (primario), como pide la guia legend.xyz */
+    /* pastilla negra solida (primario), como pide la guía legend.xyz */
     .action-primary {
       background: var(--ink);
       border-color: var(--ink);
@@ -1889,7 +1889,7 @@ HTML_TEMPLATE = """<!doctype html>
     const API_BASE = window.location.protocol.startsWith('http') ? window.location.origin : '';
     const BACKEND_ENABLED = Boolean(API_BASE);
     const PRECOMPUTED_STAGE_KEYS = new Set(['briefing', 'ingesta', 'uplift']);
-    // briefing/ingesta/uplift no dependen de ejecucion real (son datos ya
+    // briefing/ingesta/uplift no dependen de ejecución real (son datos ya
     // calculados), se marcan "done" desde el arranque para que la fase 4
     // (montecarlo) nunca aparezca bloqueada por una carrera con hydratePayload.
     const stageStatusInicial = {};
@@ -2427,7 +2427,7 @@ HTML_TEMPLATE = """<!doctype html>
           state.stageStatus.montecarlo = { running: true, done: false };
           beginMontecarloPolling();
         } else if (live.completed) {
-          // la simulacion ya termino en una sesion anterior del servidor:
+          // la simulación ya termino en una sesión anterior del servidor:
           // se recupera el estado "done" en vez de dejar la fase bloqueada.
           setMontecarloPlaceholder(false);
           state.stageStatus.montecarlo = { running: false, done: true };
@@ -2442,7 +2442,7 @@ HTML_TEMPLATE = """<!doctype html>
       const stage = asArray(PAYLOAD.stages).find((item) => item.key === stageKey);
       if (!stage) return;
 
-      // fase todavia no alcanzable (la anterior no ha terminado): en vez de
+      // fase todavía no alcanzable (la anterior no ha terminado): en vez de
       // no hacer nada, se explica por que con un modal.
       if (!options.fromWaitModal && isStageLocked(stageKey)) {
         showWaitModal(stageKey);
@@ -2450,7 +2450,7 @@ HTML_TEMPLATE = """<!doctype html>
       }
 
       // montecarlo ya corriendo o ya terminado: solo muestra el panel, nunca
-      // relanza la simulacion desde 0% por un click repetido.
+      // relanza la simulación desde 0% por un click repetido.
       if (stageKey === 'montecarlo') {
         const mcStatus = state.stageStatus.montecarlo || {};
         if (mcStatus.running || mcStatus.done) {
@@ -2547,7 +2547,7 @@ HTML_TEMPLATE = """<!doctype html>
 
     function typewriteText(el, text) {
       // efecto maquina de escribir, como el modal "a note from us" de
-      // legend.xyz. se salta la animacion si el usuario pide menos movimiento.
+      // legend.xyz. se salta la animación si el usuario pide menos movimiento.
       if (el._typewriteTimer) clearInterval(el._typewriteTimer);
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if (reduce) {
@@ -2592,7 +2592,7 @@ HTML_TEMPLATE = """<!doctype html>
       const mcStatus = state.stageStatus.montecarlo || {};
       updateWaitModalProgress(0, Boolean(mcStatus.running));
       if (waitingOnMontecarlo && !mcStatus.running && !mcStatus.done) {
-        // la simulacion ni siquiera se ha lanzado todavia: lanzarla ahora
+        // la simulación ni siquiera se ha lanzado todavía: lanzarla ahora
         // para que el usuario no tenga que cerrar el modal y hacerlo aparte.
         runStage('montecarlo');
       }
@@ -2719,7 +2719,7 @@ HTML_TEMPLATE = """<!doctype html>
         return;
       }
       // limpia el estado local de montecarlo y reporte (el informe depende
-      // de la simulacion anterior, ya no es valido) y relanza desde 0%.
+      // de la simulación anterior, ya no es valido) y relanza desde 0%.
       state.stageStatus.montecarlo = { running: false, done: false };
       state.stageStatus.reporte = { running: false, done: false };
       updateStageDecorators();

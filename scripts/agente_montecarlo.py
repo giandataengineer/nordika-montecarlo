@@ -610,9 +610,9 @@ def _fallback_agent_memo(summary_json: str, uplift_json: str) -> dict[str, Any]:
     if reactivacion_row and reactivacion_row.get("uplift_conversion_pct") is not None:
         reactivacion_uplift = float(reactivacion_row["uplift_conversion_pct"])
 
-    # El P10 y la probabilidad de perdida de la segunda opcion se leen del
+    # El P10 y la probabilidad de pérdida de la segunda opción se leen del
     # ranking en vez de darse por supuestos: el caso base afirmaba "0.0% de
-    # perdida" en texto fijo y eso era falso en cuanto cambiaban los datos.
+    # pérdida" en texto fijo y eso era falso en cuanto cambiaban los datos.
     second_p10 = float(second["p10_usd"])
     second_loss = float(second.get("probabilidad_perdida", 0.0))
     second_perfil = (

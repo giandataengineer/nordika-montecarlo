@@ -1,6 +1,6 @@
-/* Cierre. Version corta: la decision, por que gana, que costaria equivocarse y
+/* Cierre. Versión corta: la decisión, por que gana, que costaria equivocarse y
    que la invalidaria. Antes eran diez preguntas respondidas una a una, unas 900
-   palabras. Quien revisa el proyecto ya vio el ranking y la distribucion dos
+   palabras. Quien revisa el proyecto ya vio el ranking y la distribución dos
    secciones antes; repetirlo en prosa no aportaba nada. */
 
 export function Respuestas({ payload }) {

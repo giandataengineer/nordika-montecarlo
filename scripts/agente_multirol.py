@@ -23,8 +23,8 @@ from pathlib import Path
 from typing import Any
 
 # Las lecturas se guardan en disco con la huella del ranking que las produjo.
-# Sin esto, cada reconstruccion del payload relanzaba tres llamadas y los
-# tier gratuitos se agotan en minutos: el 429 no venia del proveedor, venia
+# Sin esto, cada reconstrucción del payload relanzaba tres llamadas y los
+# tier gratuitos se agotan en minutos: el 429 no venía del proveedor, venía
 # de consultar lo mismo una y otra vez.
 CACHE_PATH = Path(__file__).resolve().parent.parent / "data" / "lecturas_multirol.json"
 
@@ -60,19 +60,19 @@ def _escribir_cache(huella: str, resultado: dict[str, Any]) -> None:
         pass
 
 # ---------------------------------------------------------------------------
-# Proveedores. Los tres hablan el protocolo de OpenAI, asi que solo cambian
+# Proveedores. Los tres hablan el protocolo de OpenAI, así que solo cambian
 # la clave, la base_url y el modelo por defecto.
 # ---------------------------------------------------------------------------
 # Los modelos se eligen de FAMILIAS distintas a proposito: si los tres roles
 # corrieran sobre el mismo modelo compartirian sesgos y coincidirian siempre,
-# que es justo lo que hacia decorativa la pantalla de "tres angulos".
+# que es justo lo que hacía decorativa la pantalla de "tres angulos".
 # Reparto comprobado contra las APIs reales en agosto de 2026:
 #   CEO    -> Groq / Qwen 3.6          (Alibaba)
 #   Growth -> OpenRouter / Nemotron 3    (NVIDIA)
 #   Riesgo -> Gemini / 3.6 Flash         (Google)
-# Un proveedor distinto por rol: con dos roles en el mismo se agotaba su limite
+# Un proveedor distinto por rol: con dos roles en el mismo se agotaba su límite
 # por minuto y los dos caian a la vez. Cerebras queda configurado pero su free
-# tier devuelve 402 sin facturacion activada.
+# tier devuelve 402 sin facturación activada.
 PROVEEDORES: dict[str, dict[str, str]] = {
     "groq": {
         "env_key": "GROQ_API_KEY",
@@ -154,7 +154,7 @@ PROVEEDORES: dict[str, dict[str, str]] = {
         "modelo": "llama-3.3-70b-instruct",
         "env_modelo": "SCALEWAY_MODEL",
     },
-    # ultimo recurso: si solo hay una clave, los tres roles la comparten y el
+    # último recurso: si solo hay una clave, los tres roles la comparten y el
     # agregador avisa de que el desacuerdo vale menos
     "openai": {
         "env_key": "OPENAI_API_KEY",
@@ -166,7 +166,7 @@ PROVEEDORES: dict[str, dict[str, str]] = {
 
 # ---------------------------------------------------------------------------
 # Catalogo de respaldo. Comprobado contra las APIs reales en agosto de 2026.
-# El orden dentro de cada proveedor va de mas capaz a mas ligero: si el primero
+# El orden dentro de cada proveedor va de más capaz a más ligero: si el primero
 # esta saturado se baja de escalon en vez de rendirse.
 # ---------------------------------------------------------------------------
 CATALOGO: dict[str, list[str]] = {
@@ -211,7 +211,7 @@ CATALOGO: dict[str, list[str]] = {
         "gpt-oss-120b",
         "gemma-4-31b",
     ],
-    # un alias por familia. La API acepta ademas las versiones fechadas
+    # un alias por familia. La API acepta además las versiones fechadas
     # (mistral-large-2512, mistral-medium-2604...), pero apuntan al mismo modelo
     # que su -latest: sumarlas inflaria la cuenta de "modelos independientes"
     # con lo que en realidad es una sola opinion repetida.
@@ -513,7 +513,7 @@ def _sin_vallas(texto: str) -> str:
 
     # Un <think> sin cerrar significa que el modelo agoto su presupuesto pensando
     # y nunca llego a emitir el JSON. Rescatar el primer "{...}" de ahi dentro
-    # produce basura, asi que se marca como truncado y el rol cae al determinista.
+    # produce basura, así que se marca como truncado y el rol cae al determinista.
     if "<think>" in texto and "</think>" not in texto:
         raise ValueError("respuesta truncada: el modelo no cerro su bloque de razonamiento")
     limpio = _re.sub(r"<think>.*?</think>", "", texto, flags=_re.DOTALL).strip()
@@ -524,7 +524,7 @@ def _sin_vallas(texto: str) -> str:
             if limpio.lstrip().startswith("json"):
                 limpio = limpio.lstrip()[4:]
     limpio = limpio.strip()
-    # ultimo recurso: quedarse con el primer objeto JSON que aparezca
+    # último recurso: quedarse con el primer objeto JSON que aparezca
     if not limpio.startswith("{"):
         i, j = limpio.find("{"), limpio.rfind("}")
         if i != -1 and j > i:
@@ -619,7 +619,7 @@ def lecturas_multirol(
         if salida.get("modelo"):
             usados.add(salida["modelo"])
         if salida.get("fuente") == "llm":
-            # el guardarrail se aplica tambien a lo que escribe el modelo
+            # el guardarrail se aplica también a lo que escribe el modelo
             revisado = coherencia_informe(salida, ranking)
             salida = revisado["informe"]
             salida["coherencia"] = {
@@ -660,7 +660,7 @@ def _autocomprobacion() -> None:
             if v is not None:
                 os.environ[k] = v
 
-    # consenso con proveedores distintos vale mas que con el mismo
+    # consenso con proveedores distintos vale más que con el mismo
     # mismo modelo en los dos roles: la coincidencia no informa
     iguales = [
         {"rol": "ceo", "fuente": "llm", "proveedor": "groq", "modelo": "qwen", "decision_elegida": "Optimizar la conversión del sitio"},

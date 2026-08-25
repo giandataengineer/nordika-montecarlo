@@ -1,7 +1,7 @@
 import { MarcaFase } from "./MarcaFase";
 
-/* Fase 01. Version corta.
-   Tenia enunciado largo, diez preguntas, tres razones y tres capacidades: unas
+/* Fase 01. Versión corta.
+   Tenía enunciado largo, diez preguntas, tres razones y tres capacidades: unas
    1.600 palabras antes de la primera cifra. Quien revisa el proyecto quiere el
    problema, el mecanismo y el coste de equivocarse, y lo quiere en la primera
    pantalla. Lo demas vive en el README. */

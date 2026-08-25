@@ -1,10 +1,10 @@
 import { Panel } from "./Blocks";
 
 /* La capa SQL, a la vista.
-   Estaba en el repo desde el principio y no se veia en la consola: quien abria
-   la pagina no sabia que el analisis descriptivo salia de DuckDB con CTEs y
+   Estaba en el repo desde el principio y no se veía en la consola: quien abría
+   la pagina no sabía que el análisis descriptivo salía de DuckDB con CTEs y
    funciones de ventana. Se enseña la consulta al lado de su resultado, que es
-   la unica forma de que se lea como trabajo y no como una linea del stack. */
+   la única forma de que se lea como trabajo y no como una linea del stack. */
 
 function Tabla({ columnas, filas }) {
   const fmt = (v) => {

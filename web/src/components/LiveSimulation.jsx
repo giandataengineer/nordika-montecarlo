@@ -33,7 +33,7 @@ function Caja({ active, payload, label, sufijo }) {
 
 /* Cada alternativa es un contacto en un radar: el punto solido con su anillo
    de barrido girando y un pulso que se expande. Mientras corre la simulación
-   el barrido va mas rapido, porque hay mas contactos entrando. */
+   el barrido va más rápido, porque hay más contactos entrando. */
 /* Cada alternativa lleva su propio radar: el barrido gira sobre el punto y
    deja un eco que se expande. Se dibuja desde el origen dentro de un <g>
    trasladado, porque un transform-origin en píxeles sobre un <g> de SVG no
@@ -168,7 +168,7 @@ export function LiveSimulation({ payload, sim }) {
 
   return (
     <div className="stack">
-      <Panel eyebrow="Mission control" title={sim.corriendo ? "Simulación en directo" : "Simulación completada"}>
+      <Panel eyebrow="Missión control" title={sim.corriendo ? "Simulación en directo" : "Simulación completada"}>
         <p className="panel__copy">
           Cada punto del recorrido es un futuro distinto. El progreso y las cifras se
           calculan en el propio navegador, sobre el motor que exporta Python, así que lo

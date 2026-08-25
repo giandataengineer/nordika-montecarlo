@@ -37,12 +37,12 @@ def test_dataset_tiene_forma_esperada(df):
 
 
 def test_sin_nulos_en_las_features(df):
-    # un NaN aqui revienta LogisticRegression en tiempo de entrenamiento
+    # un NaN aquí revienta Logisticregressión en tiempo de entrenamiento
     assert df[FEATURES].isna().sum().sum() == 0
 
 
 def test_no_hay_fuga_del_objetivo(df):
-    # estas columnas se calculan DESPUES de saber si convirtio
+    # estas columnas se calculan Después de saber si convirtio
     posteriores = {
         "aov_usd",
         "revenue_usd",
@@ -61,7 +61,7 @@ def test_el_corte_es_temporal_no_aleatorio(df):
 
 
 def test_tiktok_es_canal_pagado(df):
-    # el caso trata sobre reparto de inversion: TikTok tiene que tener presupuesto
+    # el caso trata sobre reparto de inversión: TikTok tiene que tener presupuesto
     tiktok = df[df["channel"] == "TikTok Ads"]
     assert len(tiktok) > 1000
     assert (tiktok["ad_budget_level"] != "organic_or_owned").all()
@@ -72,7 +72,7 @@ def test_la_saturacion_degrada_la_calidad(df):
     pagados = df[df["ad_budget_level"] != "organic_or_owned"]
     calidad = pagados.groupby("ad_budget_level")["lead_score"].mean()
     conversion = pagados.groupby("ad_budget_level")["converted_to_sale"].mean()
-    # el hallazgo central: al saturar, la calidad y la conversion caen
+    # el hallazgo central: al saturar, la calidad y la conversión caen
     assert calidad["saturated"] < calidad["medium"]
     assert conversion["saturated"] < conversion["medium"]
 
@@ -118,10 +118,10 @@ class TestGuardarrail:
         ]
         informe = {
             "headline": "Abrir categoría nueva tiene suelo positivo en P10",
-            "reasons": ["El suelo es positivo y la perdida es practicamente nula"],
+            "reasons": ["El suelo es positivo y la pérdida es practicamente nula"],
         }
         limpio = coherencia_informe(informe, ranking)
-        assert limpio["incidencias"], "deberia haber detectado la contradiccion"
+        assert limpio["incidencias"], "debería haber detectado la contradicción"
 
     def test_deja_pasar_lo_que_si_cuadra(self):
         ranking = [

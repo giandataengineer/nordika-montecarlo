@@ -22,7 +22,7 @@ SALIDA = PROJECT_ROOT / "datos" / "distribucion_escenarios.png"
 
 COLORES = {
     "Ventana conservadora": "#158a5c",
-    "Servicios de regulacion": "#2f80ed",
+    "Servicios de regulación": "#2f80ed",
     "Arbitraje agresivo": "#d9531e",
     "Hibrido certificado": "#7c3aed",
 }
@@ -63,10 +63,10 @@ def dibujar(destino: Path = SALIDA) -> Path:
     ax.text(4, tope * 0.055, "gana dinero", fontsize=11, color="#117a50",
             ha="left", weight="bold")
 
-    ax.set_xlabel("Resultado del ano, en miles de dolares", fontsize=11, color="#131313")
+    ax.set_xlabel("Resultado del ano, en miles de dólares", fontsize=11, color="#131313")
     ax.set_ylabel("Escenarios", fontsize=11, color="#131313")
     ax.set_title(
-        "10.000 futuros simulados por estrategia de operacion",
+        "10.000 futuros simulados por estrategia de operación",
         fontsize=16, color="#131313", pad=16, loc="left", weight="bold",
     )
 

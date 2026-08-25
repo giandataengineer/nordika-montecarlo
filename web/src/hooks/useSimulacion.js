@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { simular } from "../lib/montecarlo";
 
-/* Estado unico de la simulacion para toda la pagina.
+/* Estado único de la simulación para toda la pagina.
 
    Tres estados reales:
 
      espera    -> aun no se ha lanzado: no se enseña ningun resultado
      corriendo -> llegan resultados parciales y las graficas se mueven
-     lista     -> los 10.000 escenarios estan hechos
+     lista     -> los 10.000 escenarios están hechos
 
-   La simulacion corre en el navegador. Los modelos de ML se entrenan en
-   Python y exportan el valor esperado de cada oportunidad a motor.json; aqui solo
+   La simulación corre en el navegador. Los modelos de ML se entrenan en
+   Python y exportan el valor esperado de cada oportunidad a motor.json; aquí solo
    quedan el remuestreo y los tres ruidos, que tardan menos de un segundo.
 
    Antes esto sondeaba un backend cada 400 ms. Funcionaba en local, pero
@@ -46,7 +46,7 @@ export function useSimulacion(total = 10000) {
     cancelar.current = simular(motor, {
       total,
       // el motor termina en menos de un segundo; sin ritmo, el anillo saltaba
-      // de 0 a 100 y las curvas salian ya dibujadas
+      // de 0 a 100 y las curvas salían ya dibujadas
       pasos: 130,
       duracionMs: 26000,
       alAvanzar: (parcial, n) => {

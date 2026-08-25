@@ -3,7 +3,7 @@ import { Bullets, Metric, MetricGrid, Panel } from "./Blocks";
 import { pct, usd, usdK } from "../lib/format";
 import { IconAlert, IconCheck, IconLayers } from "./Icons";
 
-/* Las tres preguntas que separan un simulador de una herramienta de decision:
+/* Las tres preguntas que separan un simulador de una herramienta de decisión:
    ¿aguanta el ranking?, ¿aguanta si me equivoque calibrando?, ¿cuanto vale
    quitarme la incertidumbre antes de decidir? */
 export function RobustezSection({ payload }) {

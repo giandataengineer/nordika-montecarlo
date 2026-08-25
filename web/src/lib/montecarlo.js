@@ -1,14 +1,14 @@
 /* Monte Carlo en el navegador.
 
    Los modelos de ML se entrenan en Python y exportan el valor esperado de cada
-   oportunidad bajo cada estrategia. Lo que queda aqui es el remuestreo bootstrap y
+   oportunidad bajo cada estrategia. Lo que queda aquí es el remuestreo bootstrap y
    los tres ruidos, que es aritmetica: 10.000 iteraciones tardan menos de un
    segundo y no necesitan servidor.
 
    La logica replica scripts/simulacion_montecarlo.py:simulate_decisions. */
 
 // Generador con semilla para que la pagina de el mismo resultado en cada
-// visita. Sin esto, dos personas viendo el proyecto verian numeros distintos.
+// visita. Sin esto, dos personas viendo el proyecto verían números distintos.
 function mulberry32(semilla) {
   let a = semilla >>> 0;
   return function () {
@@ -58,8 +58,8 @@ function percentil(ordenados, q) {
    no, la interfaz se congela los 10.000 escenarios y no se ve nada moverse.
 
    La pausa entre lotes no es un adorno. El navegador termina los 10.000
-   escenarios en menos de un segundo, asi que sin ritmo el anillo saltaba de 0
-   a 100 y las curvas aparecian ya dibujadas: la fase prometia una simulacion
+   escenarios en menos de un segundo, así que sin ritmo el anillo saltaba de 0
+   a 100 y las curvas aparecían ya dibujadas: la fase prometía una simulación
    en vivo y enseñaba un resultado congelado. `duracionMs` reparte el trabajo
    en `pasos` tramos para que el avance se vea escenario a escenario. */
 export function simular(
@@ -88,7 +88,7 @@ export function simular(
 
     for (let s = hecho; s < hasta; s += 1) {
       // mismos indices para todas las estrategias en cada escenario: se
-      // comparan sobre la misma realizacion, no sobre muestras distintas
+      // comparan sobre la misma realización, no sobre muestras distintas
       const idx = new Array(base.length);
       for (let i = 0; i < base.length; i += 1) idx[i] = Math.floor(rand() * base.length);
 

@@ -69,7 +69,7 @@ def _autocomprobacion() -> None:
 
     saturacion = curva_de_saturacion()
     assert len(saturacion) == 4
-    # el caso entero depende de esto: al saturar, la conversion cae
+    # el caso entero depende de esto: al saturar, la conversión cae
     barato = saturacion.iloc[0]
     caro = saturacion.iloc[-1]
     assert caro["coste_por_oportunidad"] > barato["coste_por_oportunidad"]

@@ -38,7 +38,7 @@
   --accent: var(--orange);
 
   /* tipografía: pareja sobre un eje de contraste real. Bricolage Grotesque
-     tiene ancho optico variable y remates propios, asi que los titulares
+     tiene ancho optico variable y remates propios, así que los titulares
      dejan de parecer la fuente por defecto de cualquier plantilla.
      Instrument Sans se queda para texto corrido, donde manda la lectura. */
   --font-display: "Bricolage Grotesque", "Instrument Sans", -apple-system, sans-serif;

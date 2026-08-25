@@ -109,7 +109,7 @@ export const IconMontecarlo = (p) => (
   </svg>
 );
 
-// alias: la marca se seguia importando con el nombre antiguo en varios sitios
+// alias: la marca se seguía importando con el nombre antiguo en varios sitios
 export const IconPeak = IconMontecarlo;
 
 export const IconAlert = (p) => (
