@@ -24,94 +24,22 @@ def _con() -> duckdb.DuckDBPyConnection:
     return con
 
 
-# Rentabilidad por canal. Es la consulta que responde de donde sale el margen
-# y cual de los canales pagados esta comprando volumen caro.
-RENTABILIDAD_POR_CANAL = """
-SELECT
-    channel                                             AS canal,
-    count(*)                                            AS oportunidades,
-    round(avg(converted_to_sale), 4)                    AS tasa_conversion,
-    round(avg(cost_attributed_usd), 2)                  AS coste_medio,
-    round(sum(cost_attributed_usd), 2)                  AS inversion,
-    round(sum(revenue_usd), 2)                          AS ingreso,
-    round(sum(contribution_profit_usd), 2)              AS margen,
-    round(sum(revenue_usd) / nullif(sum(cost_attributed_usd), 0), 2) AS roas
-FROM oportunidades
-GROUP BY channel
-ORDER BY margen DESC
-"""
+SQL_DIR = PROJECT_ROOT / "sql"
 
-# La curva de saturacion: el hallazgo central del caso. Al subir de nivel de
-# inversion crece el volumen y cae la calidad, hasta que el margen se da vuelta.
-CURVA_DE_SATURACION = """
-SELECT
-    ad_budget_level                                     AS nivel_inversion,
-    count(*)                                            AS oportunidades,
-    round(avg(converted_to_sale), 4)                    AS tasa_conversion,
-    round(avg(lead_score), 1)                           AS calidad_media,
-    round(avg(cost_attributed_usd), 2)                  AS coste_por_oportunidad,
-    round(avg(contribution_profit_usd), 2)              AS margen_por_oportunidad
-FROM oportunidades
-WHERE ad_budget_level <> 'organic_or_owned'
-GROUP BY ad_budget_level
-ORDER BY coste_por_oportunidad
-"""
 
-# Evolucion mensual con media movil de tres meses. La funcion de ventana es la
-# razon principal por la que esto vive en SQL y no en pandas.
-EVOLUCION_MENSUAL = """
-WITH por_mes AS (
-    SELECT
-        month                       AS mes,
-        sum(contribution_profit_usd) AS margen,
-        sum(cost_attributed_usd)     AS inversion,
-        sum(revenue_usd)             AS ingreso,
-        avg(converted_to_sale)       AS conversion
-    FROM oportunidades
-    GROUP BY month
-)
-SELECT
-    mes,
-    round(margen, 2)        AS margen,
-    round(inversion, 2)     AS inversion,
-    round(conversion, 4)    AS tasa_conversion,
-    round(ingreso / nullif(inversion, 0), 2) AS roas,
-    round(avg(margen) OVER (ORDER BY mes ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), 2) AS margen_media_movil_3m
-FROM por_mes
-ORDER BY mes
-"""
+def _leer(nombre: str) -> str:
+    """Las consultas viven en sql/*.sql, no incrustadas aqui.
 
-# Concentracion del margen: cuantas oportunidades pagan de verdad el ano.
-CONCENTRACION_DEL_MARGEN = """
-WITH rentables AS (
-    SELECT contribution_profit_usd
-    FROM oportunidades
-    WHERE converted_to_sale = 1 AND contribution_profit_usd > 0
-),
-acumulado AS (
-    SELECT
-        row_number() OVER (ORDER BY contribution_profit_usd DESC)         AS puesto,
-        count(*)     OVER ()                                              AS total,
-        sum(contribution_profit_usd) OVER (ORDER BY contribution_profit_usd DESC) AS acum,
-        sum(contribution_profit_usd) OVER ()                              AS margen_total
-    FROM rentables
-)
-SELECT tramo, max(pct_margen) AS pct_del_margen
-FROM (
-    SELECT
-        CASE
-            WHEN puesto <= total * 0.01 THEN 'top 1%'
-            WHEN puesto <= total * 0.05 THEN 'top 5%'
-            WHEN puesto <= total * 0.10 THEN 'top 10%'
-            WHEN puesto <= total * 0.25 THEN 'top 25%'
-            ELSE 'resto'
-        END AS tramo,
-        round(100.0 * acum / margen_total, 1) AS pct_margen
-    FROM acumulado
-)
-GROUP BY tramo
-ORDER BY pct_del_margen
-"""
+    Asi se revisan en un editor de SQL, se versionan por separado y el dia que
+    haya que llevarlas a Postgres o a dbt se mueve el fichero y ya.
+    """
+    return (SQL_DIR / nombre).read_text(encoding="utf-8")
+
+
+RENTABILIDAD_POR_CANAL = _leer("01_rentabilidad_por_canal.sql")
+CURVA_DE_SATURACION = _leer("02_curva_de_saturacion.sql")
+EVOLUCION_MENSUAL = _leer("03_evolucion_mensual.sql")
+CONCENTRACION_DEL_MARGEN = _leer("04_concentracion_del_margen.sql")
 
 
 def rentabilidad_por_canal() -> pd.DataFrame:

@@ -3164,3 +3164,46 @@ a:hover {
   border-top: 1px solid var(--line);
   max-width: 82ch;
 }
+
+/* --- la capa SQL --- */
+
+.sql__titulo {
+  font-size: clamp(1.9rem, 1.4rem + 2.2vw, 3.4rem);
+  line-height: 1.04;
+  margin: 20px 0 0;
+}
+
+.sql__lede {
+  margin: 20px 0 0;
+  color: var(--muted);
+  max-width: 66ch;
+  line-height: 1.62;
+}
+
+.sql__lede code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--panel-warm);
+  padding: 2px 6px;
+}
+
+.sql__lista {
+  display: grid;
+  gap: clamp(20px, 3vw, 32px);
+  margin-top: clamp(32px, 4vw, 48px);
+}
+
+/* La consulta se lee entera o no se lee: sin scroll vertical interno y con
+   scroll horizontal solo si alguna linea se pasa. */
+.sql__codigo {
+  margin: 16px 0;
+  padding: 16px 18px;
+  background: var(--panel-warm);
+  border-left: 2px solid var(--accent);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text);
+  white-space: pre;
+}

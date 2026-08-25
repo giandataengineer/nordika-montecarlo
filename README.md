@@ -142,7 +142,13 @@ cp .env.example .env    # y rellena las que tengas
 ## Estructura
 
 ```
+sql/
+  01_rentabilidad_por_canal.sql    margen y ROAS por canal
+  02_curva_de_saturacion.sql       coste y conversion por tramo de inversion
+  03_evolucion_mensual.sql         serie mensual con media movil de 3 meses
+  04_concentracion_del_margen.sql  acumulado por percentil con funciones de ventana
 scripts/
+  consultas.py                capa SQL sobre el historico, con DuckDB
   simulacion_montecarlo.py    generador, modelos, escenarios, Monte Carlo, checks
   analitica_avanzada.py       guardarrail, bootstrap, estabilidad, sensibilidad, EVPI
   agente_multirol.py          los tres roles, catálogo de 57 modelos, cadena de fallback
@@ -153,6 +159,22 @@ scripts/
 web/                          consola React (Vite, Recharts, Motion)
 datos/                        CSV generados por el pipeline
 ```
+
+## Capa SQL
+
+El análisis descriptivo del caso no está en pandas, está en SQL. Las cuatro
+consultas viven en `sql/*.sql` y corren con **DuckDB** directamente sobre el
+CSV, sin paso de ingesta que mantener. Usan CTEs, `row_number`, sumas
+acumuladas sobre ventana y una media móvil de tres meses con
+`ROWS BETWEEN 2 PRECEDING AND CURRENT ROW`.
+
+```bash
+python scripts/consultas.py    # imprime las tres tablas y valida los resultados
+```
+
+El día que el histórico no quepa en memoria, estas mismas consultas corren
+contra Postgres cambiando la conexión. La curva de saturación, que es el
+hallazgo que decide el caso, sale de `02_curva_de_saturacion.sql`.
 
 ## Esquema de datos
 
@@ -185,7 +207,7 @@ la más dispersa y escalar paid social pierde dinero más de un 5 % de las veces
 
 ## Stack
 
-**Datos y ML** · Python · pandas · NumPy · scikit-learn
+**Datos y ML** · Python · SQL (DuckDB) · pandas · NumPy · scikit-learn
 **Simulación** · Monte Carlo · lognormal, discreta y gaussiana · bootstrap · EVPI
 **LLM** · SDK de OpenAI como protocolo · 6 proveedores · 57 modelos
 **Backend** · `http.server` (biblioteca estándar), opcional

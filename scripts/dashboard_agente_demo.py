@@ -255,6 +255,67 @@ def _lecturas_multirol(top_summary, important_uplift, avanzado) -> dict:
         return {"lecturas": [], "agregacion": {"modo": "error", "veredicto": str(exc)[:200]}}
 
 
+def _capa_sql() -> dict[str, Any]:
+    """Las consultas de sql/*.sql con su resultado, para enseñarlas en la web.
+
+    La capa SQL existia desde el principio pero no se veia en ningun sitio:
+    quien abria la consola no sabia que el analisis descriptivo estaba resuelto
+    con DuckDB, CTEs y funciones de ventana. Aqui viaja el texto de cada
+    consulta junto a las filas que devuelve, para que se lea una al lado de la
+    otra.
+    """
+    from consultas import (
+        CONCENTRACION_DEL_MARGEN,
+        CURVA_DE_SATURACION,
+        RENTABILIDAD_POR_CANAL,
+        concentracion_del_margen,
+        curva_de_saturacion,
+        rentabilidad_por_canal,
+    )
+
+    definidas = [
+        {
+            "archivo": "sql/02_curva_de_saturacion.sql",
+            "titulo": "Curva de saturación publicitaria",
+            "proposito": "Al subir de tramo de inversión sube el coste por oportunidad y cae la conversión. Es el hallazgo que decide el caso.",
+            "sql": CURVA_DE_SATURACION.strip(),
+            "fn": curva_de_saturacion,
+        },
+        {
+            "archivo": "sql/04_concentracion_del_margen.sql",
+            "titulo": "Concentración del margen",
+            "proposito": "Acumulado por percentil con row_number y sum sobre ventana: cuántas oportunidades pagan de verdad el año.",
+            "sql": CONCENTRACION_DEL_MARGEN.strip(),
+            "fn": concentracion_del_margen,
+        },
+        {
+            "archivo": "sql/01_rentabilidad_por_canal.sql",
+            "titulo": "Rentabilidad por canal",
+            "proposito": "De dónde sale el margen y qué canal está comprando volumen caro.",
+            "sql": RENTABILIDAD_POR_CANAL.strip(),
+            "fn": rentabilidad_por_canal,
+        },
+    ]
+
+    consultas = []
+    for d in definidas:
+        try:
+            df = d["fn"]()
+        except Exception:  # la web no se cae porque falte DuckDB
+            continue
+        consultas.append(
+            {
+                "archivo": d["archivo"],
+                "titulo": d["titulo"],
+                "proposito": d["proposito"],
+                "sql": d["sql"],
+                "columnas": [str(c) for c in df.columns],
+                "filas": _records(df),
+            }
+        )
+    return {"motor": "DuckDB sobre el CSV, sin paso de ingesta", "consultas": consultas}
+
+
 def _build_payload() -> dict:
     dataset = _read_csv(DATASET_PATH)
     params = _read_csv(PARAMS_PATH)
@@ -489,6 +550,7 @@ def _build_payload() -> dict:
             "executive_notes": executive_notes,
         },
         "avanzado": avanzado,
+        "sql": _capa_sql(),
         "multirol": _lecturas_multirol(top_summary, important_uplift, avanzado),
     }
 

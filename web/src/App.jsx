@@ -14,6 +14,7 @@ import { ReportSection } from "./components/ReportSection";
 import { RobustezSection } from "./components/RobustezSection";
 import { ProblemaSection } from "./components/ProblemaSection";
 import { Respuestas } from "./components/Respuestas";
+import { SqlSection } from "./components/SqlSection";
 import "./styles/global.css";
 
 const PHASE_LABEL = {
@@ -91,6 +92,8 @@ export default function App() {
         wide
         media={<DatasetSection payload={payload} />}
       />
+
+      <SqlSection payload={payload} />
 
       <Feature
         id="fase-02"
