@@ -118,7 +118,7 @@ const PLATES = [
   {
     n: "01",
     title: "Incertidumbre en los parámetros.",
-    copy: "Cada coeficiente estimado por el modelo se muestrea de una distribución lognormal centrada en su valor puntual, porque un parámetro estimado no es una constante sino un rango con incertidumbre propia.",
+    copy: "Cada coeficiente se muestrea de una lognormal centrada en su valor puntual. Un parámetro estimado nunca es una constante: trae su propia incertidumbre y aquí se respeta.",
     Art: ArtUncertainty,
   },
   {
@@ -136,7 +136,7 @@ const PLATES = [
   {
     n: "04",
     title: "Ranking ajustado al riesgo.",
-    copy: "Las iniciativas se ordenan por esperanza matemática penalizada por la cola izquierda de la distribución, no por el techo del mejor escenario. La alternativa más llamativa rara vez es la más rentable.",
+    copy: "Las iniciativas se ordenan por esperanza matemática penalizada por la cola izquierda, no por el techo del mejor escenario. Es lo que hace que gane la aburrida.",
     Art: ArtRanking,
   },
 ];

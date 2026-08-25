@@ -12,28 +12,28 @@ const CANDIDATAS = [
     nombre: "Escalar paid social",
     inversion: "$9.000",
     tono: "riesgo",
-    copy: "Más presupuesto en Meta y TikTok. Aporta volumen desde el primer día y es la que mejor se ve en los paneles.",
+    copy: "Más presupuesto en Meta y TikTok. Trae volumen desde el primer día y es la que mejor luce en los paneles.",
   },
   {
     tipo: "La de menor coste",
     nombre: "Optimizar la conversión del sitio",
     inversion: "$1.200",
     tono: "calma",
-    copy: "Landing, CTA, lead magnet y checkout. No compra tráfico nuevo: mejora el rendimiento del que ya llega.",
+    copy: "Landing, CTA, lead magnet y checkout. No trae visitas nuevas, aprovecha mejor las que ya entran.",
   },
   {
     tipo: "La de menor riesgo",
     nombre: "Reactivación y remarketing",
     inversion: "$2.500",
     tono: "calma",
-    copy: "Trabaja la base que ya interactuó con la marca. Coste incremental bajo y ticket alto, con techo limitado.",
+    copy: "Trabaja la base que ya te conoce. Cuesta poco por oportunidad y el ticket es alto, pero esa base no crece sola.",
   },
   {
     tipo: "La de mayor techo",
     nombre: "Abrir categoría nueva",
     inversion: "$12.000",
     tono: "riesgo",
-    copy: "Línea de producto con ticket superior. El gasto se compromete entero antes de conocer la respuesta del mercado.",
+    copy: "Línea de producto con ticket mayor. Aquí el gasto se compromete entero antes de saber si el mercado responde.",
   },
 ];
 
@@ -59,9 +59,9 @@ export function ProblemaSection({ fase, summary, ranking = [] }) {
             Cuatro iniciativas<br />y un solo presupuesto.
           </h2>
           <p className="problema__lede">
-            La unidad de captación de pago de un ecommerce reparte el presupuesto
-            del trimestre. Hay cuatro iniciativas sobre la mesa y dinero para una.
-            El histórico son 20.000 oportunidades cerradas en 28 meses.
+            La unidad de captación de pago de un ecommerce reparte el presupuesto del
+            trimestre. Cuatro iniciativas encima de la mesa y dinero para una. Detrás
+            hay 20.000 oportunidades cerradas en 28 meses.
           </p>
 
           {brecha != null && (
@@ -100,9 +100,10 @@ export function ProblemaSection({ fase, summary, ranking = [] }) {
               declara estar reduciendo su dependencia de esos datos.
             </p>
             <p>
-              La alternativa habitual tampoco resuelve: tres escenarios en una hoja de
-              cálculo, malo menos 30 % y bueno más 30 %, sin que nadie sepa qué
-              probabilidad tiene ese 30 ni cuántas veces de cada cien se pierde dinero.
+              La alternativa de siempre tampoco arregla nada: tres escenarios en una
+              hoja de cálculo, malo menos 30 % y bueno más 30 %, sin que nadie sepa qué
+              probabilidad tiene ese 30 ni cuántas veces de cada cien se acaba perdiendo
+              dinero.
             </p>
           </div>
         </div>
@@ -113,10 +114,10 @@ export function ProblemaSection({ fase, summary, ranking = [] }) {
               El mecanismo: la audiencia se satura antes de lo que dice el panel.
             </h3>
             <p>
-              Al subir el presupuesto de un canal llega más tráfico, pero la audiencia
-              con intención de compra es finita. Cuando se agota, el algoritmo amplía
-              el público hacia perfiles peores y hay que pujar más alto para
-              alcanzarlos: el coste sube justo cuando la conversión baja.
+              Al subir el presupuesto de un canal entra más tráfico, pero la audiencia
+              con intención de compra se acaba. Cuando se agota, el algoritmo empieza a
+              traer perfiles peores y hay que pujar más alto para llegar a ellos. El
+              coste sube justo cuando la conversión baja.
             </p>
             <p>
               <b>Del tramo medio al saturado, el coste por oportunidad se duplica y la

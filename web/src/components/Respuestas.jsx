@@ -29,7 +29,7 @@ export function Respuestas({ payload }) {
     {
       k: "Por qué gana",
       v: `Suelo de ${usd(mejor.p10_usd)}`,
-      d: "No gana por tener la media más alta, sino porque su percentil 10 sigue siendo positivo. La segunda opción tiene mejor techo y peor suelo.",
+      d: "Gana por el suelo. Su percentil 10 sigue en positivo, mientras que la segunda tiene mejor techo y peor suelo.",
     },
     {
       k: "Coste de equivocarse",

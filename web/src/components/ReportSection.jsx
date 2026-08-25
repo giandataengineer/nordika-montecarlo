@@ -108,9 +108,9 @@ export function ReportSection({ payload }) {
       <div className="split-2">
         <Panel eyebrow="Consultas realizadas" title="Huella de herramientas">
           <p className="panel__copy">
-            El agente no responde de memoria. Cada afirmación procede de una consulta
-            concreta sobre los resultados del simulador y de los modelos, y puede
-            rastrearse hasta la cifra que la respalda.
+            El agente no responde de memoria. Cada afirmación viene de una consulta
+            concreta sobre los resultados del simulador y de los modelos, y se puede
+            rastrear hasta la cifra que la sostiene.
           </p>
           <div className="trace-list">
             {(rec.tool_trace ?? []).map((t) => (

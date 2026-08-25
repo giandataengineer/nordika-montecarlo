@@ -27,15 +27,15 @@ const PHASE_LABEL = {
 const FAQ = [
   {
     q: "¿Por qué simular y no predecir?",
-    a: "Una predicción puntual oculta el riesgo. Diez mil escenarios con incertidumbre realista dan la distribución completa: el suelo, la mediana, el techo y con qué probabilidad se pierde dinero. El presupuesto se compromete una sola vez, no cien.",
+    a: "Una predicción sola no dice cuánto puedes perder. Con diez mil escenarios sale la distribución entera: el suelo, la mediana, el techo y cada cuántas veces la cosa acaba en rojo. Y el presupuesto se firma una vez, no cien."
   },
   {
     q: "¿Qué es el uplift contrafactual?",
-    a: "La diferencia entre el resultado esperado de una oportunidad tal como se registró y el que cabría esperar cambiando una sola palanca. Esa segunda versión no existe en el histórico, así que se estima con los modelos entrenados sobre los casos en los que sí se movió esa palanca.",
+    a: "La diferencia entre lo que se espera de una oportunidad tal como quedó registrada y lo que se esperaría cambiándole una sola palanca. Esa segunda versión no está en ningún sitio, así que la estiman los modelos, entrenados con los casos en los que esa palanca sí se movió."
   },
   {
     q: "¿La simulación se ejecuta de verdad?",
-    a: "Sí. Los modelos se entrenan en Python y su resultado se exporta al navegador, donde se calculan el remuestreo y los tres ruidos escenario a escenario. El progreso en pantalla son escenarios completados, no un temporizador.",
+    a: "Sí. Los modelos se entrenan en Python y el resultado se exporta al navegador, que hace el remuestreo y los tres ruidos escenario a escenario. Lo que marca la barra son escenarios ya terminados, no un temporizador."
   },
 ];
 
@@ -87,8 +87,8 @@ export default function App() {
         faseTitulo={f("ingesta")?.title}
         solid="El histórico comercial"
         ghost="es la única fuente de verdad."
-        echo="Sin diversidad real no hay modelo: hay memorización."
-        copy="Antes de modelizar es necesario comprobar que el histórico recoge condiciones suficientemente diversas. Se revisan los canales, las campañas, los segmentos de cliente, las geografías y la ventana temporal cubierta, de manera que el modelo aprenda del comportamiento del negocio y no del ruido de un único trimestre."
+        echo="Si el histórico solo cubre un trimestre, el modelo memoriza ese trimestre."
+        copy="Antes de modelizar hay que mirar si el histórico da para tanto. Se revisan canales, campañas, segmentos, geografías y cuánto periodo cubre. Si toda la variedad se concentra en unos pocos meses, el modelo aprende de esos meses y no del negocio."
         wide
         media={<DatasetSection payload={payload} />}
       />
@@ -102,8 +102,8 @@ export default function App() {
         faseTitulo={f("uplift")?.title}
         solid="Dos modelos"
         ghost="estiman el impacto de cada palanca."
-        echo="El uplift no es una opinión, es una diferencia medida."
-        copy="Una regresión logística estima la probabilidad de que la oportunidad convierta y un gradient boosting estima el ingreso esperado cuando lo hace. La diferencia entre el escenario base y el escenario con la palanca modificada es el uplift contrafactual de esa palanca, aislado del resto de factores."
+        echo="El uplift se mide, no se supone."
+        copy="Una regresión logística estima la probabilidad de que la oportunidad convierta. Un gradient boosting estima cuánto factura si convierte. Se cambia una palanca, se vuelve a preguntar, y la diferencia entre las dos respuestas es lo que aporta esa palanca con todo lo demás quieto."
         wide
         media={<ModelsSection payload={payload} />}
       />
@@ -117,8 +117,8 @@ export default function App() {
         faseTitulo={f("montecarlo")?.title}
         solid={totalSims ? `${fmtInt(totalSims)} futuros` : "Miles de futuros"}
         ghost="en vez de una sola predicción."
-        echo="Un valor único esconde el riesgo. Una distribución lo muestra."
-        copy="La simulación incorpora tres fuentes de incertidumbre: la variabilidad de los parámetros estimados, el riesgo de que la iniciativa no llegue a ejecutarse por completo y el error residual del modelo. El resultado no es una cifra, sino una distribución con suelo, techo y probabilidad de pérdida."
+        echo="Con un solo número no se ve el riesgo. Con diez mil, sí."
+        copy="La simulación mete tres fuentes de incertidumbre: lo que varían los parámetros estimados, el riesgo de que la iniciativa se quede a medias y el error que el modelo no explica. Al final no sale una cifra. Sale una distribución, con su suelo, su techo y su probabilidad de perder dinero."
         wide
         media={
           <>
@@ -137,7 +137,7 @@ export default function App() {
         solid="La recomendación"
         ghost="cambia según quién la lea."
         echo="Mismas cifras, tres criterios distintos."
-        copy="El mismo resultado se interpreta desde tres ángulos: el retorno sobre el capital invertido, el aprendizaje que deja la palanca para los trimestres siguientes y el control del escenario adverso. No son tres resúmenes del mismo texto, sino tres lecturas que pueden no coincidir."
+        copy="Las mismas cifras leídas desde tres sitios: el retorno sobre el capital, el aprendizaje que deja la palanca para los trimestres que vienen y el control del peor escenario. Tres lecturas que pueden no coincidir, y cuando no coinciden eso también es información."
         wide
         media={<ReportSection payload={payload} />}
       />

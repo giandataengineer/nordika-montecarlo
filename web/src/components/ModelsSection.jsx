@@ -93,11 +93,10 @@ export function ModelsSection({ payload }) {
             </ResponsiveContainer>
           </div>
           <p className="chart-lectura">
-            La lectura del gráfico es la siguiente: la diagonal representa lo que se
-            capturaría eligiendo oportunidades al azar y la curva, lo que se captura
-            siguiendo el orden que propone el modelo. Cuanto más se despega la curva
-            de la diagonal en el tramo izquierdo, más conversiones se concentran en
-            el primer decil y menos esfuerzo hace falta para alcanzarlas.
+            La diagonal es lo que se captura eligiendo oportunidades al azar. La curva
+            es lo que se captura siguiendo el orden del modelo. Cuanto más se separan en
+            el tramo izquierdo, más conversiones caen dentro del primer decil y menos
+            esfuerzo cuesta alcanzarlas.
           </p>
         </Panel>
 
@@ -132,10 +131,10 @@ export function ModelsSection({ payload }) {
 
       <Panel eyebrow="Palancas de negocio" title="Escenarios con mayor uplift esperado">
         <p className="panel__copy">
-          Estas son las iniciativas mejor posicionadas según el análisis contrafactual,
-          ordenadas por la conversión que añaden y por el margen que aportan a cada
-          oportunidad. El uplift no procede de una hipótesis escrita a mano, sino de
-          comparar cada oportunidad consigo misma después de modificar una sola palanca.
+          Las iniciativas mejor posicionadas según el contrafactual, ordenadas por la
+          conversión que añaden y por el margen que dejan en cada oportunidad. El uplift
+          sale de comparar cada oportunidad consigo misma después de cambiarle una sola
+          palanca, así que ninguna de estas cifras está puesta a mano.
         </p>
         <div className="lever-grid">{main.map((u) => lever(u, "var(--purple)"))}</div>
       </Panel>

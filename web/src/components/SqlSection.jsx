@@ -41,11 +41,10 @@ export function SqlSection({ payload }) {
           El descriptivo no sale<br />de pandas. Sale de SQL.
         </h2>
         <p className="sql__lede">
-          Las agregaciones del caso viven en <code>sql/*.sql</code> y corren con
-          DuckDB directamente sobre el CSV, sin paso de ingesta que mantener. El
-          día que el histórico no quepa en memoria, estas mismas consultas corren
-          contra Postgres cambiando la conexión. Aquí van tres, con el resultado
-          que devuelven.
+          Las agregaciones del caso viven en <code>sql/*.sql</code> y corren con DuckDB
+          directamente sobre el CSV, sin paso de ingesta que mantener. El día que el
+          histórico no quepa en memoria, esas mismas consultas van contra Postgres
+          cambiando la conexión. Aquí van tres, con lo que devuelven.
         </p>
 
         <div className="sql__lista">

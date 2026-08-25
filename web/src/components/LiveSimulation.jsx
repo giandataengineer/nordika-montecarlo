@@ -113,11 +113,10 @@ function Compuerta({ total, onLanzar }) {
     <Panel eyebrow="Fase 04 · Simulación Monte Carlo" title="Todavía no hay resultados que mostrar" className="compuerta">
       <p className="panel__copy">
         Los modelos ya estimaron el uplift de cada palanca, pero eso sigue siendo una
-        única predicción. Para saber qué decisión resiste la incertidumbre es necesario
-        simular
-        {" "}{Number(total).toLocaleString("en-US")} futuros incorporando la variabilidad de los parámetros, el riesgo de ejecución y
-        el error residual del modelo. El ranking, el radar y el informe aparecen al
-        terminar.
+        sola predicción. Para saber cuál aguanta hay que simular
+        {" "}{Number(total).toLocaleString("en-US")} futuros metiendo la variabilidad de
+        los parámetros, el riesgo de que la cosa no se ejecute entera y el error que el
+        modelo no explica. El ranking, el radar y el informe salen al terminar.
       </p>
       <div className="compuerta__cta">
         <Magnet padding={80} magnetStrength={6}>
@@ -171,10 +170,9 @@ export function LiveSimulation({ payload, sim }) {
     <div className="stack">
       <Panel eyebrow="Mission control" title={sim.corriendo ? "Simulación en directo" : "Simulación completada"}>
         <p className="panel__copy">
-          Cada punto del recorrido corresponde a un futuro distinto. El progreso y las
-          cifras se calculan en el propio navegador sobre el motor exportado desde
-          Python, de modo que reflejan escenarios realmente completados y no una
-          animación.
+          Cada punto del recorrido es un futuro distinto. El progreso y las cifras se
+          calculan en el propio navegador, sobre el motor que exporta Python, así que lo
+          que ves son escenarios ya completados y no una animación con temporizador.
         </p>
 
         <div className="live-top">
@@ -294,10 +292,9 @@ export function LiveSimulation({ payload, sim }) {
 
         <Panel eyebrow="Evolución del beneficio esperado" title="Cómo se mueve cada estrategia">
           <p className="panel__copy">
-            Cada línea representa una iniciativa y cada punto una lectura tomada
-            mientras avanza la simulación. Las curvas que se estabilizan pronto son las
-            que menos dependen del azar; las que siguen oscilando necesitan más
-            escenarios para dar una media fiable.
+            Cada línea es una iniciativa y cada punto una lectura tomada mientras avanza
+            la simulación. Las que se estabilizan pronto dependen poco del azar. Las que
+            siguen oscilando necesitan más escenarios antes de fiarse de su media.
           </p>
           <div className="chart">
             <ResponsiveContainer width="100%" height={330}>
@@ -332,8 +329,8 @@ export function LiveSimulation({ payload, sim }) {
       {sim.lista && finales.length > 0 && (
         <Panel eyebrow="Lectura consolidada" title="Ranking final de alternativas">
           <p className="panel__copy">
-            El percentil 10 marca el suelo de la distribución. Cuando resulta negativo,
-            la iniciativa puede destruir margen aunque su mediana sea elevada.
+            El percentil 10 es el suelo de la distribución. Si sale negativo, esa
+            iniciativa puede destruir margen por muy alta que tenga la mediana.
           </p>
           <div className="rank-rows">
             {finales.map((r, i) => (
@@ -351,7 +348,7 @@ export function LiveSimulation({ payload, sim }) {
                 {Number(r.p10_usd) < 0 && (
                   <p className="rank-row__warn">
                     <IconAlert style={{ width: 14, height: 14 }} />
-                    Su percentil 10 entra en pérdidas, de modo que puede destruir margen aunque su mediana sea elevada.
+                    Su percentil 10 entra en pérdidas: puede destruir margen aunque la mediana sea alta.
                   </p>
                 )}
               </article>
